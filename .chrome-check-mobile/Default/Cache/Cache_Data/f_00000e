@@ -1,0 +1,566 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:\\Users\\SSAFY\\Desktop\\홈 대시보드 및 UI 구성\\src\\app\\components\\FinancePage.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f1d6f3ce"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=f1d6f3ce"; const useState = __vite__cjsImport3_react["useState"];
+import {
+  ArrowRight,
+  Calculator,
+  CheckCircle2,
+  Landmark,
+  Percent,
+  ShieldAlert,
+  SlidersHorizontal,
+  WalletCards
+} from "/node_modules/.vite/deps/lucide-react.js?v=79293960";
+import { financialProducts, profile, subscriptions } from "/src/app/data/cheongyak.ts?t=1778828170349";
+const categories = ["전체", "전세대출", "주택담보대출", "청약통장", "적금"];
+function scoreColor(score) {
+  if (score >= 92) return "bg-blue-600";
+  if (score >= 86) return "bg-emerald-500";
+  return "bg-amber-500";
+}
+export function FinancePage() {
+  _s();
+  const [category, setCategory] = useState("전체");
+  const products = category === "전체" ? financialProducts : financialProducts.filter((product) => product.category === category);
+  const topSubscription = subscriptions[0];
+  return /* @__PURE__ */ jsxDEV("div", { className: "mx-auto w-full max-w-7xl p-4 sm:p-6", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "mb-6 grid gap-4 lg:grid-cols-[1fr_360px]", children: [
+      /* @__PURE__ */ jsxDEV("section", { className: "rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col gap-5 md:flex-row md:items-start md:justify-between", children: [
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "text-sm font-semibold text-blue-700", children: "사용자맞춤 금융상품 추천" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 53,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("h1", { className: "mt-1 text-2xl font-bold text-slate-950 sm:text-3xl", children: "청약 일정에 맞춰 자금 계획까지 연결합니다" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 54,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "mt-3 max-w-2xl text-sm leading-6 text-slate-600", children: [
+              profile.name,
+              "님의 예산, 가구 구성, 청약 마감일, 예상 계약금 흐름을 기준으로 금융상품을 추천합니다."
+            ] }, void 0, true, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 57,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 52,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "inline-flex w-fit items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700", children: [
+            /* @__PURE__ */ jsxDEV(WalletCards, { className: "h-4 w-4" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 63,
+              columnNumber: 15
+            }, this),
+            financialProducts.length,
+            "개 상품 분석"
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 62,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+          lineNumber: 51,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "mt-6 grid gap-3 md:grid-cols-3", children: [
+          ["추천 청약", topSubscription.name],
+          ["예상 계약금", topSubscription.deposit],
+          ["예산 범위", profile.budget]
+        ].map(
+          ([label, value]) => /* @__PURE__ */ jsxDEV("div", { className: "rounded-lg bg-slate-50 p-4", children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-500", children: label }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 75,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "mt-1 font-bold text-slate-950", children: value }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 76,
+              columnNumber: 17
+            }, this)
+          ] }, label, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 74,
+            columnNumber: 13
+          }, this)
+        ) }, void 0, false, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+          lineNumber: 68,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+        lineNumber: 50,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("aside", { className: "rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-sm sm:p-6", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex h-11 w-11 items-center justify-center rounded-lg bg-white/10", children: /* @__PURE__ */ jsxDEV(Calculator, { className: "h-5 w-5" }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 85,
+            columnNumber: 15
+          }, this) }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 84,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-300", children: "월 상환 여력" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 88,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "text-2xl font-bold", children: "약 138만원" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 89,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 87,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+          lineNumber: 83,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "mt-5 space-y-3 text-sm", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between border-b border-white/10 pb-3", children: [
+            /* @__PURE__ */ jsxDEV("span", { className: "text-slate-300", children: "소득 대비 부담률" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 94,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "font-bold", children: "27%" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 95,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 93,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between border-b border-white/10 pb-3", children: [
+            /* @__PURE__ */ jsxDEV("span", { className: "text-slate-300", children: "권장 비상금" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 98,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "font-bold", children: "1,200만원" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 99,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 97,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxDEV("span", { className: "text-slate-300", children: "계약금 준비율" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 102,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "font-bold text-emerald-300", children: "82%" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 103,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 101,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+          lineNumber: 92,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+        lineNumber: 82,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+      lineNumber: 49,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "grid gap-5 xl:grid-cols-[1fr_320px]", children: [
+      /* @__PURE__ */ jsxDEV("section", { className: "space-y-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700", children: /* @__PURE__ */ jsxDEV(SlidersHorizontal, { className: "h-5 w-5" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 114,
+              columnNumber: 17
+            }, this) }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 113,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { children: [
+              /* @__PURE__ */ jsxDEV("p", { className: "font-bold text-slate-950", children: "상품 유형 필터" }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 117,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-500", children: "청약 단계별 필요한 상품만 보기" }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 118,
+                columnNumber: 17
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 116,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 112,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex flex-wrap gap-2", children: categories.map(
+            (item) => /* @__PURE__ */ jsxDEV(
+              "button",
+              {
+                type: "button",
+                onClick: () => setCategory(item),
+                className: `h-9 rounded-lg border px-3 text-sm font-semibold transition ${category === item ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`,
+                children: item
+              },
+              item,
+              false,
+              {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 123,
+                columnNumber: 15
+              },
+              this
+            )
+          ) }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 121,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+          lineNumber: 111,
+          columnNumber: 11
+        }, this),
+        products.map(
+          (product) => /* @__PURE__ */ jsxDEV("article", { className: "rounded-lg border border-slate-200 bg-white p-5 shadow-sm", children: /* @__PURE__ */ jsxDEV("div", { className: "grid gap-5 lg:grid-cols-[1fr_220px]", children: [
+            /* @__PURE__ */ jsxDEV("div", { children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "flex flex-wrap items-center gap-2", children: [
+                /* @__PURE__ */ jsxDEV("span", { className: "rounded-md bg-slate-950 px-2 py-1 text-xs font-bold text-white", children: product.category }, void 0, false, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 144,
+                  columnNumber: 21
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { className: "rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700", children: [
+                  product.matchScore,
+                  "% 적합"
+                ] }, void 0, true, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 147,
+                  columnNumber: 21
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 143,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("h2", { className: "mt-3 text-xl font-bold text-slate-950", children: product.name }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 151,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("p", { className: "mt-1 text-sm font-semibold text-slate-500", children: product.provider }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 152,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { className: "mt-5 grid gap-3 sm:grid-cols-3", children: [
+                ["금리", product.rate, Percent],
+                ["한도", product.limit, Landmark],
+                ["기간", product.period, WalletCards]
+              ].map(
+                ([label, value, Icon]) => /* @__PURE__ */ jsxDEV("div", { className: "rounded-lg bg-slate-50 p-4", children: [
+                  /* @__PURE__ */ jsxDEV("div", { className: "mb-2 flex items-center gap-2 text-sm text-slate-500", children: [
+                    /* @__PURE__ */ jsxDEV(Icon, { className: "h-4 w-4" }, void 0, false, {
+                      fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                      lineNumber: 162,
+                      columnNumber: 27
+                    }, this),
+                    label
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                    lineNumber: 161,
+                    columnNumber: 25
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("p", { className: "font-bold text-slate-950", children: value }, void 0, false, {
+                    fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                    lineNumber: 165,
+                    columnNumber: 25
+                  }, this)
+                ] }, label, true, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 160,
+                  columnNumber: 19
+                }, this)
+              ) }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 154,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { className: "mt-5 grid gap-4 lg:grid-cols-2", children: [
+                /* @__PURE__ */ jsxDEV("div", { children: [
+                  /* @__PURE__ */ jsxDEV("p", { className: "mb-2 text-sm font-semibold text-slate-700", children: "추천 이유" }, void 0, false, {
+                    fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                    lineNumber: 172,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("div", { className: "space-y-2", children: product.reasons.map(
+                    (reason) => /* @__PURE__ */ jsxDEV("div", { className: "flex items-start gap-2 text-sm text-slate-600", children: [
+                      /* @__PURE__ */ jsxDEV(CheckCircle2, { className: "mt-0.5 h-4 w-4 shrink-0 text-emerald-600" }, void 0, false, {
+                        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                        lineNumber: 176,
+                        columnNumber: 29
+                      }, this),
+                      /* @__PURE__ */ jsxDEV("span", { children: reason }, void 0, false, {
+                        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                        lineNumber: 177,
+                        columnNumber: 29
+                      }, this)
+                    ] }, reason, true, {
+                      fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                      lineNumber: 175,
+                      columnNumber: 23
+                    }, this)
+                  ) }, void 0, false, {
+                    fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                    lineNumber: 173,
+                    columnNumber: 23
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 171,
+                  columnNumber: 21
+                }, this),
+                /* @__PURE__ */ jsxDEV("div", { children: [
+                  /* @__PURE__ */ jsxDEV("p", { className: "mb-2 text-sm font-semibold text-slate-700", children: "주의 사항" }, void 0, false, {
+                    fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                    lineNumber: 183,
+                    columnNumber: 23
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("div", { className: "flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800", children: [
+                    /* @__PURE__ */ jsxDEV(ShieldAlert, { className: "mt-0.5 h-4 w-4 shrink-0" }, void 0, false, {
+                      fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                      lineNumber: 185,
+                      columnNumber: 25
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { children: product.caution }, void 0, false, {
+                      fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                      lineNumber: 186,
+                      columnNumber: 25
+                    }, this)
+                  ] }, void 0, true, {
+                    fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                    lineNumber: 184,
+                    columnNumber: 23
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 182,
+                  columnNumber: 21
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 170,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 142,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "rounded-lg border border-slate-200 bg-slate-50 p-4", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+                /* @__PURE__ */ jsxDEV("p", { className: "text-sm font-semibold text-slate-500", children: "적합도" }, void 0, false, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 194,
+                  columnNumber: 21
+                }, this),
+                /* @__PURE__ */ jsxDEV("p", { className: "text-2xl font-bold text-slate-950", children: [
+                  product.matchScore,
+                  "%"
+                ] }, void 0, true, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 195,
+                  columnNumber: 21
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 193,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { className: "mt-3 h-3 overflow-hidden rounded-full bg-white", children: /* @__PURE__ */ jsxDEV("div", { className: `h-full rounded-full ${scoreColor(product.matchScore)}`, style: { width: `${product.matchScore}%` } }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 198,
+                columnNumber: 21
+              }, this) }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 197,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("div", { className: "mt-5 flex flex-wrap gap-2", children: product.tags.map(
+                (tag) => /* @__PURE__ */ jsxDEV("span", { className: "rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600", children: tag }, tag, false, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 202,
+                  columnNumber: 19
+                }, this)
+              ) }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 200,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("button", { className: "mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700", children: [
+                "상세 조건 비교",
+                /* @__PURE__ */ jsxDEV(ArrowRight, { className: "h-4 w-4" }, void 0, false, {
+                  fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                  lineNumber: 209,
+                  columnNumber: 21
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 207,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 192,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 141,
+            columnNumber: 15
+          }, this) }, product.id, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 140,
+            columnNumber: 11
+          }, this)
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+        lineNumber: 110,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("aside", { className: "space-y-5", children: /* @__PURE__ */ jsxDEV("div", { className: "rounded-lg border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-24", children: [
+        /* @__PURE__ */ jsxDEV("h2", { className: "font-bold text-slate-950", children: "자금 플랜" }, void 0, false, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+          lineNumber: 219,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "mt-4 space-y-3", children: [
+          ["계약금", "4,680만원", "82% 준비"],
+          ["중도금", "2.8억", "대출 검토"],
+          ["잔금", "1.3억", "입주 전 준비"]
+        ].map(
+          ([label, amount, status]) => /* @__PURE__ */ jsxDEV("div", { className: "rounded-lg bg-slate-50 p-4", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ jsxDEV("p", { className: "text-sm text-slate-500", children: label }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 228,
+                columnNumber: 21
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "rounded-md bg-white px-2 py-1 text-xs font-bold text-blue-700", children: status }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+                lineNumber: 229,
+                columnNumber: 21
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 227,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "mt-2 text-lg font-bold text-slate-950", children: amount }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+              lineNumber: 231,
+              columnNumber: 19
+            }, this)
+          ] }, label, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+            lineNumber: 226,
+            columnNumber: 15
+          }, this)
+        ) }, void 0, false, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+          lineNumber: 220,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+        lineNumber: 218,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+        lineNumber: 217,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+      lineNumber: 109,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx",
+    lineNumber: 48,
+    columnNumber: 5
+  }, this);
+}
+_s(FinancePage, "7eY+diWJ5uNq12UyawuX3+GfVD0=");
+_c = FinancePage;
+var _c;
+$RefreshReg$(_c, "FinancePage");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FinancePage.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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bmRtYXJrIiwiUGVyY2VudCIsIlNoaWVsZEFsZXJ0IiwiU2xpZGVyc0hvcml6b250YWwiLCJXYWxsZXRDYXJkcyIsImZpbmFuY2lhbFByb2R1Y3RzIiwicHJvZmlsZSIsInN1YnNjcmlwdGlvbnMiLCJjYXRlZ29yaWVzIiwic2NvcmVDb2xvciIsInNjb3JlIiwiRmluYW5jZVBhZ2UiLCJfcyIsImNhdGVnb3J5Iiwic2V0Q2F0ZWdvcnkiLCJwcm9kdWN0cyIsImZpbHRlciIsInByb2R1Y3QiLCJ0b3BTdWJzY3JpcHRpb24iLCJuYW1lIiwibGVuZ3RoIiwiZGVwb3NpdCIsImJ1ZGdldCIsIm1hcCIsImxhYmVsIiwidmFsdWUiLCJpdGVtIiwibWF0Y2hTY29yZSIsInByb3ZpZGVyIiwicmF0ZSIsImxpbWl0IiwicGVyaW9kIiwiSWNvbiIsInJlYXNvbnMiLCJyZWFzb24iLCJjYXV0aW9uIiwid2lkdGgiLCJ0YWdzIiwidGFnIiwiaWQiLCJhbW91bnQiLCJzdGF0dXMiLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJGaW5hbmNlUGFnZS50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlU3RhdGUgfSBmcm9tIFwicmVhY3RcIjtcbmltcG9ydCB7XG4gIEFycm93UmlnaHQsXG4gIENhbGN1bGF0b3IsXG4gIENoZWNrQ2lyY2xlMixcbiAgTGFuZG1hcmssXG4gIFBlcmNlbnQsXG4gIFNoaWVsZEFsZXJ0LFxuICBTbGlkZXJzSG9yaXpvbnRhbCxcbiAgV2FsbGV0Q2FyZHMsXG59IGZyb20gXCJsdWNpZGUtcmVhY3RcIjtcbmltcG9ydCB7IGZpbmFuY2lhbFByb2R1Y3RzLCBwcm9maWxlLCBzdWJzY3JpcHRpb25zIH0gZnJvbSBcIi4uL2RhdGEvY2hlb25neWFrXCI7XG5cbmNvbnN0IGNhdGVnb3JpZXMgPSBbXCLsoITssrRcIiwgXCLsoITshLjrjIDstpxcIiwgXCLso7ztg53ri7Trs7TrjIDstpxcIiwgXCLssq3slb3thrXsnqVcIiwgXCLsoIHquIhcIl07XG5cbmZ1bmN0aW9uIHNjb3JlQ29sb3Ioc2NvcmU6IG51bWJlcikge1xuICBpZiAoc2NvcmUgPj0gOTIpIHJldHVybiBcImJnLWJsdWUtNjAwXCI7XG4gIGlmIChzY29yZSA+PSA4NikgcmV0dXJuIFwiYmctZW1lcmFsZC01MDBcIjtcbiAgcmV0dXJuIFwiYmctYW1iZXItNTAwXCI7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiBGaW5hbmNlUGFnZSgpIHtcbiAgY29uc3QgW2NhdGVnb3J5LCBzZXRDYXRlZ29yeV0gPSB1c2VTdGF0ZShcIuyghOyytFwiKTtcbiAgY29uc3QgcHJvZHVjdHMgPVxuICAgIGNhdGVnb3J5ID09PSBcIuyghOyytFwiID8gZmluYW5jaWFsUHJvZHVjdHMgOiBmaW5hbmNpYWxQcm9kdWN0cy5maWx0ZXIoKHByb2R1Y3QpID0+IHByb2R1Y3QuY2F0ZWdvcnkgPT09IGNhdGVnb3J5KTtcbiAgY29uc3QgdG9wU3Vic2NyaXB0aW9uID0gc3Vic2NyaXB0aW9uc1swXTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwibXgtYXV0byB3LWZ1bGwgbWF4LXctN3hsIHAtNCBzbTpwLTZcIj5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWItNiBncmlkIGdhcC00IGxnOmdyaWQtY29scy1bMWZyXzM2MHB4XVwiPlxuICAgICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJyb3VuZGVkLWxnIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIGJnLXdoaXRlIHAtNSBzaGFkb3ctc20gc206cC02XCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtY29sIGdhcC01IG1kOmZsZXgtcm93IG1kOml0ZW1zLXN0YXJ0IG1kOmp1c3RpZnktYmV0d2VlblwiPlxuICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtYmx1ZS03MDBcIj7sgqzsmqnsnpDrp57stqQg6riI7Jy17IOB7ZKIIOy2lOyynDwvcD5cbiAgICAgICAgICAgICAgPGgxIGNsYXNzTmFtZT1cIm10LTEgdGV4dC0yeGwgZm9udC1ib2xkIHRleHQtc2xhdGUtOTUwIHNtOnRleHQtM3hsXCI+XG4gICAgICAgICAgICAgICAg7LKt7JW9IOydvOygleyXkCDrp57strAg7J6Q6riIIOqzhO2ajeq5jOyngCDsl7DqsrDtlanri4jri6RcbiAgICAgICAgICAgICAgPC9oMT5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwibXQtMyBtYXgtdy0yeGwgdGV4dC1zbSBsZWFkaW5nLTYgdGV4dC1zbGF0ZS02MDBcIj5cbiAgICAgICAgICAgICAgICB7cHJvZmlsZS5uYW1lfeuLmOydmCDsmIjsgrAsIOqwgOq1rCDqtazshLEsIOyyreyVvSDrp4jqsJDsnbwsIOyYiOyDgSDqs4Tslb3quIgg7Z2Q66aE7J2EIOq4sOykgOycvOuhnCDquIjsnLXsg4HtkojsnYRcbiAgICAgICAgICAgICAgICDstpTsspztlanri4jri6QuXG4gICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJpbmxpbmUtZmxleCB3LWZpdCBpdGVtcy1jZW50ZXIgZ2FwLTIgcm91bmRlZC1sZyBiZy1ibHVlLTUwIHB4LTMgcHktMiB0ZXh0LXNtIGZvbnQtYm9sZCB0ZXh0LWJsdWUtNzAwXCI+XG4gICAgICAgICAgICAgIDxXYWxsZXRDYXJkcyBjbGFzc05hbWU9XCJoLTQgdy00XCIgLz5cbiAgICAgICAgICAgICAge2ZpbmFuY2lhbFByb2R1Y3RzLmxlbmd0aH3qsJwg7IOB7ZKIIOu2hOyEnVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm10LTYgZ3JpZCBnYXAtMyBtZDpncmlkLWNvbHMtM1wiPlxuICAgICAgICAgICAge1tcbiAgICAgICAgICAgICAgW1wi7LaU7LKcIOyyreyVvVwiLCB0b3BTdWJzY3JpcHRpb24ubmFtZV0sXG4gICAgICAgICAgICAgIFtcIuyYiOyDgSDqs4Tslb3quIhcIiwgdG9wU3Vic2NyaXB0aW9uLmRlcG9zaXRdLFxuICAgICAgICAgICAgICBbXCLsmIjsgrAg67KU7JyEXCIsIHByb2ZpbGUuYnVkZ2V0XSxcbiAgICAgICAgICAgIF0ubWFwKChbbGFiZWwsIHZhbHVlXSkgPT4gKFxuICAgICAgICAgICAgICA8ZGl2IGtleT17bGFiZWx9IGNsYXNzTmFtZT1cInJvdW5kZWQtbGcgYmctc2xhdGUtNTAgcC00XCI+XG4gICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LXNsYXRlLTUwMFwiPntsYWJlbH08L3A+XG4gICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwibXQtMSBmb250LWJvbGQgdGV4dC1zbGF0ZS05NTBcIj57dmFsdWV9PC9wPlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICkpfVxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L3NlY3Rpb24+XG5cbiAgICAgICAgPGFzaWRlIGNsYXNzTmFtZT1cInJvdW5kZWQtbGcgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgYmctc2xhdGUtOTUwIHAtNSB0ZXh0LXdoaXRlIHNoYWRvdy1zbSBzbTpwLTZcIj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaC0xMSB3LTExIGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciByb3VuZGVkLWxnIGJnLXdoaXRlLzEwXCI+XG4gICAgICAgICAgICAgIDxDYWxjdWxhdG9yIGNsYXNzTmFtZT1cImgtNSB3LTVcIiAvPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtc2xhdGUtMzAwXCI+7JuUIOyDge2ZmCDsl6zroKU8L3A+XG4gICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtMnhsIGZvbnQtYm9sZFwiPuyVvSAxMzjrp4zsm5A8L3A+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm10LTUgc3BhY2UteS0zIHRleHQtc21cIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGJvcmRlci1iIGJvcmRlci13aGl0ZS8xMCBwYi0zXCI+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInRleHQtc2xhdGUtMzAwXCI+7IaM65OdIOuMgOu5hCDrtoDri7TrpaA8L3NwYW4+XG4gICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImZvbnQtYm9sZFwiPjI3JTwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gYm9yZGVyLWIgYm9yZGVyLXdoaXRlLzEwIHBiLTNcIj5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbGF0ZS0zMDBcIj7qtozsnqUg67mE7IOB6riIPC9zcGFuPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmb250LWJvbGRcIj4xLDIwMOunjOybkDwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW5cIj5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbGF0ZS0zMDBcIj7qs4Tslb3quIgg7KSA67mE7JyoPC9zcGFuPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmb250LWJvbGQgdGV4dC1lbWVyYWxkLTMwMFwiPjgyJTwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2FzaWRlPlxuICAgICAgPC9kaXY+XG5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZ3JpZCBnYXAtNSB4bDpncmlkLWNvbHMtWzFmcl8zMjBweF1cIj5cbiAgICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwic3BhY2UteS00XCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtY29sIGdhcC0zIHJvdW5kZWQtbGcgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgYmctd2hpdGUgcC00IHNoYWRvdy1zbSBzbTpmbGV4LXJvdyBzbTppdGVtcy1jZW50ZXIgc206anVzdGlmeS1iZXR3ZWVuXCI+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBoLTEwIHctMTAgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQtbGcgYmctYmx1ZS01MCB0ZXh0LWJsdWUtNzAwXCI+XG4gICAgICAgICAgICAgICAgPFNsaWRlcnNIb3Jpem9udGFsIGNsYXNzTmFtZT1cImgtNSB3LTVcIiAvPlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJmb250LWJvbGQgdGV4dC1zbGF0ZS05NTBcIj7sg4Htkogg7Jyg7ZiVIO2VhO2EsDwvcD5cbiAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtc2xhdGUtNTAwXCI+7LKt7JW9IOuLqOqzhOuzhCDtlYTsmpTtlZwg7IOB7ZKI66eMIOuztOq4sDwvcD5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LXdyYXAgZ2FwLTJcIj5cbiAgICAgICAgICAgICAge2NhdGVnb3JpZXMubWFwKChpdGVtKSA9PiAoXG4gICAgICAgICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgICAgICAga2V5PXtpdGVtfVxuICAgICAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXG4gICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRDYXRlZ29yeShpdGVtKX1cbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17YGgtOSByb3VuZGVkLWxnIGJvcmRlciBweC0zIHRleHQtc20gZm9udC1zZW1pYm9sZCB0cmFuc2l0aW9uICR7XG4gICAgICAgICAgICAgICAgICAgIGNhdGVnb3J5ID09PSBpdGVtXG4gICAgICAgICAgICAgICAgICAgICAgPyBcImJvcmRlci1ibHVlLTYwMCBiZy1ibHVlLTUwIHRleHQtYmx1ZS03MDBcIlxuICAgICAgICAgICAgICAgICAgICAgIDogXCJib3JkZXItc2xhdGUtMjAwIGJnLXdoaXRlIHRleHQtc2xhdGUtNjAwIGhvdmVyOmJnLXNsYXRlLTUwXCJcbiAgICAgICAgICAgICAgICAgIH1gfVxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIHtpdGVtfVxuICAgICAgICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAge3Byb2R1Y3RzLm1hcCgocHJvZHVjdCkgPT4gKFxuICAgICAgICAgICAgPGFydGljbGUga2V5PXtwcm9kdWN0LmlkfSBjbGFzc05hbWU9XCJyb3VuZGVkLWxnIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIGJnLXdoaXRlIHAtNSBzaGFkb3ctc21cIj5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJncmlkIGdhcC01IGxnOmdyaWQtY29scy1bMWZyXzIyMHB4XVwiPlxuICAgICAgICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC13cmFwIGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxuICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJyb3VuZGVkLW1kIGJnLXNsYXRlLTk1MCBweC0yIHB5LTEgdGV4dC14cyBmb250LWJvbGQgdGV4dC13aGl0ZVwiPlxuICAgICAgICAgICAgICAgICAgICAgIHtwcm9kdWN0LmNhdGVnb3J5fVxuICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInJvdW5kZWQtbWQgYmctYmx1ZS01MCBweC0yIHB5LTEgdGV4dC14cyBmb250LXNlbWlib2xkIHRleHQtYmx1ZS03MDBcIj5cbiAgICAgICAgICAgICAgICAgICAgICB7cHJvZHVjdC5tYXRjaFNjb3JlfSUg7KCB7ZWpXG4gICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgPGgyIGNsYXNzTmFtZT1cIm10LTMgdGV4dC14bCBmb250LWJvbGQgdGV4dC1zbGF0ZS05NTBcIj57cHJvZHVjdC5uYW1lfTwvaDI+XG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJtdC0xIHRleHQtc20gZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTUwMFwiPntwcm9kdWN0LnByb3ZpZGVyfTwvcD5cblxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtdC01IGdyaWQgZ2FwLTMgc206Z3JpZC1jb2xzLTNcIj5cbiAgICAgICAgICAgICAgICAgICAge1tcbiAgICAgICAgICAgICAgICAgICAgICBbXCLquIjrpqxcIiwgcHJvZHVjdC5yYXRlLCBQZXJjZW50XSxcbiAgICAgICAgICAgICAgICAgICAgICBbXCLtlZzrj4RcIiwgcHJvZHVjdC5saW1pdCwgTGFuZG1hcmtdLFxuICAgICAgICAgICAgICAgICAgICAgIFtcIuq4sOqwhFwiLCBwcm9kdWN0LnBlcmlvZCwgV2FsbGV0Q2FyZHNdLFxuICAgICAgICAgICAgICAgICAgICBdLm1hcCgoW2xhYmVsLCB2YWx1ZSwgSWNvbl0pID0+IChcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGtleT17bGFiZWwgYXMgc3RyaW5nfSBjbGFzc05hbWU9XCJyb3VuZGVkLWxnIGJnLXNsYXRlLTUwIHAtNFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtYi0yIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yIHRleHQtc20gdGV4dC1zbGF0ZS01MDBcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgPEljb24gY2xhc3NOYW1lPVwiaC00IHctNFwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICAgIHtsYWJlbCBhcyBzdHJpbmd9XG4gICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cImZvbnQtYm9sZCB0ZXh0LXNsYXRlLTk1MFwiPnt2YWx1ZSBhcyBzdHJpbmd9PC9wPlxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm10LTUgZ3JpZCBnYXAtNCBsZzpncmlkLWNvbHMtMlwiPlxuICAgICAgICAgICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cIm1iLTIgdGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtc2xhdGUtNzAwXCI+7LaU7LKcIOydtOycoDwvcD5cbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxuICAgICAgICAgICAgICAgICAgICAgICAge3Byb2R1Y3QucmVhc29ucy5tYXAoKHJlYXNvbikgPT4gKFxuICAgICAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGtleT17cmVhc29ufSBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLXN0YXJ0IGdhcC0yIHRleHQtc20gdGV4dC1zbGF0ZS02MDBcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgICAgICA8Q2hlY2tDaXJjbGUyIGNsYXNzTmFtZT1cIm10LTAuNSBoLTQgdy00IHNocmluay0wIHRleHQtZW1lcmFsZC02MDBcIiAvPlxuICAgICAgICAgICAgICAgICAgICAgICAgICAgIDxzcGFuPntyZWFzb259PC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgICAgICkpfVxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJtYi0yIHRleHQtc20gZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTcwMFwiPuyjvOydmCDsgqztla08L3A+XG4gICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLXN0YXJ0IGdhcC0yIHJvdW5kZWQtbGcgYmctYW1iZXItNTAgcC0zIHRleHQtc20gdGV4dC1hbWJlci04MDBcIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxTaGllbGRBbGVydCBjbGFzc05hbWU9XCJtdC0wLjUgaC00IHctNCBzaHJpbmstMFwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICA8c3Bhbj57cHJvZHVjdC5jYXV0aW9ufTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicm91bmRlZC1sZyBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBiZy1zbGF0ZS01MCBwLTRcIj5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XG4gICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtc20gZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTUwMFwiPuygge2VqeuPhDwvcD5cbiAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC0yeGwgZm9udC1ib2xkIHRleHQtc2xhdGUtOTUwXCI+e3Byb2R1Y3QubWF0Y2hTY29yZX0lPC9wPlxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm10LTMgaC0zIG92ZXJmbG93LWhpZGRlbiByb3VuZGVkLWZ1bGwgYmctd2hpdGVcIj5cbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e2BoLWZ1bGwgcm91bmRlZC1mdWxsICR7c2NvcmVDb2xvcihwcm9kdWN0Lm1hdGNoU2NvcmUpfWB9IHN0eWxlPXt7IHdpZHRoOiBgJHtwcm9kdWN0Lm1hdGNoU2NvcmV9JWAgfX0gLz5cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtdC01IGZsZXggZmxleC13cmFwIGdhcC0yXCI+XG4gICAgICAgICAgICAgICAgICAgIHtwcm9kdWN0LnRhZ3MubWFwKCh0YWcpID0+IChcbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBrZXk9e3RhZ30gY2xhc3NOYW1lPVwicm91bmRlZC1tZCBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBiZy13aGl0ZSBweC0yIHB5LTEgdGV4dC14cyB0ZXh0LXNsYXRlLTYwMFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAge3RhZ31cbiAgICAgICAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgICAgICAgICkpfVxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICA8YnV0dG9uIGNsYXNzTmFtZT1cIm10LTUgaW5saW5lLWZsZXggaC0xMCB3LWZ1bGwgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIGdhcC0yIHJvdW5kZWQtbGcgYmctYmx1ZS02MDAgdGV4dC1zbSBmb250LWJvbGQgdGV4dC13aGl0ZSB0cmFuc2l0aW9uIGhvdmVyOmJnLWJsdWUtNzAwXCI+XG4gICAgICAgICAgICAgICAgICAgIOyDgeyEuCDsobDqsbQg67mE6rWQXG4gICAgICAgICAgICAgICAgICAgIDxBcnJvd1JpZ2h0IGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9hcnRpY2xlPlxuICAgICAgICAgICkpfVxuICAgICAgICA8L3NlY3Rpb24+XG5cbiAgICAgICAgPGFzaWRlIGNsYXNzTmFtZT1cInNwYWNlLXktNVwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicm91bmRlZC1sZyBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBiZy13aGl0ZSBwLTUgc2hhZG93LXNtIHhsOnN0aWNreSB4bDp0b3AtMjRcIj5cbiAgICAgICAgICAgIDxoMiBjbGFzc05hbWU9XCJmb250LWJvbGQgdGV4dC1zbGF0ZS05NTBcIj7snpDquIgg7ZSM656cPC9oMj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibXQtNCBzcGFjZS15LTNcIj5cbiAgICAgICAgICAgICAge1tcbiAgICAgICAgICAgICAgICBbXCLqs4Tslb3quIhcIiwgXCI0LDY4MOunjOybkFwiLCBcIjgyJSDspIDruYRcIl0sXG4gICAgICAgICAgICAgICAgW1wi7KSR64+E6riIXCIsIFwiMi447Ja1XCIsIFwi64yA7LacIOqygO2GoFwiXSxcbiAgICAgICAgICAgICAgICBbXCLsnpTquIhcIiwgXCIxLjPslrVcIiwgXCLsnoXso7wg7KCEIOykgOu5hFwiXSxcbiAgICAgICAgICAgICAgXS5tYXAoKFtsYWJlbCwgYW1vdW50LCBzdGF0dXNdKSA9PiAoXG4gICAgICAgICAgICAgICAgPGRpdiBrZXk9e2xhYmVsfSBjbGFzc05hbWU9XCJyb3VuZGVkLWxnIGJnLXNsYXRlLTUwIHAtNFwiPlxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW5cIj5cbiAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1zbSB0ZXh0LXNsYXRlLTUwMFwiPntsYWJlbH08L3A+XG4gICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInJvdW5kZWQtbWQgYmctd2hpdGUgcHgtMiBweS0xIHRleHQteHMgZm9udC1ib2xkIHRleHQtYmx1ZS03MDBcIj57c3RhdHVzfTwvc3Bhbj5cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwibXQtMiB0ZXh0LWxnIGZvbnQtYm9sZCB0ZXh0LXNsYXRlLTk1MFwiPnthbW91bnR9PC9wPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2FzaWRlPlxuICAgICAgPC9kaXY+XG4gICAgPC9kaXY+XG4gICk7XG59XG4iXSwiZmlsZSI6IkM6L1VzZXJzL1NTQUZZL0Rlc2t0b3Av7ZmIIOuMgOyLnOuztOuTnCDrsI8gVUkg6rWs7ISxL3NyYy9hcHAvY29tcG9uZW50cy9GaW5hbmNlUGFnZS50c3gifQ==

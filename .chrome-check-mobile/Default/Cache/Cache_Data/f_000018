@@ -1,0 +1,319 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:\\Users\\SSAFY\\Desktop\\홈 대시보드 및 UI 구성\\src\\app\\components\\FloatingChat.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f1d6f3ce"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=f1d6f3ce"; const useState = __vite__cjsImport3_react["useState"];
+import { Bot, MessageCircle, Send, Sparkles, UserRound, X } from "/node_modules/.vite/deps/lucide-react.js?v=79293960";
+import { financialProducts, subscriptions } from "/src/app/data/cheongyak.ts?t=1778828170349";
+const starterMessages = [
+  {
+    id: 1,
+    sender: "ai",
+    text: "안녕하세요. 청약 조건, 금융상품, 서류 준비까지 바로 도와드릴게요."
+  }
+];
+const suggestions = ["내 추천 청약 요약", "계약금 준비 방법", "서류 체크", "커뮤니티 인기글"];
+function getReply(text) {
+  if (text.includes("계약금") || text.includes("금융")) {
+    return `${financialProducts[0].name}이 가장 잘 맞습니다. 예상 한도는 ${financialProducts[0].limit}, 금리는 ${financialProducts[0].rate}부터예요.`;
+  }
+  if (text.includes("서류")) {
+    return "현재 필수 서류 5종은 준비 완료 상태입니다. 공고일 이후 발급본인지 한 번 더 확인하면 좋아요.";
+  }
+  if (text.includes("커뮤니티")) {
+    return "지금은 모델하우스 후기와 신혼 특공 소득 기준 질문이 가장 활발합니다. 커뮤니티 탭에서 바로 볼 수 있어요.";
+  }
+  return `${subscriptions[0].name}이 매칭률 ${subscriptions[0].matchScore}%로 가장 높습니다. 마감일은 ${subscriptions[0].deadline}입니다.`;
+}
+export function FloatingChat() {
+  _s();
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [messages, setMessages] = useState(starterMessages);
+  const sendMessage = (value = inputValue) => {
+    const text = value.trim();
+    if (!text) return;
+    setMessages(
+      (prev) => [
+        ...prev,
+        { id: Date.now(), sender: "user", text },
+        { id: Date.now() + 1, sender: "ai", text: getReply(text) }
+      ]
+    );
+    setInputValue("");
+    setIsOpen(true);
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: "fixed bottom-24 right-5 z-50 lg:bottom-6 lg:right-6", children: [
+    isOpen && /* @__PURE__ */ jsxDEV("section", { className: "mb-3 flex h-[520px] w-[calc(100vw-2rem)] max-w-[380px] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between border-b border-slate-200 bg-slate-950 px-4 py-3 text-white", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600", children: /* @__PURE__ */ jsxDEV(Bot, { className: "h-5 w-5" }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 78,
+            columnNumber: 17
+          }, this) }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 77,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("p", { className: "font-bold", children: "청약내비 AI" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 81,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-300", children: "청약 · 금융 · 서류 상담" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 82,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 80,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+          lineNumber: 76,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            type: "button",
+            onClick: () => setIsOpen(false),
+            className: "flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white",
+            "aria-label": "챗봇 닫기",
+            children: /* @__PURE__ */ jsxDEV(X, { className: "h-4 w-4" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 91,
+              columnNumber: 15
+            }, this)
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 85,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+        lineNumber: 75,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex-1 space-y-3 overflow-auto bg-slate-50 p-4", children: messages.map((message) => {
+        const isUser = message.sender === "user";
+        return /* @__PURE__ */ jsxDEV("div", { className: `flex gap-2 ${isUser ? "justify-end" : "justify-start"}`, children: [
+          !isUser && /* @__PURE__ */ jsxDEV("div", { className: "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white", children: /* @__PURE__ */ jsxDEV(Bot, { className: "h-4 w-4" }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 103,
+            columnNumber: 23
+          }, this) }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 102,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "div",
+            {
+              className: `max-w-[78%] rounded-lg px-3 py-2 text-sm leading-6 ${isUser ? "bg-slate-950 text-white" : "border border-slate-200 bg-white text-slate-700"}`,
+              children: message.text
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 106,
+              columnNumber: 19
+            },
+            this
+          ),
+          isUser && /* @__PURE__ */ jsxDEV("div", { className: "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-700", children: /* @__PURE__ */ jsxDEV(UserRound, { className: "h-4 w-4" }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 115,
+            columnNumber: 23
+          }, this) }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 114,
+            columnNumber: 17
+          }, this)
+        ] }, message.id, true, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+          lineNumber: 100,
+          columnNumber: 15
+        }, this);
+      }) }, void 0, false, {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+        lineNumber: 95,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "border-t border-slate-200 bg-white p-3", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "mb-3 flex flex-wrap gap-2", children: suggestions.map(
+          (suggestion) => /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              type: "button",
+              onClick: () => sendMessage(suggestion),
+              className: "rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700",
+              children: suggestion
+            },
+            suggestion,
+            false,
+            {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 126,
+              columnNumber: 13
+            },
+            this
+          )
+        ) }, void 0, false, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+          lineNumber: 124,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsxDEV(
+            "input",
+            {
+              value: inputValue,
+              onChange: (event) => setInputValue(event.target.value),
+              onKeyDown: (event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  sendMessage();
+                }
+              },
+              className: "h-10 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100",
+              placeholder: "궁금한 점을 입력하세요"
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 137,
+              columnNumber: 15
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              type: "button",
+              onClick: () => sendMessage(),
+              className: "flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white transition hover:bg-blue-700",
+              "aria-label": "메시지 보내기",
+              children: /* @__PURE__ */ jsxDEV(Send, { className: "h-4 w-4" }, void 0, false, {
+                fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+                lineNumber: 155,
+                columnNumber: 17
+              }, this)
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 149,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+          lineNumber: 136,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+        lineNumber: 123,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+      lineNumber: 74,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV(
+      "button",
+      {
+        type: "button",
+        onClick: () => setIsOpen((prev) => !prev),
+        className: "group flex h-14 items-center gap-3 rounded-full bg-blue-600 px-4 font-bold text-white shadow-xl shadow-blue-600/30 transition hover:-translate-y-0.5 hover:bg-blue-700",
+        children: [
+          /* @__PURE__ */ jsxDEV("span", { className: "relative flex h-9 w-9 items-center justify-center rounded-full bg-white/15", children: [
+            /* @__PURE__ */ jsxDEV(MessageCircle, { className: "h-5 w-5" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 168,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400", children: /* @__PURE__ */ jsxDEV(Sparkles, { className: "h-2.5 w-2.5 text-slate-950" }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 170,
+              columnNumber: 13
+            }, this) }, void 0, false, {
+              fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+              lineNumber: 169,
+              columnNumber: 11
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 167,
+            columnNumber: 9
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { className: "hidden sm:inline", children: "AI 상담" }, void 0, false, {
+            fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+            lineNumber: 173,
+            columnNumber: 9
+          }, this)
+        ]
+      },
+      void 0,
+      true,
+      {
+        fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+        lineNumber: 162,
+        columnNumber: 7
+      },
+      this
+    )
+  ] }, void 0, true, {
+    fileName: "C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx",
+    lineNumber: 72,
+    columnNumber: 5
+  }, this);
+}
+_s(FloatingChat, "BDHkZHWvtEhVKQ6kgj+3PbK+YVM=");
+_c = FloatingChat;
+var _c;
+$RefreshReg$(_c, "FloatingChat");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/SSAFY/Desktop/홈 대시보드 및 UI 구성/src/app/components/FloatingChat.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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aUJBQWMsV0FBVSxhQUF6QjtBQUFBO0FBQUE7QUFBQTtBQUFBLG1CQUFrQztBQUFBLFlBQ2xDLHVCQUFDLFVBQUssV0FBVSxxR0FDZCxpQ0FBQyxZQUFTLFdBQVUsZ0NBQXBCO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBQWdELEtBRGxEO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBRUE7QUFBQSxlQUpGO0FBQUE7QUFBQTtBQUFBO0FBQUEsaUJBS0E7QUFBQSxVQUNBLHVCQUFDLFVBQUssV0FBVSxvQkFBbUIscUJBQW5DO0FBQUE7QUFBQTtBQUFBO0FBQUEsaUJBQXdDO0FBQUE7QUFBQTtBQUFBLE1BWDFDO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxJQVlBO0FBQUEsT0F0R0Y7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQXVHQTtBQUVKO0FBQUNWLEdBNUhlRCxjQUFZO0FBQUEsS0FBWkE7QUFBWSxJQUFBc0I7QUFBQSxhQUFBQSxJQUFBIiwibmFtZXMiOlsidXNlU3RhdGUiLCJCb3QiLCJNZXNzYWdlQ2lyY2xlIiwiU2VuZCIsIlNwYXJrbGVzIiwiVXNlclJvdW5kIiwiWCIsImZpbmFuY2lhbFByb2R1Y3RzIiwic3Vic2NyaXB0aW9ucyIsInN0YXJ0ZXJNZXNzYWdlcyIsImlkIiwic2VuZGVyIiwidGV4dCIsInN1Z2dlc3Rpb25zIiwiZ2V0UmVwbHkiLCJpbmNsdWRlcyIsIm5hbWUiLCJsaW1pdCIsInJhdGUiLCJtYXRjaFNjb3JlIiwiZGVhZGxpbmUiLCJGbG9hdGluZ0NoYXQiLCJfcyIsImlzT3BlbiIsInNldElzT3BlbiIsImlucHV0VmFsdWUiLCJzZXRJbnB1dFZhbHVlIiwibWVzc2FnZXMiLCJzZXRNZXNzYWdlcyIsInNlbmRNZXNzYWdlIiwidmFsdWUiLCJ0cmltIiwicHJldiIsIkRhdGUiLCJub3ciLCJtYXAiLCJtZXNzYWdlIiwiaXNVc2VyIiwic3VnZ2VzdGlvbiIsImV2ZW50IiwidGFyZ2V0Iiwia2V5IiwicHJldmVudERlZmF1bHQiLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJGbG9hdGluZ0NoYXQudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IHVzZVN0YXRlIH0gZnJvbSBcInJlYWN0XCI7XG5pbXBvcnQgeyBCb3QsIE1lc3NhZ2VDaXJjbGUsIFNlbmQsIFNwYXJrbGVzLCBVc2VyUm91bmQsIFggfSBmcm9tIFwibHVjaWRlLXJlYWN0XCI7XG5pbXBvcnQgeyBmaW5hbmNpYWxQcm9kdWN0cywgc3Vic2NyaXB0aW9ucyB9IGZyb20gXCIuLi9kYXRhL2NoZW9uZ3lha1wiO1xuXG50eXBlIEZsb2F0aW5nTWVzc2FnZSA9IHtcbiAgaWQ6IG51bWJlcjtcbiAgc2VuZGVyOiBcImFpXCIgfCBcInVzZXJcIjtcbiAgdGV4dDogc3RyaW5nO1xufTtcblxuY29uc3Qgc3RhcnRlck1lc3NhZ2VzOiBGbG9hdGluZ01lc3NhZ2VbXSA9IFtcbiAge1xuICAgIGlkOiAxLFxuICAgIHNlbmRlcjogXCJhaVwiLFxuICAgIHRleHQ6IFwi7JWI64WV7ZWY7IS47JqULiDssq3slb0g7KGw6rG0LCDquIjsnLXsg4HtkogsIOyEnOulmCDspIDruYTquYzsp4Ag67CU66GcIOuPhOyZgOuTnOumtOqyjOyalC5cIixcbiAgfSxcbl07XG5cbmNvbnN0IHN1Z2dlc3Rpb25zID0gW1wi64K0IOy2lOyynCDssq3slb0g7JqU7JW9XCIsIFwi6rOE7JW96riIIOykgOu5hCDrsKnrspVcIiwgXCLshJzrpZgg7LK07YGsXCIsIFwi7Luk666k64uI7YuwIOyduOq4sOq4gFwiXTtcblxuZnVuY3Rpb24gZ2V0UmVwbHkodGV4dDogc3RyaW5nKSB7XG4gIGlmICh0ZXh0LmluY2x1ZGVzKFwi6rOE7JW96riIXCIpIHx8IHRleHQuaW5jbHVkZXMoXCLquIjsnLVcIikpIHtcbiAgICByZXR1cm4gYCR7ZmluYW5jaWFsUHJvZHVjdHNbMF0ubmFtZX3snbQg6rCA7J6lIOyemCDrp57sirXri4jri6QuIOyYiOyDgSDtlZzrj4TripQgJHtmaW5hbmNpYWxQcm9kdWN0c1swXS5saW1pdH0sIOq4iOumrOuKlCAke2ZpbmFuY2lhbFByb2R1Y3RzWzBdLnJhdGV967aA7YSw7JiI7JqULmA7XG4gIH1cbiAgaWYgKHRleHQuaW5jbHVkZXMoXCLshJzrpZhcIikpIHtcbiAgICByZXR1cm4gXCLtmITsnqwg7ZWE7IiYIOyEnOulmCA17KKF7J2AIOykgOu5hCDsmYTro4wg7IOB7YOc7J6F64uI64ukLiDqs7Xqs6Dsnbwg7J207ZuEIOuwnOq4ieuzuOyduOyngCDtlZwg67KIIOuNlCDtmZXsnbjtlZjrqbQg7KKL7JWE7JqULlwiO1xuICB9XG4gIGlmICh0ZXh0LmluY2x1ZGVzKFwi7Luk666k64uI7YuwXCIpKSB7XG4gICAgcmV0dXJuIFwi7KeA6riI7J2AIOuqqOuNuO2VmOyasOyKpCDtm4TquLDsmYAg7Iug7Zi8IO2KueqztSDshozrk50g6riw7KSAIOyniOusuOydtCDqsIDsnqUg7Zmc67Cc7ZWp64uI64ukLiDsu6TrrqTri4jti7Ag7YOt7JeQ7IScIOuwlOuhnCDrs7wg7IiYIOyeiOyWtOyalC5cIjtcbiAgfVxuICByZXR1cm4gYCR7c3Vic2NyaXB0aW9uc1swXS5uYW1lfeydtCDrp6Tsua3rpaAgJHtzdWJzY3JpcHRpb25zWzBdLm1hdGNoU2NvcmV9JeuhnCDqsIDsnqUg64aS7Iq164uI64ukLiDrp4jqsJDsnbzsnYAgJHtzdWJzY3JpcHRpb25zWzBdLmRlYWRsaW5lfeyeheuLiOuLpC5gO1xufVxuXG5leHBvcnQgZnVuY3Rpb24gRmxvYXRpbmdDaGF0KCkge1xuICBjb25zdCBbaXNPcGVuLCBzZXRJc09wZW5dID0gdXNlU3RhdGUoZmFsc2UpO1xuICBjb25zdCBbaW5wdXRWYWx1ZSwgc2V0SW5wdXRWYWx1ZV0gPSB1c2VTdGF0ZShcIlwiKTtcbiAgY29uc3QgW21lc3NhZ2VzLCBzZXRNZXNzYWdlc10gPSB1c2VTdGF0ZTxGbG9hdGluZ01lc3NhZ2VbXT4oc3RhcnRlck1lc3NhZ2VzKTtcblxuICBjb25zdCBzZW5kTWVzc2FnZSA9ICh2YWx1ZSA9IGlucHV0VmFsdWUpID0+IHtcbiAgICBjb25zdCB0ZXh0ID0gdmFsdWUudHJpbSgpO1xuICAgIGlmICghdGV4dCkgcmV0dXJuO1xuXG4gICAgc2V0TWVzc2FnZXMoKHByZXYpID0+IFtcbiAgICAgIC4uLnByZXYsXG4gICAgICB7IGlkOiBEYXRlLm5vdygpLCBzZW5kZXI6IFwidXNlclwiLCB0ZXh0IH0sXG4gICAgICB7IGlkOiBEYXRlLm5vdygpICsgMSwgc2VuZGVyOiBcImFpXCIsIHRleHQ6IGdldFJlcGx5KHRleHQpIH0sXG4gICAgXSk7XG4gICAgc2V0SW5wdXRWYWx1ZShcIlwiKTtcbiAgICBzZXRJc09wZW4odHJ1ZSk7XG4gIH07XG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2IGNsYXNzTmFtZT1cImZpeGVkIGJvdHRvbS0yNCByaWdodC01IHotNTAgbGc6Ym90dG9tLTYgbGc6cmlnaHQtNlwiPlxuICAgICAge2lzT3BlbiAmJiAoXG4gICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cIm1iLTMgZmxleCBoLVs1MjBweF0gdy1bY2FsYygxMDB2dy0ycmVtKV0gbWF4LXctWzM4MHB4XSBmbGV4LWNvbCBvdmVyZmxvdy1oaWRkZW4gcm91bmRlZC1sZyBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBiZy13aGl0ZSBzaGFkb3ctMnhsXCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gYm9yZGVyLWIgYm9yZGVyLXNsYXRlLTIwMCBiZy1zbGF0ZS05NTAgcHgtNCBweS0zIHRleHQtd2hpdGVcIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTNcIj5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGgtOSB3LTkgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQtbGcgYmctYmx1ZS02MDBcIj5cbiAgICAgICAgICAgICAgICA8Qm90IGNsYXNzTmFtZT1cImgtNSB3LTVcIiAvPlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJmb250LWJvbGRcIj7ssq3slb3rgrTruYQgQUk8L3A+XG4gICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LXNsYXRlLTMwMFwiPuyyreyVvSDCtyDquIjsnLUgwrcg7ISc66WYIOyDgeuLtDwvcD5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXG4gICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldElzT3BlbihmYWxzZSl9XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cImZsZXggaC04IHctOCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC1sZyB0ZXh0LXNsYXRlLTMwMCB0cmFuc2l0aW9uIGhvdmVyOmJnLXdoaXRlLzEwIGhvdmVyOnRleHQtd2hpdGVcIlxuICAgICAgICAgICAgICBhcmlhLWxhYmVsPVwi7LGX67SHIOuLq+q4sFwiXG4gICAgICAgICAgICA+XG4gICAgICAgICAgICAgIDxYIGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXgtMSBzcGFjZS15LTMgb3ZlcmZsb3ctYXV0byBiZy1zbGF0ZS01MCBwLTRcIj5cbiAgICAgICAgICAgIHttZXNzYWdlcy5tYXAoKG1lc3NhZ2UpID0+IHtcbiAgICAgICAgICAgICAgY29uc3QgaXNVc2VyID0gbWVzc2FnZS5zZW5kZXIgPT09IFwidXNlclwiO1xuXG4gICAgICAgICAgICAgIHJldHVybiAoXG4gICAgICAgICAgICAgICAgPGRpdiBrZXk9e21lc3NhZ2UuaWR9IGNsYXNzTmFtZT17YGZsZXggZ2FwLTIgJHtpc1VzZXIgPyBcImp1c3RpZnktZW5kXCIgOiBcImp1c3RpZnktc3RhcnRcIn1gfT5cbiAgICAgICAgICAgICAgICAgIHshaXNVc2VyICYmIChcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGgtOCB3LTggc2hyaW5rLTAgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQtbGcgYmctYmx1ZS02MDAgdGV4dC13aGl0ZVwiPlxuICAgICAgICAgICAgICAgICAgICAgIDxCb3QgY2xhc3NOYW1lPVwiaC00IHctNFwiIC8+XG4gICAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgbWF4LXctWzc4JV0gcm91bmRlZC1sZyBweC0zIHB5LTIgdGV4dC1zbSBsZWFkaW5nLTYgJHtcbiAgICAgICAgICAgICAgICAgICAgICBpc1VzZXIgPyBcImJnLXNsYXRlLTk1MCB0ZXh0LXdoaXRlXCIgOiBcImJvcmRlciBib3JkZXItc2xhdGUtMjAwIGJnLXdoaXRlIHRleHQtc2xhdGUtNzAwXCJcbiAgICAgICAgICAgICAgICAgICAgfWB9XG4gICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgIHttZXNzYWdlLnRleHR9XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgIHtpc1VzZXIgJiYgKFxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaC04IHctOCBzaHJpbmstMCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC1sZyBiZy1zbGF0ZS0yMDAgdGV4dC1zbGF0ZS03MDBcIj5cbiAgICAgICAgICAgICAgICAgICAgICA8VXNlclJvdW5kIGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICk7XG4gICAgICAgICAgICB9KX1cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYm9yZGVyLXQgYm9yZGVyLXNsYXRlLTIwMCBiZy13aGl0ZSBwLTNcIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWItMyBmbGV4IGZsZXgtd3JhcCBnYXAtMlwiPlxuICAgICAgICAgICAgICB7c3VnZ2VzdGlvbnMubWFwKChzdWdnZXN0aW9uKSA9PiAoXG4gICAgICAgICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgICAgICAga2V5PXtzdWdnZXN0aW9ufVxuICAgICAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXG4gICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZW5kTWVzc2FnZShzdWdnZXN0aW9uKX1cbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInJvdW5kZWQtbWQgYmctc2xhdGUtMTAwIHB4LTIgcHktMSB0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1zbGF0ZS02MDAgdHJhbnNpdGlvbiBob3ZlcjpiZy1ibHVlLTUwIGhvdmVyOnRleHQtYmx1ZS03MDBcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIHtzdWdnZXN0aW9ufVxuICAgICAgICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGdhcC0yXCI+XG4gICAgICAgICAgICAgIDxpbnB1dFxuICAgICAgICAgICAgICAgIHZhbHVlPXtpbnB1dFZhbHVlfVxuICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZXZlbnQpID0+IHNldElucHV0VmFsdWUoZXZlbnQudGFyZ2V0LnZhbHVlKX1cbiAgICAgICAgICAgICAgICBvbktleURvd249eyhldmVudCkgPT4ge1xuICAgICAgICAgICAgICAgICAgaWYgKGV2ZW50LmtleSA9PT0gXCJFbnRlclwiKSB7XG4gICAgICAgICAgICAgICAgICAgIGV2ZW50LnByZXZlbnREZWZhdWx0KCk7XG4gICAgICAgICAgICAgICAgICAgIHNlbmRNZXNzYWdlKCk7XG4gICAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgICAgfX1cbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJoLTEwIGZsZXgtMSByb3VuZGVkLWxnIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIHB4LTMgdGV4dC1zbSBvdXRsaW5lLW5vbmUgdHJhbnNpdGlvbiBmb2N1czpib3JkZXItYmx1ZS01MDAgZm9jdXM6cmluZy00IGZvY3VzOnJpbmctYmx1ZS0xMDBcIlxuICAgICAgICAgICAgICAgIHBsYWNlaG9sZGVyPVwi6raB6riI7ZWcIOygkOydhCDsnoXroKXtlZjshLjsmpRcIlxuICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXG4gICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2VuZE1lc3NhZ2UoKX1cbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJmbGV4IGgtMTAgdy0xMCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC1sZyBiZy1ibHVlLTYwMCB0ZXh0LXdoaXRlIHRyYW5zaXRpb24gaG92ZXI6YmctYmx1ZS03MDBcIlxuICAgICAgICAgICAgICAgIGFyaWEtbGFiZWw9XCLrqZTsi5zsp4Ag67O064K06riwXCJcbiAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgIDxTZW5kIGNsYXNzTmFtZT1cImgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L3NlY3Rpb24+XG4gICAgICApfVxuXG4gICAgICA8YnV0dG9uXG4gICAgICAgIHR5cGU9XCJidXR0b25cIlxuICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRJc09wZW4oKHByZXYpID0+ICFwcmV2KX1cbiAgICAgICAgY2xhc3NOYW1lPVwiZ3JvdXAgZmxleCBoLTE0IGl0ZW1zLWNlbnRlciBnYXAtMyByb3VuZGVkLWZ1bGwgYmctYmx1ZS02MDAgcHgtNCBmb250LWJvbGQgdGV4dC13aGl0ZSBzaGFkb3cteGwgc2hhZG93LWJsdWUtNjAwLzMwIHRyYW5zaXRpb24gaG92ZXI6LXRyYW5zbGF0ZS15LTAuNSBob3ZlcjpiZy1ibHVlLTcwMFwiXG4gICAgICA+XG4gICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInJlbGF0aXZlIGZsZXggaC05IHctOSBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC1mdWxsIGJnLXdoaXRlLzE1XCI+XG4gICAgICAgICAgPE1lc3NhZ2VDaXJjbGUgY2xhc3NOYW1lPVwiaC01IHctNVwiIC8+XG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiYWJzb2x1dGUgLXJpZ2h0LTAuNSAtdG9wLTAuNSBmbGV4IGgtNCB3LTQgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHJvdW5kZWQtZnVsbCBiZy1lbWVyYWxkLTQwMFwiPlxuICAgICAgICAgICAgPFNwYXJrbGVzIGNsYXNzTmFtZT1cImgtMi41IHctMi41IHRleHQtc2xhdGUtOTUwXCIgLz5cbiAgICAgICAgICA8L3NwYW4+XG4gICAgICAgIDwvc3Bhbj5cbiAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiaGlkZGVuIHNtOmlubGluZVwiPkFJIOyDgeuLtDwvc3Bhbj5cbiAgICAgIDwvYnV0dG9uPlxuICAgIDwvZGl2PlxuICApO1xufVxuIl0sImZpbGUiOiJDOi9Vc2Vycy9TU0FGWS9EZXNrdG9wL+2ZiCDrjIDsi5zrs7Trk5wg67CPIFVJIOq1rOyEsS9zcmMvYXBwL2NvbXBvbmVudHMvRmxvYXRpbmdDaGF0LnRzeCJ9
