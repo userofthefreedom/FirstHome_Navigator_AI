@@ -1,0 +1,25 @@
+import { createRouter, createWebHistory } from 'vue-router'
+
+import RootLayout from '../layouts/RootLayout.vue'
+import HomePage from '../pages/HomePage.vue'
+import ProfileFormPage from '../pages/ProfileFormPage.vue'
+import RecommendationPage from '../pages/RecommendationPage.vue'
+import FundingPage from '../pages/FundingPage.vue'
+import AiCoachPage from '../pages/AiCoachPage.vue'
+
+export const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/',
+      component: RootLayout,
+      children: [
+        { path: '', name: 'home', component: HomePage },
+        { path: 'profile', name: 'profile', component: ProfileFormPage },
+        { path: 'recommendations', name: 'recommendations', component: RecommendationPage },
+        { path: 'funding', name: 'funding', component: FundingPage },
+        { path: 'ai-coach', name: 'ai-coach', component: AiCoachPage },
+      ],
+    },
+  ],
+})

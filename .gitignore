@@ -270,4 +270,12 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+# Frontend generated artifacts
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/.chrome-check/
+frontend/.chrome-check-mobile/
+frontend/.visual-check/
+
 # End of https://www.toptal.com/developers/gitignore/api/python,django,vuejs
