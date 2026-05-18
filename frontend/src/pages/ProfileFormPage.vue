@@ -1,31 +1,23 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  BadgeCheck,
-  Banknote,
-  Home,
-  MapPinned,
-  UserRound,
-} from 'lucide-vue-next'
-import { profile } from '../data/sampleData'
+import { BadgeCheck, Banknote, Home, MapPinned, Save, UserRound } from 'lucide-vue-next'
+import { emptyProfile, useProfileStore } from '../stores/profileStore'
+import type { Profile } from '../types/firsthome'
+import { formatMoney } from '../utils/format'
 
 const router = useRouter()
+const profileStore = useProfileStore()
 const saved = ref(false)
+const saving = ref(false)
+const saveError = ref('')
 
-const form = reactive({
-  birth_year: profile.birth_year,
-  job_status: profile.job_status,
-  annual_income: profile.annual_income,
-  asset: profile.asset,
-  debt: profile.debt,
-  monthly_saving: profile.monthly_saving,
-  is_homeless: profile.is_homeless,
-  subscription_months: profile.subscription_months,
-  special_conditions: [...profile.special_conditions],
-  preferred_regions: [...profile.preferred_regions],
-  preferred_supply_types: [...profile.preferred_supply_types],
-  target_months: profile.target_months,
+const form = reactive<Profile>({
+  ...emptyProfile,
+  ...profileStore.profile,
+  special_conditions: [...profileStore.profile.special_conditions],
+  preferred_regions: [...profileStore.profile.preferred_regions],
+  preferred_supply_types: [...profileStore.profile.preferred_supply_types],
 })
 
 const specialConditionOptions = [
@@ -34,10 +26,21 @@ const specialConditionOptions = [
   { label: '신혼부부', value: 'newlywed' },
 ]
 const regionOptions = ['서울', '경기 남부', '경기 북부', '인천', '부산']
-const supplyTypeOptions = ['공공분양', '민영', '청년 공공주택', '공공임대']
+const supplyTypeOptions = ['공공분양', '뉴홈', '청년 공공주택', '민영']
+const moneyFields = [
+  { key: 'annual_income', label: '연소득' },
+  { key: 'asset', label: '보유 현금' },
+  { key: 'debt', label: '부채' },
+  { key: 'monthly_saving', label: '월 저축 가능액' },
+] as const
 
-function formatMoney(value: number) {
-  return `${Math.round(value / 10000).toLocaleString()}만원`
+function applyProfile(profile: Profile) {
+  Object.assign(form, {
+    ...profile,
+    special_conditions: [...profile.special_conditions],
+    preferred_regions: [...profile.preferred_regions],
+    preferred_supply_types: [...profile.preferred_supply_types],
+  })
 }
 
 function toggleArrayValue(target: string[], value: string) {
@@ -46,10 +49,32 @@ function toggleArrayValue(target: string[], value: string) {
   else target.push(value)
 }
 
-function handleSubmit() {
-  saved.value = true
-  setTimeout(() => router.push('/recommendations'), 500)
+async function handleSubmit() {
+  saving.value = true
+  saveError.value = ''
+  try {
+    await profileStore.saveProfile({ ...form })
+    saved.value = true
+    setTimeout(() => router.push('/recommendations'), 350)
+  } catch {
+    saveError.value = '백엔드 프로필 저장 API에 연결하지 못했습니다.'
+  } finally {
+    saving.value = false
+  }
 }
+
+onMounted(async () => {
+  if (!profileStore.loaded) {
+    await profileStore.hydrateProfile()
+  }
+  applyProfile(profileStore.profile)
+})
+
+watch(
+  () => profileStore.profile,
+  (profile) => applyProfile(profile),
+  { deep: true },
+)
 </script>
 
 <template>
@@ -59,16 +84,24 @@ function handleSubmit() {
         <UserRound class="h-4 w-4" />
         조건 입력
       </p>
-      <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">청약 추천 조건을 입력하세요</h1>
-      <p class="mt-2 text-sm text-slate-500">추천, 자금 로드맵, AI 체크리스트에 사용할 기본 조건입니다.</p>
+      <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">첫 집 청약 추천 조건</h1>
+      <p class="mt-2 text-sm text-slate-500">저장한 조건은 백엔드 세션에 저장되고 추천, 자금 로드맵, AI 코치에 함께 반영됩니다.</p>
     </div>
+
+    <p v-if="profileStore.error" class="rounded-lg border border-amber-100 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+      {{ profileStore.error }}
+    </p>
 
     <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <h2 class="flex items-center gap-2 text-lg font-bold">
         <UserRound class="h-5 w-5 text-blue-700" />
         기본 정보
       </h2>
-      <div class="mt-5 grid gap-4 md:grid-cols-2">
+      <div class="mt-5 grid gap-4 md:grid-cols-3">
+        <label class="block">
+          <span class="text-sm font-medium text-slate-700">이름</span>
+          <input v-model="form.name" type="text" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+        </label>
         <label class="block">
           <span class="text-sm font-medium text-slate-700">출생연도</span>
           <input v-model.number="form.birth_year" type="number" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
@@ -91,15 +124,10 @@ function handleSubmit() {
         자금 조건
       </h2>
       <div class="mt-5 grid gap-4 md:grid-cols-2">
-        <label v-for="field in [
-          ['annual_income', '연소득'],
-          ['asset', '보유 현금'],
-          ['debt', '부채'],
-          ['monthly_saving', '월 저축 가능액'],
-        ]" :key="field[0]" class="block">
-          <span class="text-sm font-medium text-slate-700">{{ field[1] }}</span>
-          <input v-model.number="form[field[0] as keyof typeof form]" type="number" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
-          <p class="mt-1 text-xs text-slate-500">{{ formatMoney(Number(form[field[0] as keyof typeof form])) }}</p>
+        <label v-for="field in moneyFields" :key="field.key" class="block">
+          <span class="text-sm font-medium text-slate-700">{{ field.label }}</span>
+          <input v-model.number="form[field.key]" type="number" min="0" step="10000" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+          <p class="mt-1 text-xs text-slate-500">{{ formatMoney(Number(form[field.key])) }}</p>
         </label>
       </div>
     </section>
@@ -109,7 +137,7 @@ function handleSubmit() {
         <Home class="h-5 w-5 text-blue-700" />
         청약 조건
       </h2>
-      <div class="mt-5 grid gap-4 md:grid-cols-2">
+      <div class="mt-5 grid gap-4 md:grid-cols-3">
         <label class="block">
           <span class="text-sm font-medium text-slate-700">무주택 여부</span>
           <select v-model="form.is_homeless" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500">
@@ -119,15 +147,20 @@ function handleSubmit() {
         </label>
         <label class="block">
           <span class="text-sm font-medium text-slate-700">청약통장 가입기간</span>
-          <input v-model.number="form.subscription_months" type="number" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+          <input v-model.number="form.subscription_months" type="number" min="0" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
           <p class="mt-1 text-xs text-slate-500">{{ form.subscription_months }}개월</p>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-slate-700">계약금 목표 기간</span>
+          <input v-model.number="form.target_months" type="number" min="1" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+          <p class="mt-1 text-xs text-slate-500">{{ form.target_months }}개월</p>
         </label>
       </div>
 
       <div class="mt-5">
         <p class="flex items-center gap-2 text-sm font-medium text-slate-700">
           <BadgeCheck class="h-4 w-4" />
-          특별 조건
+          관심 특별 조건
         </p>
         <div class="mt-3 flex flex-wrap gap-2">
           <button
@@ -147,10 +180,10 @@ function handleSubmit() {
     <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <h2 class="flex items-center gap-2 text-lg font-bold">
         <MapPinned class="h-5 w-5 text-blue-700" />
-        선호 조건
+        희망 조건
       </h2>
       <div class="mt-5">
-        <p class="text-sm font-medium text-slate-700">선호 지역</p>
+        <p class="text-sm font-medium text-slate-700">희망 지역</p>
         <div class="mt-3 flex flex-wrap gap-2">
           <button
             v-for="region in regionOptions"
@@ -182,12 +215,16 @@ function handleSubmit() {
       </div>
     </section>
 
-    <div class="sticky bottom-20 flex justify-end gap-3 lg:bottom-5">
+    <div class="sticky bottom-20 flex flex-wrap justify-end gap-3 lg:bottom-5">
       <p v-if="saved" class="rounded-lg bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
         저장 완료
       </p>
-      <button type="submit" class="rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700">
-        조건 저장하고 추천 보기
+      <p v-if="saveError" class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+        {{ saveError }}
+      </p>
+      <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700" :disabled="saving">
+        <Save class="h-4 w-4" />
+        {{ saving ? '저장 중' : '저장하고 추천 보기' }}
       </button>
     </div>
   </form>

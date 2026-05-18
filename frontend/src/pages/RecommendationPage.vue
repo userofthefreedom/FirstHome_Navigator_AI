@@ -1,19 +1,32 @@
 <script setup lang="ts">
-import {
-  ArrowUpDown,
-  CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  Clock3,
-  MapPin,
-  ShieldAlert,
-  Sparkles,
-} from 'lucide-vue-next'
-import { housingRecommendations } from '../data/sampleData'
+import { onMounted, ref } from 'vue'
+import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, Clock3, MapPin, ShieldAlert, Sparkles } from 'lucide-vue-next'
+import { fetchHousingRecommendations } from '../api/firsthome'
+import type { HousingRecommendation } from '../types/firsthome'
+import { formatMoney } from '../utils/format'
+import { useProfileStore } from '../stores/profileStore'
 
-function formatMoney(value: number) {
-  return `${Math.round(value / 10000).toLocaleString()}만원`
+const profileStore = useProfileStore()
+const recommendations = ref<HousingRecommendation[]>([])
+const loading = ref(true)
+const error = ref('')
+
+async function loadRecommendations() {
+  loading.value = true
+  error.value = ''
+  try {
+    recommendations.value = await fetchHousingRecommendations()
+    if (!profileStore.loaded) {
+      await profileStore.hydrateProfile()
+    }
+  } catch {
+    error.value = '백엔드 추천 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
+  } finally {
+    loading.value = false
+  }
 }
+
+onMounted(loadRecommendations)
 </script>
 
 <template>
@@ -21,33 +34,44 @@ function formatMoney(value: number) {
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p class="text-sm font-semibold text-blue-700">추천 청약</p>
-        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">조건 기반 매칭 결과</h1>
-        <p class="mt-2 text-sm text-slate-500">React 백업의 리스트형 추천 카드 디자인을 Vue 화면에 맞췄습니다.</p>
+        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">조건 기반 TOP 3</h1>
+        <p class="mt-2 text-sm text-slate-500">백엔드 추천 API가 자격 35점, 자금 25점, 지역 15점, 일정 10점, 정책 연계 15점을 합산합니다.</p>
       </div>
-      <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+      <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button">
         <ArrowUpDown class="h-4 w-4" />
-        매칭률순
+        점수순
       </button>
     </div>
 
-    <section class="space-y-4">
+    <section v-if="loading" class="rounded-lg border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-600 shadow-sm">
+      추천 결과를 불러오는 중입니다.
+    </section>
+
+    <section v-else-if="error" class="rounded-lg border border-amber-100 bg-amber-50 p-6 text-sm font-semibold text-amber-800">
+      {{ error }}
+    </section>
+
+    <section v-else-if="recommendations.length === 0" class="rounded-lg border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-600 shadow-sm">
+      조건에 맞는 추천 후보가 없습니다. 희망 지역이나 공급 유형을 완화해 보세요.
+    </section>
+
+    <section v-else class="space-y-4">
       <div class="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
             <Sparkles class="h-5 w-5" />
           </div>
           <div>
-            <p class="font-bold text-slate-950">{{ housingRecommendations.length }}개 청약이 조건과 맞습니다</p>
-            <p class="text-sm text-slate-500">매칭률, 자금 적합도, 일정 리스크를 함께 반영했습니다.</p>
+            <p class="font-bold text-slate-950">{{ recommendations.length }}개 청약 후보가 조건과 맞습니다</p>
+            <p class="text-sm text-slate-500">{{ profileStore.profile.name || '현재 사용자' }}님의 백엔드 세션 조건이 추천 점수에 반영됩니다.</p>
           </div>
         </div>
+        <RouterLink to="/profile" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700">
+          조건 수정
+        </RouterLink>
       </div>
 
-      <article
-        v-for="(item, index) in housingRecommendations"
-        :key="item.notice_id"
-        class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-      >
+      <article v-for="(item, index) in recommendations" :key="item.notice_id" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div class="grid gap-5 lg:grid-cols-[1fr_220px]">
           <div>
             <div class="flex flex-wrap items-center gap-2">
@@ -63,23 +87,23 @@ function formatMoney(value: number) {
             <div class="mt-5 grid gap-3 sm:grid-cols-5">
               <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <p class="text-xs text-slate-500">자격</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.eligibility }}점</p>
+                <p class="mt-1 font-bold">{{ item.score_detail.eligibility }}/35</p>
               </div>
               <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <p class="text-xs text-slate-500">자금</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.funding }}점</p>
+                <p class="mt-1 font-bold">{{ item.score_detail.funding }}/25</p>
               </div>
               <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p class="text-xs text-slate-500">입지</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.location }}점</p>
+                <p class="text-xs text-slate-500">지역</p>
+                <p class="mt-1 font-bold">{{ item.score_detail.location }}/15</p>
               </div>
               <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <p class="text-xs text-slate-500">일정</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.schedule }}점</p>
+                <p class="mt-1 font-bold">{{ item.score_detail.schedule }}/10</p>
               </div>
               <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <p class="text-xs text-slate-500">정책</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.policy_link }}점</p>
+                <p class="mt-1 font-bold">{{ item.score_detail.policy_link }}/15</p>
               </div>
             </div>
 
@@ -94,8 +118,8 @@ function formatMoney(value: number) {
 
           <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
             <div class="flex items-center justify-between">
-              <p class="text-sm font-semibold text-slate-500">매칭률</p>
-              <p class="text-2xl font-bold text-slate-950">{{ item.total_score }}%</p>
+              <p class="text-sm font-semibold text-slate-500">총점</p>
+              <p class="text-2xl font-bold text-slate-950">{{ item.total_score }}점</p>
             </div>
             <div class="mt-3 h-3 overflow-hidden rounded-full bg-white">
               <div class="h-full rounded-full bg-blue-600" :style="{ width: `${item.total_score}%` }" />
@@ -106,7 +130,7 @@ function formatMoney(value: number) {
                   <CalendarDays class="h-4 w-4" />
                   접수 마감
                 </span>
-                <span class="font-bold text-slate-950">2026-05</span>
+                <span class="font-bold text-slate-950">{{ item.application_deadline }}</span>
               </div>
               <div class="flex items-center justify-between gap-3">
                 <span class="flex items-center gap-2 text-slate-500">
@@ -119,7 +143,7 @@ function formatMoney(value: number) {
             <p class="mt-5 text-sm text-slate-500">예상 분양가</p>
             <p class="mt-1 text-lg font-bold text-slate-950">{{ formatMoney(item.price) }}</p>
             <RouterLink
-              to="/funding"
+              :to="`/funding/${item.notice_id}`"
               class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
             >
               자금 로드맵 보기
