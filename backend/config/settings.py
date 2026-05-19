@@ -25,7 +25,14 @@ SECRET_KEY = 'django-insecure-+kh8+(+yt5%-io_upre(4r2&ax5emcmt2x#1*t5k8g3(z9!p=r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+CORS_ALLOW_CREDENTIALS = True
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -47,13 +54,13 @@ INSTALLED_APPS = [
     "drf_spectacular",
 
     # Local apps
-    "profiles",
-    "notices",
-    "recommendations",
-    "funding",
-    "products",
-    "policies",
-    "ai_coach",
+    "apps.profiles",
+    "apps.notices",
+    "apps.recommendations",
+    "apps.funding",
+    "apps.products",
+    "apps.policies",
+    "apps.ai_coach",
 ]
 
 MIDDLEWARE = [
