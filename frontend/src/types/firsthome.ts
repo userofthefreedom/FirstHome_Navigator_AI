@@ -36,6 +36,12 @@ export type Notice = {
   cautions: string[]
 }
 
+export type Favorite = {
+  favorite_type: 'notice' | 'product' | 'policy'
+  object_id: number
+  item?: Record<string, any> | null
+}
+
 export type HousingRecommendation = {
   notice_id: number
   title: string
@@ -73,6 +79,7 @@ export type FundingPlan = {
   months_until_contract: number
   monthly_target: number
   timeline: Array<{ label: string; date: string; amount: number }>
+  notice: string
 }
 
 export type FinancialProduct = {
@@ -83,6 +90,10 @@ export type FinancialProduct = {
   rate: string
   limit: string
   period: string
+  term_months?: number
+  monthly_limit?: number
+  protection_status?: boolean
+  match_score?: number
   source_url: string
   reasons: string[]
 }
@@ -93,6 +104,9 @@ export type Policy = {
   provider: string
   target: string
   benefit: string
+  policy_category?: string
+  regions?: string[]
+  match_score?: number
   source_url: string
   reasons: string[]
 }

@@ -2,6 +2,7 @@ import axios from 'axios'
 import type {
   CoachSummary,
   Dashboard,
+  Favorite,
   FinancialProduct,
   FundingPlan,
   HousingRecommendation,
@@ -64,4 +65,18 @@ export async function fetchPolicies() {
 export async function fetchCoachSummary(noticeId: number, profile: Profile) {
   const response = await api.post<CoachSummary>('/ai/coach-summary', { notice_id: noticeId, profile })
   return response.data
+}
+
+export async function fetchFavorites() {
+  const response = await api.get<Favorite[]>('/favorites')
+  return response.data
+}
+
+export async function addFavorite(favorite: Favorite) {
+  const response = await api.post<Favorite>('/favorites', favorite)
+  return response.data
+}
+
+export async function removeFavorite(favorite: Favorite) {
+  await api.delete('/favorites', { data: favorite })
 }

@@ -1,23 +1,19 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from apps.services import calculate_score, default_profile, funding_plan, notices, policies, products
+from apps.services import default_profile, funding_plan, match_policies, match_products, notices, ranked_recommendations
 
 
 @api_view(["GET"])
 def dashboard(request):
     profile = request.session.get("profile", default_profile())
-    recommendations = sorted(
-        [calculate_score(notice, profile) for notice in notices()],
-        key=lambda item: item["total_score"],
-        reverse=True,
-    )
+    recommendations = ranked_recommendations(profile, limit=3)
     return Response(
         {
             "profile": profile,
-            "top_recommendations": recommendations[:3],
-            "notice_count": len(recommendations),
-            "message": "fixture 기준으로 대표 USE CASE를 실행할 수 있습니다.",
+            "top_recommendations": recommendations,
+            "notice_count": len(notices()),
+            "message": "fixture 기준으로 대표 USE CASE를 끝까지 실행할 수 있습니다.",
         }
     )
 
@@ -25,12 +21,7 @@ def dashboard(request):
 @api_view(["GET"])
 def housing_recommendations(request):
     profile = request.session.get("profile", default_profile())
-    recommendations = sorted(
-        [calculate_score(notice, profile) for notice in notices()],
-        key=lambda item: item["total_score"],
-        reverse=True,
-    )
-    return Response(recommendations[:3])
+    return Response(ranked_recommendations(profile, limit=3))
 
 
 @api_view(["GET"])
@@ -44,9 +35,11 @@ def funding_recommendation(request, notice_id):
 
 @api_view(["GET"])
 def product_recommendations(request):
-    return Response(products())
+    profile = request.session.get("profile", default_profile())
+    return Response(match_products(profile))
 
 
 @api_view(["GET"])
 def policy_recommendations(request):
-    return Response(policies())
+    profile = request.session.get("profile", default_profile())
+    return Response(match_policies(profile))

@@ -195,6 +195,14 @@ onMounted(loadDashboard)
               <p class="mt-1 font-bold text-white">{{ selected.move_in }}</p>
             </div>
           </div>
+          <div class="mt-5 flex flex-wrap gap-2">
+            <RouterLink :to="`/notices/${selected.id}`" class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-950">
+              공고 상세
+            </RouterLink>
+            <RouterLink :to="`/funding/${selected.id}`" class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white">
+              자금 보기
+            </RouterLink>
+          </div>
         </div>
       </section>
 
@@ -289,7 +297,7 @@ onMounted(loadDashboard)
               <h2 class="text-lg font-bold text-slate-950">선택 청약 상세 요약</h2>
               <p class="mt-1 text-sm text-slate-500">{{ selected.title }} 기준</p>
             </div>
-            <RouterLink :to="`/funding/${selected.id}`" class="text-sm font-bold text-blue-700 hover:text-blue-800">자금 보기</RouterLink>
+            <RouterLink :to="`/notices/${selected.id}`" class="text-sm font-bold text-blue-700 hover:text-blue-800">상세 보기</RouterLink>
           </div>
 
           <div class="grid gap-3 sm:grid-cols-2">

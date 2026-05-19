@@ -1,0 +1,85 @@
+from __future__ import annotations
+
+from datetime import datetime
+
+from django.core.management.base import BaseCommand
+
+from apps.fixture_store import load_fixture
+from apps.notices.models import HousingNotice
+from apps.policies.models import YouthPolicy
+from apps.products.models import FinancialProduct
+
+
+def parse_date(value: str | None):
+    if not value:
+        return None
+    return datetime.fromisoformat(value).date()
+
+
+class Command(BaseCommand):
+    help = "Load FirstHome MVP fixture data into the local database."
+
+    def handle(self, *args, **options):
+        data = load_fixture()
+
+        HousingNotice.objects.all().delete()
+        FinancialProduct.objects.all().delete()
+        YouthPolicy.objects.all().delete()
+
+        for notice in data["notices"]:
+            HousingNotice.objects.create(
+                title=notice["title"],
+                provider=notice["provider"],
+                region=notice["region"],
+                district=notice["district"],
+                supply_type=notice["supply_type"],
+                housing_type=notice["housing_type"],
+                area=notice.get("area", ""),
+                price=notice.get("price", 0),
+                contract_rate=notice.get("contract_rate", 0.1),
+                application_deadline=parse_date(notice.get("application_deadline")),
+                winner_date=parse_date(notice.get("winner_date")),
+                contract_date=parse_date(notice.get("contract_date")),
+                move_in=notice.get("move_in", ""),
+                competition=notice.get("competition", ""),
+                source_url=notice.get("source_url", ""),
+                tags=notice.get("tags", []),
+                required_documents=notice.get("required_documents", []),
+                cautions=notice.get("cautions", []),
+            )
+
+        for product in data["products"]:
+            FinancialProduct.objects.create(
+                name=product["name"],
+                provider=product["provider"],
+                category=product["category"],
+                rate=product.get("rate", ""),
+                monthly_limit=product.get("monthly_limit", 0),
+                term_months=product.get("term_months", 0),
+                protection_status=product.get("protection_status", True),
+                source_url=product.get("source_url", ""),
+                reasons=product.get("reasons", []),
+            )
+
+        for policy in data["policies"]:
+            YouthPolicy.objects.create(
+                name=policy["name"],
+                provider=policy["provider"],
+                target=policy["target"],
+                benefit=policy.get("benefit", ""),
+                policy_category=policy.get("policy_category", ""),
+                regions=policy.get("regions", []),
+                age_min=policy.get("age_min", 19),
+                age_max=policy.get("age_max", 39),
+                max_income=policy.get("max_income", 0),
+                requires_homeless=policy.get("requires_homeless", False),
+                source_url=policy.get("source_url", ""),
+                reasons=policy.get("reasons", []),
+            )
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                "Loaded FirstHome fixture: "
+                f"{len(data['notices'])} notices, {len(data['products'])} products, {len(data['policies'])} policies."
+            )
+        )

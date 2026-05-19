@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { CalendarDays, Calculator, Landmark, PiggyBank, WalletCards } from 'lucide-vue-next'
-import { fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchPolicies, fetchProducts } from '../api/firsthome'
-import type { FinancialProduct, FundingPlan, Notice, Policy } from '../types/firsthome'
+import { Bookmark, CalendarDays, Calculator, ExternalLink, Landmark, PiggyBank, ShieldAlert, WalletCards } from 'lucide-vue-next'
+import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchPolicies, fetchProducts, removeFavorite } from '../api/firsthome'
+import type { Favorite, FinancialProduct, FundingPlan, Notice, Policy } from '../types/firsthome'
 import { formatMoney } from '../utils/format'
 
 const route = useRoute()
@@ -12,7 +12,9 @@ const selectedNotice = ref<Notice | null>(null)
 const fundingPlan = ref<FundingPlan | null>(null)
 const financialProducts = ref<FinancialProduct[]>([])
 const policies = ref<Policy[]>([])
+const favorites = ref<Favorite[]>([])
 const loading = ref(true)
+const savingFavoriteKey = ref('')
 const error = ref('')
 
 const readinessRate = computed(() => {
@@ -20,6 +22,30 @@ const readinessRate = computed(() => {
   return Math.round((fundingPlan.value.available_cash / fundingPlan.value.down_payment) * 100)
 })
 const readinessWidth = computed(() => `${Math.min(readinessRate.value, 100)}%`)
+
+function favoriteKey(favoriteType: Favorite['favorite_type'], objectId: number) {
+  return `${favoriteType}-${objectId}`
+}
+
+function isFavorite(favoriteType: Favorite['favorite_type'], objectId: number) {
+  return favorites.value.some((favorite) => favorite.favorite_type === favoriteType && favorite.object_id === objectId)
+}
+
+async function toggleFavorite(favoriteType: Favorite['favorite_type'], objectId: number) {
+  const favorite = { favorite_type: favoriteType, object_id: objectId }
+  savingFavoriteKey.value = favoriteKey(favoriteType, objectId)
+  try {
+    if (isFavorite(favoriteType, objectId)) {
+      await removeFavorite(favorite)
+      favorites.value = favorites.value.filter((item) => item.favorite_type !== favoriteType || item.object_id !== objectId)
+    } else {
+      const saved = await addFavorite(favorite)
+      favorites.value = [...favorites.value, saved]
+    }
+  } finally {
+    savingFavoriteKey.value = ''
+  }
+}
 
 async function resolveNoticeId() {
   if (noticeId.value) return noticeId.value
@@ -32,16 +58,18 @@ async function loadFunding() {
   error.value = ''
   try {
     const targetNoticeId = await resolveNoticeId()
-    const [noticeResponse, fundingResponse, productsResponse, policiesResponse] = await Promise.all([
+    const [noticeResponse, fundingResponse, productsResponse, policiesResponse, favoriteResponse] = await Promise.all([
       fetchNotice(targetNoticeId),
       fetchFundingPlan(targetNoticeId),
       fetchProducts(),
       fetchPolicies(),
+      fetchFavorites(),
     ])
     selectedNotice.value = noticeResponse
     fundingPlan.value = fundingResponse
     financialProducts.value = productsResponse
     policies.value = policiesResponse
+    favorites.value = favoriteResponse
   } catch {
     error.value = '백엔드 자금 로드맵 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
   } finally {
@@ -77,6 +105,9 @@ onMounted(loadFunding)
           <div class="flex flex-wrap gap-2">
             <RouterLink to="/recommendations" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">
               추천 다시 보기
+            </RouterLink>
+            <RouterLink :to="`/notices/${selectedNotice.id}`" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">
+              공고 상세
             </RouterLink>
             <RouterLink :to="`/ai-coach/${selectedNotice.id}`" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
               AI 코치 보기
@@ -138,6 +169,7 @@ onMounted(loadFunding)
           <p class="mt-3 text-sm leading-6 text-slate-300">
             계약 예정일까지 {{ fundingPlan.months_until_contract }}개월을 기준으로 부족액을 나눠 계산했습니다.
           </p>
+          <p class="mt-3 text-xs leading-5 text-slate-400">{{ fundingPlan.notice }}</p>
         </div>
       </section>
 
@@ -160,17 +192,52 @@ onMounted(loadFunding)
         </div>
       </section>
 
+      <section class="rounded-lg border border-amber-100 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+        <p class="flex items-center gap-2 font-bold">
+          <ShieldAlert class="h-4 w-4" />
+          참고용 안내
+        </p>
+        <p class="mt-2">
+          자금 로드맵은 입력값과 fixture 공고 기준의 단순 계산입니다. 실제 계약금, 중도금, 잔금 납부 조건은 공식 공고와 기관 안내를 확인해야 합니다.
+        </p>
+        <a
+          v-if="selectedNotice.source_url"
+          :href="selectedNotice.source_url"
+          target="_blank"
+          rel="noreferrer"
+          class="mt-3 inline-flex items-center gap-1 font-bold text-amber-900 underline underline-offset-4"
+        >
+          공식 출처 열기
+          <ExternalLink class="h-4 w-4" />
+        </a>
+      </section>
+
       <section class="grid gap-5 lg:grid-cols-2">
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-lg font-bold text-slate-950">예·적금 후보</h2>
           <div class="mt-4 grid gap-3">
+            <p v-if="financialProducts.length === 0" class="rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+              조건에 맞는 상품 후보가 없습니다. 목표 기간이나 월 저축 가능액을 완화해 보세요.
+            </p>
             <div v-for="product in financialProducts" :key="product.id" class="rounded-lg border border-slate-100 bg-slate-50 p-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="font-bold text-slate-950">{{ product.name }}</p>
-                <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ product.category }}</span>
+                <div class="flex flex-wrap gap-2">
+                  <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ product.category }}</span>
+                  <span v-if="product.protection_status" class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">예금자보호</span>
+                </div>
               </div>
               <p class="mt-1 text-sm text-slate-500">{{ product.provider }} · {{ product.rate }} · {{ product.period }}</p>
               <p class="mt-2 text-sm text-slate-600">{{ product.reasons[0] }}</p>
+              <button
+                type="button"
+                class="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                :disabled="savingFavoriteKey === favoriteKey('product', product.id)"
+                @click="toggleFavorite('product', product.id)"
+              >
+                <Bookmark class="h-4 w-4" :class="isFavorite('product', product.id) ? 'fill-blue-600 text-blue-600' : ''" />
+                {{ isFavorite('product', product.id) ? '저장됨' : '상품 저장' }}
+              </button>
             </div>
           </div>
         </div>
@@ -178,10 +245,25 @@ onMounted(loadFunding)
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="text-lg font-bold text-slate-950">지원정책 후보</h2>
           <div class="mt-4 grid gap-3">
+            <p v-if="policies.length === 0" class="rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+              조건에 맞는 정책 후보가 없습니다. 공식 청년정책 검색에서 지역과 소득 조건을 다시 확인하세요.
+            </p>
             <div v-for="policy in policies" :key="policy.id" class="rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <p class="font-bold text-slate-950">{{ policy.name }}</p>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="font-bold text-slate-950">{{ policy.name }}</p>
+                <span v-if="policy.policy_category" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ policy.policy_category }}</span>
+              </div>
               <p class="mt-1 text-sm text-slate-500">{{ policy.provider }} · {{ policy.target }}</p>
               <p class="mt-2 text-sm text-slate-600">{{ policy.benefit }}</p>
+              <button
+                type="button"
+                class="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                :disabled="savingFavoriteKey === favoriteKey('policy', policy.id)"
+                @click="toggleFavorite('policy', policy.id)"
+              >
+                <Bookmark class="h-4 w-4" :class="isFavorite('policy', policy.id) ? 'fill-blue-600 text-blue-600' : ''" />
+                {{ isFavorite('policy', policy.id) ? '저장됨' : '정책 저장' }}
+              </button>
             </div>
           </div>
         </div>

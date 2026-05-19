@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { Bell, Bot, Building2, Home, Search, UserRound, WalletCards } from 'lucide-vue-next'
+import { Bell, Bookmark, Bot, Building2, Home, Search, UserRound, WalletCards } from 'lucide-vue-next'
 import { useProfileStore } from '../stores/profileStore'
 import { formatMoney } from '../utils/format'
 
@@ -14,6 +14,7 @@ const menus = [
   { label: '추천 청약', path: '/recommendations', icon: Building2 },
   { label: '자금 로드맵', path: '/funding', icon: WalletCards },
   { label: 'AI 코치', path: '/ai-coach', icon: Bot },
+  { label: '관심목록', path: '/favorites', icon: Bookmark },
 ]
 
 function isActive(path: string) {
@@ -116,7 +117,7 @@ onMounted(() => {
       </section>
     </main>
 
-    <nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-slate-200 bg-white lg:hidden">
+    <nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-slate-200 bg-white lg:hidden">
       <RouterLink
         v-for="menu in menus"
         :key="menu.path"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, Clock3, MapPin, ShieldAlert, Sparkles } from 'lucide-vue-next'
+import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, Clock3, ExternalLink, MapPin, ShieldAlert, Sparkles } from 'lucide-vue-next'
 import { fetchHousingRecommendations } from '../api/firsthome'
 import type { HousingRecommendation } from '../types/firsthome'
 import { formatMoney } from '../utils/format'
@@ -143,15 +143,29 @@ onMounted(loadRecommendations)
             <p class="mt-5 text-sm text-slate-500">예상 분양가</p>
             <p class="mt-1 text-lg font-bold text-slate-950">{{ formatMoney(item.price) }}</p>
             <RouterLink
-              :to="`/funding/${item.notice_id}`"
+              :to="`/notices/${item.notice_id}`"
               class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
             >
-              자금 로드맵 보기
+              공고 상세 보기
               <ChevronRight class="h-4 w-4" />
             </RouterLink>
+            <a
+              v-if="item.source_url"
+              :href="item.source_url"
+              target="_blank"
+              rel="noreferrer"
+              class="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+            >
+              공식 출처
+              <ExternalLink class="h-4 w-4" />
+            </a>
           </div>
         </div>
       </article>
+
+      <div class="rounded-lg border border-amber-100 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+        추천 결과는 fixture 기반 참고 정보이며 청약 당첨, 정책 수급, 대출 승인을 보장하지 않습니다. 실제 신청 전 공식 공고문을 확인하세요.
+      </div>
     </section>
   </div>
 </template>

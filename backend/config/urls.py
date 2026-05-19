@@ -19,7 +19,7 @@ from django.urls import path
 
 from apps.ai_coach.views import coach_summary_view
 from apps.notices.views import notice_detail, notice_list
-from apps.profiles.views import profile_view
+from apps.profiles.views import favorites_view, profile_view
 from apps.recommendations.views import (
     dashboard,
     funding_recommendation,
@@ -32,6 +32,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/dashboard", dashboard),
     path("api/profile", profile_view),
+    path("api/favorites", favorites_view),
     path("api/recommendations/housing", housing_recommendations),
     path("api/recommendations/funding/<int:notice_id>", funding_recommendation),
     path("api/recommendations/products", product_recommendations),
