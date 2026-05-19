@@ -29,6 +29,7 @@ class Command(BaseCommand):
         for notice in data["notices"]:
             HousingNotice.objects.create(
                 id=notice["id"],
+                source_id=str(notice["id"]),
                 title=notice["title"],
                 provider=notice["provider"],
                 region=notice["region"],
@@ -47,6 +48,7 @@ class Command(BaseCommand):
                 tags=notice.get("tags", []),
                 required_documents=notice.get("required_documents", []),
                 cautions=notice.get("cautions", []),
+                source_meta={"fixture_id": notice["id"]},
             )
 
         for product in data["products"]:

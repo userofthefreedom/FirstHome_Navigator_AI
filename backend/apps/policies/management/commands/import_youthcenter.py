@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+
+from apps.policies.models import YouthPolicy
+from apps.policies.services.youthcenter import fetch_youthcenter_payload, normalize_youthcenter_policies
+
+
+class Command(BaseCommand):
+    help = "Import youth policies from the Ontong Youth open API."
+
+    def add_arguments(self, parser):
+        parser.add_argument("--page", type=int, default=1)
+        parser.add_argument("--display", type=int, default=100)
+        parser.add_argument("--query", default="")
+        parser.add_argument("--keyword", default="")
+        parser.add_argument("--clear", action="store_true", help="Delete existing youth policies before importing.")
+        parser.add_argument("--dry-run", action="store_true", help="Fetch and normalize policies without writing to DB.")
+
+    def handle(self, *args, **options):
+        api_key = settings.EXTERNAL_API_KEYS.get("YOUTH_POLICY_API_KEY", "")
+        if not api_key:
+            raise CommandError("YOUTH_POLICY_API_KEY is missing. Add it to backend/.env after Ontong Youth approves it.")
+
+        payload = fetch_youthcenter_payload(
+            api_key,
+            page=options["page"],
+            display=options["display"],
+            query=options["query"],
+            keyword=options["keyword"],
+        )
+        policies = normalize_youthcenter_policies(payload)
+
+        if options["dry_run"]:
+            self.stdout.write(self.style.SUCCESS(f"Fetched {len(policies)} youth policies. No database changes."))
+            for policy in policies[:5]:
+                self.stdout.write(f"- {policy.provider} {policy.name}")
+            return
+
+        if options["clear"]:
+            YouthPolicy.objects.all().delete()
+
+        created_count = 0
+        updated_count = 0
+        for policy in policies:
+            _instance, created = YouthPolicy.objects.update_or_create(
+                provider=policy.provider,
+                name=policy.name,
+                defaults={
+                    "target": policy.target,
+                    "benefit": policy.benefit,
+                    "policy_category": policy.policy_category,
+                    "regions": policy.regions,
+                    "age_min": policy.age_min,
+                    "age_max": policy.age_max,
+                    "max_income": policy.max_income,
+                    "requires_homeless": policy.requires_homeless,
+                    "source_url": policy.source_url,
+                    "reasons": policy.reasons,
+                },
+            )
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        self.stdout.write(self.style.SUCCESS(f"Imported youth policies: {created_count} created, {updated_count} updated."))

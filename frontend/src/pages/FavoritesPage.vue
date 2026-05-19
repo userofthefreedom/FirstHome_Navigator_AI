@@ -124,6 +124,8 @@ onMounted(loadFavorites)
                 <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
                   {{ favorite.favorite_type === 'notice' ? '청약' : favorite.favorite_type === 'product' ? '상품' : '정책' }}
                 </span>
+                <span v-if="favorite.item?.data_source" class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ favorite.item.data_source }}</span>
+                <span v-if="favorite.favorite_type === 'notice' && favorite.item?.is_price_confirmed === false" class="rounded-md bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">금액 확인 필요</span>
                 <span class="text-xs font-semibold text-slate-500">{{ itemMeta(favorite) }}</span>
               </div>
               <h2 class="mt-3 text-lg font-bold text-slate-950">{{ itemName(favorite) }}</h2>

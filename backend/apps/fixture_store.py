@@ -30,21 +30,21 @@ def notices() -> list[dict[str, Any]]:
     db_notices = _db_notices()
     if db_notices:
         return db_notices
-    return [notice.copy() for notice in load_fixture()["notices"]]
+    return [_fixture_notice(notice) for notice in load_fixture()["notices"]]
 
 
 def products() -> list[dict[str, Any]]:
     db_products = _db_products()
     if db_products:
         return db_products
-    return [product.copy() for product in load_fixture()["products"]]
+    return [_fixture_product(product) for product in load_fixture()["products"]]
 
 
 def policies() -> list[dict[str, Any]]:
     db_policies = _db_policies()
     if db_policies:
         return db_policies
-    return [policy.copy() for policy in load_fixture()["policies"]]
+    return [_fixture_policy(policy) for policy in load_fixture()["policies"]]
 
 
 def find_notice(notice_id: int) -> dict[str, Any] | None:
@@ -58,6 +58,24 @@ def _db_notices() -> list[dict[str, Any]]:
         return [_serialize_notice(notice) for notice in HousingNotice.objects.order_by("application_deadline", "id")]
     except (OperationalError, ProgrammingError):
         return []
+
+
+def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **notice.copy(),
+        "source_id": str(notice.get("id", "")),
+        "data_source": "fixture",
+        "is_price_confirmed": int(notice.get("price") or 0) > 0,
+        "source_meta": {},
+    }
+
+
+def _fixture_product(product: dict[str, Any]) -> dict[str, Any]:
+    return {**product.copy(), "data_source": "fixture"}
+
+
+def _fixture_policy(policy: dict[str, Any]) -> dict[str, Any]:
+    return {**policy.copy(), "data_source": "fixture"}
 
 
 def _db_products() -> list[dict[str, Any]]:
@@ -93,6 +111,9 @@ def _term_label(value: int) -> str:
 def _serialize_notice(notice: Any) -> dict[str, Any]:
     return {
         "id": notice.id,
+        "source_id": notice.source_id,
+        "data_source": _notice_data_source(notice),
+        "is_price_confirmed": notice.price > 0,
         "title": notice.title,
         "provider": notice.provider,
         "region": notice.region,
@@ -111,12 +132,14 @@ def _serialize_notice(notice: Any) -> dict[str, Any]:
         "tags": notice.tags,
         "required_documents": notice.required_documents,
         "cautions": notice.cautions,
+        "source_meta": notice.source_meta,
     }
 
 
 def _serialize_product(product: Any) -> dict[str, Any]:
     return {
         "id": product.id,
+        "data_source": _product_data_source(product),
         "name": product.name,
         "provider": product.provider,
         "category": product.category,
@@ -134,6 +157,7 @@ def _serialize_product(product: Any) -> dict[str, Any]:
 def _serialize_policy(policy: Any) -> dict[str, Any]:
     return {
         "id": policy.id,
+        "data_source": _policy_data_source(policy),
         "name": policy.name,
         "provider": policy.provider,
         "target": policy.target,
@@ -147,3 +171,23 @@ def _serialize_policy(policy: Any) -> dict[str, Any]:
         "source_url": policy.source_url,
         "reasons": policy.reasons,
     }
+
+
+def _notice_data_source(notice: Any) -> str:
+    if notice.provider == "LH" and notice.source_id and not str(notice.source_id).isdigit():
+        return "LH API"
+    if notice.source_id:
+        return "DB"
+    return "fixture"
+
+
+def _product_data_source(product: Any) -> str:
+    if "finlife.fss.or.kr" in (product.source_url or ""):
+        return "금융감독원 API"
+    return "DB"
+
+
+def _policy_data_source(policy: Any) -> str:
+    if policy.source_url:
+        return "정책 데이터"
+    return "DB"

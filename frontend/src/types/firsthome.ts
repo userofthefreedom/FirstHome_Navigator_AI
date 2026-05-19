@@ -16,6 +16,10 @@ export type Profile = {
 
 export type Notice = {
   id: number
+  source_id?: string
+  data_source?: string
+  is_price_confirmed?: boolean
+  source_meta?: Record<string, any>
   title: string
   provider: string
   region: string
@@ -44,6 +48,10 @@ export type Favorite = {
 
 export type HousingRecommendation = {
   notice_id: number
+  source_id?: string
+  data_source?: string
+  is_price_confirmed?: boolean
+  source_meta?: Record<string, any>
   title: string
   provider: string
   region: string
@@ -84,6 +92,7 @@ export type FundingPlan = {
 
 export type FinancialProduct = {
   id: number
+  data_source?: string
   name: string
   provider: string
   category: string
@@ -100,6 +109,7 @@ export type FinancialProduct = {
 
 export type Policy = {
   id: number
+  data_source?: string
   name: string
   provider: string
   target: string

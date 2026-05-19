@@ -89,6 +89,43 @@ MVP에서는 부채를 정밀 대출 심사에 쓰지 않고 참고 정보로만
 
 서비스 API는 DB에 데이터가 있으면 DB를 먼저 사용하고, DB가 비어 있거나 아직 준비되지 않았으면 fixture로 fallback합니다. 실제 API 수집 명령을 추가할 때도 화면 API는 이 조회 구조를 그대로 사용하면 됩니다.
 
+## 실제 금융상품 데이터 수집
+
+금융감독원 금융상품통합비교공시 API 키가 `backend/.env`의 `FINLIFE_API_KEY`에 있으면 예금/적금 상품을 DB로 수집할 수 있습니다.
+
+```bash
+cd backend
+python manage.py import_finlife --dry-run
+python manage.py import_finlife --clear
+```
+
+`--dry-run`은 API 호출과 정규화만 확인하고 DB를 바꾸지 않습니다. `--clear`는 기존 금융상품을 지운 뒤 금융감독원 예금/적금 데이터를 새로 저장합니다. 청약 공고와 청년정책 데이터는 건드리지 않습니다.
+
+## 실제 LH 공고 데이터 수집
+
+공공데이터포털 서비스 키가 `backend/.env`의 `DATA_GO_KR_SERVICE_KEY`에 있으면 LH 분양임대공고 목록을 DB로 수집할 수 있습니다.
+
+```bash
+cd backend
+python manage.py import_lh --dry-run --page-size 20 --max-pages 2
+python manage.py import_lh --page-size 100 --max-pages 3
+python manage.py import_lh --page-size 100 --max-pages 3 --with-supply-info --supply-limit 50
+```
+
+LH 목록 API에는 가격, 계약일, 세부 자격이 빠진 공고가 많습니다. `--with-supply-info`를 붙이면 LH 공급정보 상세 API를 추가 조회해 면적, 주택형, 일부 금액을 보강하고 원본 조회 코드는 `source_meta`에 보관합니다. 그래도 가격이 확인되지 않는 공고는 서비스에서 자금 계산을 추정하지 않고 “공식 공고 확인 필요”로 표시하며, 추천 자금 점수는 보수적으로 반영합니다. `--clear`를 붙이면 기존 청약 공고를 지운 뒤 LH 공고만 저장하므로 발표용 fixture를 유지하려면 생략하는 편이 안전합니다.
+
+## 실제 청년정책 데이터 수집
+
+온통청년 OPEN API 키가 승인되어 `backend/.env`의 `YOUTH_POLICY_API_KEY`에 있으면 청년정책을 DB로 수집할 수 있습니다. 온통청년 공식 문서의 청년정책 목록 URL은 `https://www.youthcenter.go.kr/opi/youthPlcyList.do`이고 인증 파라미터는 `openApiVlak`입니다.
+
+```bash
+cd backend
+python manage.py import_youthcenter --dry-run --display 20
+python manage.py import_youthcenter --display 100
+```
+
+키가 아직 승인 전이면 명령은 DB를 건드리지 않고 누락 안내를 출력합니다.
+
 ## 테스트
 
 ```bash

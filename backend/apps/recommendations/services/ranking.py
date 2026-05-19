@@ -11,6 +11,10 @@ def calculate_score(notice: dict[str, Any], profile: dict[str, Any] | None = Non
     detail = score_detail(notice, profile)
     return {
         "notice_id": notice["id"],
+        "source_id": notice.get("source_id", ""),
+        "data_source": notice.get("data_source", "fixture"),
+        "is_price_confirmed": notice.get("is_price_confirmed", int(notice.get("price") or 0) > 0),
+        "source_meta": notice.get("source_meta", {}),
         "title": notice["title"],
         "provider": notice["provider"],
         "region": notice["region"],

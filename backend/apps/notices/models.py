@@ -2,6 +2,7 @@ from django.db import models
 
 
 class HousingNotice(models.Model):
+    source_id = models.CharField(max_length=80, blank=True, db_index=True)
     title = models.CharField(max_length=120)
     provider = models.CharField(max_length=60)
     region = models.CharField(max_length=40)
@@ -20,6 +21,7 @@ class HousingNotice(models.Model):
     tags = models.JSONField(default=list, blank=True)
     required_documents = models.JSONField(default=list, blank=True)
     cautions = models.JSONField(default=list, blank=True)
+    source_meta = models.JSONField(default=dict, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:

@@ -11,6 +11,10 @@ const recommendations = ref<HousingRecommendation[]>([])
 const loading = ref(true)
 const error = ref('')
 
+function priceLabel(price: number) {
+  return price > 0 ? formatMoney(price) : '공식 확인 필요'
+}
+
 async function loadRecommendations() {
   loading.value = true
   error.value = ''
@@ -77,6 +81,8 @@ onMounted(loadRecommendations)
             <div class="flex flex-wrap items-center gap-2">
               <span class="rounded-md bg-slate-950 px-2 py-1 text-xs font-bold text-white">추천 {{ index + 1 }}</span>
               <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{{ item.supply_type }}</span>
+              <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">{{ item.data_source ?? 'fixture' }}</span>
+              <span v-if="!item.is_price_confirmed" class="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">금액 확인 필요</span>
             </div>
             <h2 class="mt-3 text-xl font-bold text-slate-950">{{ item.title }}</h2>
             <p class="mt-2 flex items-center gap-1 text-sm text-slate-500">
@@ -141,7 +147,7 @@ onMounted(loadRecommendations)
               </div>
             </div>
             <p class="mt-5 text-sm text-slate-500">예상 분양가</p>
-            <p class="mt-1 text-lg font-bold text-slate-950">{{ formatMoney(item.price) }}</p>
+            <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(item.price) }}</p>
             <RouterLink
               :to="`/notices/${item.notice_id}`"
               class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"

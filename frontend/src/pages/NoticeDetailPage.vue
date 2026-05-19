@@ -16,6 +16,10 @@ const loading = ref(true)
 const savingFavorite = ref(false)
 const error = ref('')
 
+function priceLabel(price: number) {
+  return price > 0 ? formatMoney(price) : '공식 확인 필요'
+}
+
 const noticeFavorite = computed<Favorite | null>(() => {
   if (!selectedNotice.value) return null
   return { favorite_type: 'notice', object_id: selectedNotice.value.id }
@@ -102,6 +106,8 @@ onMounted(loadDetail)
             <div class="mt-4 flex flex-wrap items-center gap-2">
               <span class="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{{ selectedNotice.supply_type }}</span>
               <span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ selectedNotice.region }}</span>
+              <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{{ selectedNotice.data_source ?? 'fixture' }}</span>
+              <span v-if="!selectedNotice.is_price_confirmed" class="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">금액 확인 필요</span>
               <span v-if="recommendation" class="rounded-md bg-slate-950 px-2.5 py-1 text-xs font-bold text-white">{{ recommendation.total_score }}점</span>
             </div>
             <h1 class="mt-3 text-2xl font-bold text-slate-950 sm:text-3xl">{{ selectedNotice.title }}</h1>
@@ -128,7 +134,7 @@ onMounted(loadDetail)
       <section class="grid gap-3 md:grid-cols-4">
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-sm text-slate-500">예상 분양가</p>
-          <p class="mt-2 text-2xl font-bold text-slate-950">{{ formatMoney(selectedNotice.price) }}</p>
+          <p class="mt-2 text-2xl font-bold text-slate-950">{{ priceLabel(selectedNotice.price) }}</p>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-sm text-slate-500">계약금</p>

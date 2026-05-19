@@ -17,6 +17,10 @@ const loading = ref(true)
 const savingFavoriteKey = ref('')
 const error = ref('')
 
+function priceLabel(price: number) {
+  return price > 0 ? formatMoney(price) : '공식 확인 필요'
+}
+
 const readinessRate = computed(() => {
   if (!fundingPlan.value?.down_payment) return 0
   return Math.round((fundingPlan.value.available_cash / fundingPlan.value.down_payment) * 100)
@@ -101,6 +105,10 @@ onMounted(loadFunding)
             </p>
             <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">계약금 준비 계획</h1>
             <p class="mt-2 text-sm text-slate-500">{{ selectedNotice.title }} 기준으로 계산한 자금 흐름입니다.</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ selectedNotice.data_source ?? 'fixture' }}</span>
+              <span v-if="!selectedNotice.is_price_confirmed" class="rounded-md bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">금액 확인 필요</span>
+            </div>
           </div>
           <div class="flex flex-wrap gap-2">
             <RouterLink to="/recommendations" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">
@@ -122,7 +130,7 @@ onMounted(loadFunding)
             <Landmark class="h-4 w-4" />
             예상 분양가
           </p>
-          <p class="mt-2 text-2xl font-bold">{{ formatMoney(fundingPlan.price) }}</p>
+          <p class="mt-2 text-2xl font-bold">{{ priceLabel(fundingPlan.price) }}</p>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="flex items-center gap-2 text-sm text-slate-500">
@@ -224,6 +232,7 @@ onMounted(loadFunding)
                 <p class="font-bold text-slate-950">{{ product.name }}</p>
                 <div class="flex flex-wrap gap-2">
                   <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ product.category }}</span>
+                  <span v-if="product.data_source" class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">{{ product.data_source }}</span>
                   <span v-if="product.protection_status" class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">예금자보호</span>
                 </div>
               </div>
@@ -251,7 +260,10 @@ onMounted(loadFunding)
             <div v-for="policy in policies" :key="policy.id" class="rounded-lg border border-slate-100 bg-slate-50 p-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="font-bold text-slate-950">{{ policy.name }}</p>
-                <span v-if="policy.policy_category" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ policy.policy_category }}</span>
+                <div class="flex flex-wrap gap-2">
+                  <span v-if="policy.policy_category" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ policy.policy_category }}</span>
+                  <span v-if="policy.data_source" class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">{{ policy.data_source }}</span>
+                </div>
               </div>
               <p class="mt-1 text-sm text-slate-500">{{ policy.provider }} · {{ policy.target }}</p>
               <p class="mt-2 text-sm text-slate-600">{{ policy.benefit }}</p>

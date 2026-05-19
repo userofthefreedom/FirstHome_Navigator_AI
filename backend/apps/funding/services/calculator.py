@@ -13,6 +13,7 @@ def available_cash(profile: dict[str, Any]) -> int:
 
 def calculate_funding_plan(notice: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
     price = int(notice["price"])
+    price_confirmed = price > 0
     contract_rate = float(notice.get("contract_rate", 0.1))
     down_payment = round(price * contract_rate)
     cash = available_cash(profile)
@@ -39,7 +40,11 @@ def calculate_funding_plan(notice: dict[str, Any], profile: dict[str, Any]) -> d
             {"label": "중도금 계획 확인", "date": notice["contract_date"], "amount": middle_payment},
             {"label": "잔금 계획 확인", "date": notice["move_in"], "amount": final_payment},
         ],
-        "notice": "자금 로드맵은 참고용이며 실제 납부 조건은 공식 공고를 확인해야 합니다.",
+        "notice": (
+            "자금 로드맵은 참고용이며 실제 납부 조건은 공식 공고를 확인해야 합니다."
+            if price_confirmed
+            else "분양가 또는 보증금 정보가 API 목록에 없어 자금 계산은 제한됩니다. 공식 공고문에서 금액을 확인해야 합니다."
+        ),
     }
 
 
@@ -53,6 +58,8 @@ def funding_plan(notice_id: int, profile: dict[str, Any] | None = None) -> dict[
 def funding_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
     plan = calculate_funding_plan(notice, profile)
     down_payment = plan["down_payment"]
+    if down_payment <= 0:
+        return 10
     readiness_ratio = min(plan["available_cash"] / down_payment if down_payment else 1, 1)
     saving = int(profile.get("monthly_saving", 0))
     target_months = max(int(profile.get("target_months", 1)), 1)
