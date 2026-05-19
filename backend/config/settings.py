@@ -10,22 +10,32 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+kh8+(+yt5%-io_upre(4r2&ax5emcmt2x#1*t5k8g3(z9!p=r'
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-+kh8+(+yt5%-io_upre(4r2&ax5emcmt2x#1*t5k8g3(z9!p=r")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+
+EXTERNAL_API_KEYS = {
+    "DATA_GO_KR_SERVICE_KEY": os.getenv("DATA_GO_KR_SERVICE_KEY", ""),
+    "FINLIFE_API_KEY": os.getenv("FINLIFE_API_KEY", ""),
+    "YOUTH_POLICY_API_KEY": os.getenv("YOUTH_POLICY_API_KEY", ""),
+}
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",

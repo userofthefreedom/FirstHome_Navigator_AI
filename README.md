@@ -23,6 +23,16 @@ python manage.py runserver
 
 백엔드 기본 주소는 `http://127.0.0.1:8000/api`입니다. 현재 MVP는 외부 API 없이 `backend/fixtures/firsthome_mvp.json`만으로 동작합니다.
 
+실제 외부 API 키를 연결할 때는 `backend/.env.example`을 참고해 `backend/.env`를 만듭니다.
+
+```bash
+DJANGO_SECRET_KEY=change-me
+DJANGO_DEBUG=true
+DATA_GO_KR_SERVICE_KEY=
+FINLIFE_API_KEY=
+YOUTH_POLICY_API_KEY=
+```
+
 ## 프론트엔드 실행
 
 ```bash
@@ -76,6 +86,8 @@ MVP에서는 부채를 정밀 대출 심사에 쓰지 않고 참고 정보로만
 - 대표 사용자 3명
 
 상품 추천은 목표 기간, 월 저축 가능액, 월 납입 한도, 예금자보호 여부를 기준으로 정렬합니다. 정책 추천은 나이, 희망 지역, 소득, 무주택 여부, 정책 카테고리를 기준으로 정렬합니다.
+
+서비스 API는 DB에 데이터가 있으면 DB를 먼저 사용하고, DB가 비어 있거나 아직 준비되지 않았으면 fixture로 fallback합니다. 실제 API 수집 명령을 추가할 때도 화면 API는 이 조회 구조를 그대로 사용하면 됩니다.
 
 ## 테스트
 

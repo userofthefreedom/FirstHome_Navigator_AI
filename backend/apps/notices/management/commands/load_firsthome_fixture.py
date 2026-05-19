@@ -28,6 +28,7 @@ class Command(BaseCommand):
 
         for notice in data["notices"]:
             HousingNotice.objects.create(
+                id=notice["id"],
                 title=notice["title"],
                 provider=notice["provider"],
                 region=notice["region"],
@@ -50,6 +51,7 @@ class Command(BaseCommand):
 
         for product in data["products"]:
             FinancialProduct.objects.create(
+                id=product["id"],
                 name=product["name"],
                 provider=product["provider"],
                 category=product["category"],
@@ -63,6 +65,7 @@ class Command(BaseCommand):
 
         for policy in data["policies"]:
             YouthPolicy.objects.create(
+                id=policy["id"],
                 name=policy["name"],
                 provider=policy["provider"],
                 target=policy["target"],

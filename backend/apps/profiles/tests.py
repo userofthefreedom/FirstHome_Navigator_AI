@@ -1,7 +1,7 @@
-from django.test import SimpleTestCase
+from django.test import TestCase
 
 
-class FavoriteApiTests(SimpleTestCase):
+class FavoriteApiTests(TestCase):
     def test_favorite_can_be_added_listed_and_removed(self):
         response = self.client.post(
             "/api/favorites",
