@@ -4,7 +4,11 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.policies.models import YouthPolicy
-from apps.policies.services.youthcenter import fetch_youthcenter_payload, normalize_youthcenter_policies
+from apps.policies.services.youthcenter import (
+    YouthCenterApiError,
+    fetch_youthcenter_payload,
+    normalize_youthcenter_policies,
+)
 
 
 class Command(BaseCommand):
@@ -23,13 +27,16 @@ class Command(BaseCommand):
         if not api_key:
             raise CommandError("YOUTH_POLICY_API_KEY is missing. Add it to backend/.env after Ontong Youth approves it.")
 
-        payload = fetch_youthcenter_payload(
-            api_key,
-            page=options["page"],
-            display=options["display"],
-            query=options["query"],
-            keyword=options["keyword"],
-        )
+        try:
+            payload = fetch_youthcenter_payload(
+                api_key,
+                page=options["page"],
+                display=options["display"],
+                query=options["query"],
+                keyword=options["keyword"],
+            )
+        except YouthCenterApiError as exc:
+            raise CommandError(str(exc)) from exc
         policies = normalize_youthcenter_policies(payload)
 
         if options["dry_run"]:

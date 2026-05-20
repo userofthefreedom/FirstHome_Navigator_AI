@@ -17,6 +17,20 @@ const api = axios.create({
   withCredentials: true,
 })
 
+function firstHomeClientId() {
+  const storageKey = 'firsthome_client_id'
+  const existingId = window.localStorage.getItem(storageKey)
+  if (existingId) return existingId
+
+  const nextId = window.crypto?.randomUUID?.() ?? `firsthome-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  window.localStorage.setItem(storageKey, nextId)
+  return nextId
+}
+
+function favoriteHeaders() {
+  return { 'X-FirstHome-Client-Id': firstHomeClientId() }
+}
+
 export async function saveProfileToApi(profile: Profile) {
   const response = await api.put<Profile>('/profile', profile)
   return response.data
@@ -68,15 +82,15 @@ export async function fetchCoachSummary(noticeId: number, profile: Profile) {
 }
 
 export async function fetchFavorites() {
-  const response = await api.get<Favorite[]>('/favorites')
+  const response = await api.get<Favorite[]>('/favorites', { headers: favoriteHeaders() })
   return response.data
 }
 
 export async function addFavorite(favorite: Favorite) {
-  const response = await api.post<Favorite>('/favorites', favorite)
+  const response = await api.post<Favorite>('/favorites', favorite, { headers: favoriteHeaders() })
   return response.data
 }
 
 export async function removeFavorite(favorite: Favorite) {
-  await api.delete('/favorites', { data: favorite })
+  await api.delete('/favorites', { data: favorite, headers: favoriteHeaders() })
 }

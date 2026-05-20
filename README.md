@@ -119,6 +119,8 @@ YOUTH_POLICY_API_KEY=
 VITE_API_BASE_URL=http://127.0.0.1:8000/api
 ```
 
+프론트 접속 주소와 백엔드 API 주소는 서로 다를 수 있습니다. 예를 들어 Vite가 `localhost` 또는 IPv6 `::1`에 바인딩된 환경에서는 프론트는 `http://localhost:5173/`로 접속하고, API만 `http://127.0.0.1:8000/api`를 바라보게 둘 수 있습니다.
+
 ---
 
 ## 5. 백엔드 실행
@@ -192,7 +194,7 @@ http://127.0.0.1:8000/api/notices
 cd frontend
 npm ci
 npm run build
-npm run dev -- --host 127.0.0.1
+npm run dev
 ```
 
 Git Bash 또는 Windows 환경에서 npm 실행이 막히면 `npm.cmd`를 사용합니다.
@@ -200,13 +202,19 @@ Git Bash 또는 Windows 환경에서 npm 실행이 막히면 `npm.cmd`를 사용
 ```bash
 npm.cmd ci
 npm.cmd run build
-npm.cmd run dev -- --host 127.0.0.1
+npm.cmd run dev
 ```
 
 프론트 접속 URL:
 
 ```text
-http://127.0.0.1:5173/
+http://localhost:5173/
+```
+
+만약 `http://127.0.0.1:5173/`로 접속해야 하는 환경이라면 Vite를 아래처럼 IPv4 주소에 직접 바인딩합니다.
+
+```bash
+npm run dev -- --host 127.0.0.1
 ```
 
 ---
@@ -224,6 +232,8 @@ http://127.0.0.1:5173/
 9. AI 코치 체크리스트 확인
 10. 관심목록에서 저장 항목 확인/해제
 11. 새로고침 후 저장 조건 유지 확인
+
+관심목록은 브라우저 `localStorage`의 `firsthome_client_id`와 백엔드 `Favorite` DB 모델을 기준으로 저장됩니다. 같은 브라우저에서는 새로고침 후에도 저장 항목이 유지되지만, `localStorage`를 지우거나 다른 브라우저를 사용하면 기존 관심목록과 연결되지 않을 수 있습니다.
 
 ---
 
@@ -350,9 +360,10 @@ cd backend
 python manage.py import_youthcenter --dry-run --display 20
 
 # 청년정책 100건 기준 수집
-python manage.py import_youthcenter --display 100
+python manage.py import_youthcenter --page 1 --display 50
+python manage.py import_youthcenter --page 2 --display 50
 
-# 검색어 제한
+# 검색어 제한 - 온통청년 API 응답 정책에 따라 기대처럼 필터링되지 않을 수 있음
 python manage.py import_youthcenter --display 100 --query 청년주거
 python manage.py import_youthcenter --display 100 --keyword 월세
 ```
@@ -367,8 +378,11 @@ http://127.0.0.1:8000/api/recommendations/policies
 
 - 온통청년 키는 신청 후 담당자 심사를 거쳐 승인됩니다.
 - 키가 아직 승인되지 않았다면 명령은 실패하거나 누락 안내를 출력합니다.
-- 온통청년 공식 요청 URL은 `https://www.youthcenter.go.kr/opi/youthPlcyList.do`입니다.
-- 현재 코드의 인증 파라미터 이름은 `openApiVlak`입니다.
+- 온통청년 testbed에서 청년정책 `apiSn=86`은 `https://www.youthcenter.go.kr/go/ythip/getPlcy`로 요청됩니다.
+- 현재 코드의 인증 파라미터 이름은 `apiKeyNm`입니다.
+- 현재 코드의 페이지 파라미터는 testbed JSON 응답 기준으로 `pageNum`, `pageSize`를 사용합니다.
+- 여러 페이지를 수집하려면 `--page` 값을 바꿔 여러 번 실행합니다.
+- `--query`, `--keyword`는 온통청년 testbed 프록시에서 기대처럼 필터링되지 않을 수 있으므로 수집 후 서비스 추천 점수로 걸러 보는 흐름을 권장합니다.
 
 ---
 
@@ -392,7 +406,9 @@ python manage.py import_finlife --clear
 python manage.py import_youthcenter --dry-run --display 20
 
 # 5. 실제 청년정책 저장
-python manage.py import_youthcenter --display 100
+python manage.py import_youthcenter --page 1 --display 50
+python manage.py import_youthcenter --page 2 --display 50
+python manage.py import_youthcenter --page 3 --display 50
 
 # 6. LH 목록 API 연결 확인
 python manage.py import_lh --dry-run --page-size 20 --max-pages 2
@@ -424,7 +440,7 @@ python manage.py import_lh --page-size 100 --max-pages 3 --with-supply-info --su
 
 ```bash
 cd backend
-python manage.py test apps.recommendations
+python manage.py test apps.profiles apps.policies apps.recommendations
 ```
 
 테스트는 아래 내용을 확인합니다.
@@ -460,12 +476,14 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 Windows/Git Bash에서는 `npm.cmd`를 사용합니다.
 
 ```bash
-npm.cmd run dev -- --host 127.0.0.1
+npm.cmd run dev
 ```
 
 ### 16-4. CORS 오류
 
-백엔드는 `127.0.0.1:8000`, 프론트는 `127.0.0.1:5173`으로 실행하는 것을 권장합니다. 다른 주소를 쓴다면 `backend/config/settings.py`의 `CORS_ALLOWED_ORIGINS`와 `frontend/.env`의 `VITE_API_BASE_URL`을 확인하세요.
+백엔드는 `127.0.0.1:8000`, 프론트는 기본적으로 `localhost:5173`으로 실행합니다. 다른 주소를 쓴다면 `backend/config/settings.py`의 `CORS_ALLOWED_ORIGINS`와 `frontend/.env`의 `VITE_API_BASE_URL`을 확인하세요.
+
+브라우저 개발자도구 또는 Django 로그에서 `OPTIONS` 요청만 보이고 실제 `GET`/`POST`가 이어지지 않으면 CORS preflight 단계에서 막힌 것입니다. 관심목록 API는 `X-FirstHome-Client-Id` 헤더를 사용하므로 `x-firsthome-client-id`가 `CORS_ALLOW_HEADERS`에 포함되어 있어야 합니다. 설정을 바꾼 뒤에는 Django 서버를 재시작합니다.
 
 ### 16-5. API Key 오류
 
@@ -506,4 +524,3 @@ frontend/dist/
 ```
 
 이미 API Key가 포함된 `.env`를 공유했다면 해당 키는 폐기하거나 재발급하는 것이 안전합니다.
-

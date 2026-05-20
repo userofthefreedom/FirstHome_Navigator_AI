@@ -9,7 +9,7 @@ from typing import Any
 import requests
 
 
-YOUTHCENTER_POLICY_URL = "https://www.youthcenter.go.kr/opi/youthPlcyList.do"
+YOUTHCENTER_POLICY_URL = "https://www.youthcenter.go.kr/go/ythip/getPlcy"
 YOUTHCENTER_SOURCE_URL = "https://www.youthcenter.go.kr/cmnFooter/openapiIntro/oaiDoc/46"
 REGION_NAMES = (
     "서울",
@@ -30,6 +30,10 @@ REGION_NAMES = (
     "경남",
     "제주",
 )
+
+
+class YouthCenterApiError(RuntimeError):
+    pass
 
 
 @dataclass(frozen=True)
@@ -58,17 +62,38 @@ def fetch_youthcenter_payload(
     timeout: int = 10,
 ) -> Any:
     params = {
-        "openApiVlak": api_key,
-        "pageIndex": str(page),
-        "display": str(display),
+        "apiKeyNm": api_key,
+        "apiSn": "86",
+        "pageNum": str(page),
+        "pageSize": str(display),
     }
     if query:
         params["query"] = query
     if keyword:
         params["keyword"] = keyword
 
-    response = requests.get(YOUTHCENTER_POLICY_URL, params=params, timeout=timeout)
-    response.raise_for_status()
+    try:
+        response = requests.get(
+            YOUTHCENTER_POLICY_URL,
+            params=params,
+            timeout=timeout,
+            allow_redirects=False,
+        )
+    except requests.RequestException as exc:
+        raise YouthCenterApiError(f"Ontong Youth API request failed: {exc.__class__.__name__}") from exc
+
+    if response.is_redirect:
+        location = response.headers.get("Location", "")
+        if ":8080" in location:
+            raise YouthCenterApiError(
+                "Ontong Youth API redirected to port 8080, which is not reachable from this environment."
+            )
+        raise YouthCenterApiError("Ontong Youth API returned an unexpected redirect.")
+
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        raise YouthCenterApiError(f"Ontong Youth API returned HTTP {response.status_code}.") from exc
     return _decode_payload(response.text)
 
 
@@ -87,7 +112,7 @@ def normalize_youthcenter_policies(payload: Any) -> list[YouthCenterPolicy]:
         source_url = _first(row, "plcyUrl", "aplyUrlAddr", "refUrlAddr1", "url") or YOUTHCENTER_SOURCE_URL
         age_text = " ".join([target, _first(row, "ageInfo", "sprtTrgtCn")])
         age_min, age_max = _age_range(row, age_text)
-        max_income = _income_limit(" ".join([target, benefit, _first(row, "earnCndCn", "income")]))
+        max_income = _income_limit(_first(row, "earnCndCn", "income", "incomeInfo", "earnInfo"))
 
         policies.append(
             YouthCenterPolicy(

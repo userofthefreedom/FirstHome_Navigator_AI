@@ -1,25 +1,56 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, Clock3, ExternalLink, MapPin, ShieldAlert, Sparkles } from 'lucide-vue-next'
-import { fetchHousingRecommendations } from '../api/firsthome'
-import type { HousingRecommendation } from '../types/firsthome'
+import { ArrowUpDown, Bookmark, CalendarDays, CheckCircle2, ChevronRight, Clock3, ExternalLink, MapPin, ShieldAlert, Sparkles } from 'lucide-vue-next'
+import { addFavorite, fetchFavorites, fetchHousingRecommendations, removeFavorite } from '../api/firsthome'
+import type { Favorite, HousingRecommendation } from '../types/firsthome'
 import { formatMoney } from '../utils/format'
 import { useProfileStore } from '../stores/profileStore'
 
 const profileStore = useProfileStore()
 const recommendations = ref<HousingRecommendation[]>([])
+const favorites = ref<Favorite[]>([])
 const loading = ref(true)
+const savingFavoriteKey = ref('')
 const error = ref('')
 
 function priceLabel(price: number) {
   return price > 0 ? formatMoney(price) : '공식 확인 필요'
 }
 
+function favoriteKey(noticeId: number) {
+  return `notice-${noticeId}`
+}
+
+function isFavorite(noticeId: number) {
+  return favorites.value.some((favorite) => favorite.favorite_type === 'notice' && favorite.object_id === noticeId)
+}
+
+async function toggleFavorite(noticeId: number) {
+  const favorite = { favorite_type: 'notice', object_id: noticeId } satisfies Favorite
+  savingFavoriteKey.value = favoriteKey(noticeId)
+  try {
+    if (isFavorite(noticeId)) {
+      await removeFavorite(favorite)
+      favorites.value = favorites.value.filter((item) => item.favorite_type !== 'notice' || item.object_id !== noticeId)
+    } else {
+      const saved = await addFavorite(favorite)
+      favorites.value = [...favorites.value, saved]
+    }
+  } finally {
+    savingFavoriteKey.value = ''
+  }
+}
+
 async function loadRecommendations() {
   loading.value = true
   error.value = ''
   try {
-    recommendations.value = await fetchHousingRecommendations()
+    const [recommendationResponse, favoriteResponse] = await Promise.all([
+      fetchHousingRecommendations(),
+      fetchFavorites(),
+    ])
+    recommendations.value = recommendationResponse
+    favorites.value = favoriteResponse
     if (!profileStore.loaded) {
       await profileStore.hydrateProfile()
     }
@@ -155,6 +186,15 @@ onMounted(loadRecommendations)
               공고 상세 보기
               <ChevronRight class="h-4 w-4" />
             </RouterLink>
+            <button
+              type="button"
+              class="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="savingFavoriteKey === favoriteKey(item.notice_id)"
+              @click="toggleFavorite(item.notice_id)"
+            >
+              <Bookmark class="h-4 w-4" :class="isFavorite(item.notice_id) ? 'fill-blue-600 text-blue-600' : ''" />
+              {{ isFavorite(item.notice_id) ? '청약 저장됨' : '청약 저장' }}
+            </button>
             <a
               v-if="item.source_url"
               :href="item.source_url"

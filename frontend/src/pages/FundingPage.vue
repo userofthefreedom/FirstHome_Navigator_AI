@@ -117,6 +117,15 @@ onMounted(loadFunding)
             <RouterLink :to="`/notices/${selectedNotice.id}`" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">
               공고 상세
             </RouterLink>
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700"
+              :disabled="savingFavoriteKey === favoriteKey('notice', selectedNotice.id)"
+              @click="toggleFavorite('notice', selectedNotice.id)"
+            >
+              <Bookmark class="h-4 w-4" :class="isFavorite('notice', selectedNotice.id) ? 'fill-blue-600 text-blue-600' : ''" />
+              {{ isFavorite('notice', selectedNotice.id) ? '청약 저장됨' : '청약 저장' }}
+            </button>
             <RouterLink :to="`/ai-coach/${selectedNotice.id}`" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
               AI 코치 보기
             </RouterLink>

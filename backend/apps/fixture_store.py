@@ -188,6 +188,10 @@ def _product_data_source(product: Any) -> str:
 
 
 def _policy_data_source(policy: Any) -> str:
+    if any("온통청년" in str(reason) for reason in (policy.reasons or [])):
+        return "온통청년 API"
+    if "youthcenter.go.kr" in (policy.source_url or ""):
+        return "온통청년 API"
     if policy.source_url:
         return "정책 데이터"
     return "DB"

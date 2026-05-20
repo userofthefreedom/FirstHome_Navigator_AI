@@ -32,6 +32,7 @@ class Favorite(models.Model):
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    client_id = models.CharField(max_length=64, blank=True, db_index=True)
     favorite_type = models.CharField(max_length=20, choices=FAVORITE_TYPES)
     object_id = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -41,6 +42,10 @@ class Favorite(models.Model):
             models.UniqueConstraint(
                 fields=["user", "favorite_type", "object_id"],
                 name="unique_user_favorite",
+            ),
+            models.UniqueConstraint(
+                fields=["client_id", "favorite_type", "object_id"],
+                name="unique_client_favorite",
             )
         ]
 
