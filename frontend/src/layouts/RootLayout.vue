@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { Bell, Bookmark, Bot, Building2, Home, LogOut, Search, UserRound, WalletCards } from 'lucide-vue-next'
+import { Bell, Bookmark, Bot, Building2, Home, LogOut, MapPinned, Search, UserRound, WalletCards } from 'lucide-vue-next'
+import FloatingCoachChat from '../components/FloatingCoachChat.vue'
 import { useAuthStore } from '../stores/authStore'
 import { useProfileStore } from '../stores/profileStore'
 import { formatMoney } from '../utils/format'
@@ -19,12 +20,13 @@ const displayName = computed(() => {
 const profileStatus = computed(() => (authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중'))
 
 const menus = [
-  { label: '대시보드', path: '/', icon: Home },
-  { label: '조건 입력', path: '/profile', icon: UserRound },
-  { label: '추천 청약', path: '/recommendations', icon: Building2 },
-  { label: '자금 로드맵', path: '/funding', icon: WalletCards },
-  { label: 'AI 코치', path: '/ai-coach', icon: Bot },
-  { label: '관심목록', path: '/favorites', icon: Bookmark },
+  { label: '대시보드', shortLabel: '홈', path: '/', icon: Home },
+  { label: '조건 입력', shortLabel: '조건', path: '/profile', icon: UserRound },
+  { label: '추천 청약', shortLabel: '추천', path: '/recommendations', icon: Building2 },
+  { label: '청약 지도', shortLabel: '지도', path: '/map', icon: MapPinned },
+  { label: '자금 로드맵', shortLabel: '자금', path: '/funding', icon: WalletCards },
+  { label: 'AI 코치', shortLabel: '코치', path: '/ai-coach', icon: Bot },
+  { label: '관심목록', shortLabel: '관심', path: '/favorites', icon: Bookmark },
 ]
 
 function isActive(path: string) {
@@ -177,16 +179,18 @@ onMounted(async () => {
       </section>
     </main>
 
-    <nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-slate-200 bg-white lg:hidden">
+    <FloatingCoachChat v-if="route.path === '/'" />
+
+    <nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-slate-200 bg-white lg:hidden">
       <RouterLink
         v-for="menu in menus"
         :key="menu.path"
         :to="menu.path"
-        class="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition"
+        class="flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-medium transition"
         :class="isActive(menu.path) ? 'text-blue-700' : 'text-slate-500'"
       >
         <component :is="menu.icon" class="h-5 w-5" />
-        <span>{{ menu.label }}</span>
+        <span>{{ menu.shortLabel }}</span>
       </RouterLink>
     </nav>
   </div>

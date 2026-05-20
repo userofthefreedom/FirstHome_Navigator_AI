@@ -2,6 +2,7 @@ import axios from 'axios'
 import type {
   AuthCredentials,
   AuthSession,
+  CoachChatResponse,
   CoachSummary,
   Dashboard,
   Favorite,
@@ -14,8 +15,8 @@ import type {
 } from '../types/firsthome'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api',
-  timeout: 3000,
+  baseURL: (import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api').replace(/\/$/, ''),
+  timeout: 10000,
   withCredentials: true,
 })
 
@@ -100,6 +101,11 @@ export async function fetchPolicies() {
 
 export async function fetchCoachSummary(noticeId: number, profile: Profile) {
   const response = await api.post<CoachSummary>('/ai/coach-summary', { notice_id: noticeId, profile })
+  return response.data
+}
+
+export async function askCoachChat(noticeId: number, message: string, profile: Profile) {
+  const response = await api.post<CoachChatResponse>('/ai/chat', { notice_id: noticeId, message, profile })
   return response.data
 }
 

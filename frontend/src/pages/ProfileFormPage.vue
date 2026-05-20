@@ -33,6 +33,7 @@ const moneyFields = [
   { key: 'debt', label: '부채' },
   { key: 'monthly_saving', label: '월 저축 가능액' },
 ] as const
+type MoneyFieldKey = (typeof moneyFields)[number]['key']
 
 function applyProfile(profile: Profile) {
   Object.assign(form, {
@@ -47,6 +48,22 @@ function toggleArrayValue(target: string[], value: string) {
   const index = target.indexOf(value)
   if (index >= 0) target.splice(index, 1)
   else target.push(value)
+}
+
+function formatNumberInput(value: number) {
+  return Number(value || 0).toLocaleString('ko-KR')
+}
+
+function updateMoneyField(key: MoneyFieldKey, event: Event) {
+  const input = event.target as HTMLInputElement
+  const numericText = input.value.replace(/[^\d]/g, '')
+  form[key] = numericText ? Number(numericText) : 0
+  input.value = formatNumberInput(form[key])
+}
+
+function normalizeMoneyField(key: MoneyFieldKey, event: Event) {
+  const input = event.target as HTMLInputElement
+  input.value = formatNumberInput(form[key])
 }
 
 async function handleSubmit() {
@@ -126,7 +143,15 @@ watch(
       <div class="mt-5 grid gap-4 md:grid-cols-2">
         <label v-for="field in moneyFields" :key="field.key" class="block">
           <span class="text-sm font-medium text-slate-700">{{ field.label }}</span>
-          <input v-model.number="form[field.key]" type="number" min="0" step="10000" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+          <input
+            :value="formatNumberInput(form[field.key])"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500"
+            @input="updateMoneyField(field.key, $event)"
+            @blur="normalizeMoneyField(field.key, $event)"
+          />
           <p class="mt-1 text-xs text-slate-500">{{ formatMoney(Number(form[field.key])) }}</p>
         </label>
       </div>

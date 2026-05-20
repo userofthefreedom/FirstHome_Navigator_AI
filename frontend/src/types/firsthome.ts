@@ -147,6 +147,14 @@ export type CoachSummary = {
   warning: string
 }
 
+export type CoachChatResponse = {
+  source: string
+  notice_id: number
+  notice_title: string
+  reply: string
+  suggested_actions: string[]
+}
+
 export type Dashboard = {
   profile: Profile
   top_recommendations: HousingRecommendation[]

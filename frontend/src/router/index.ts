@@ -9,6 +9,7 @@ import FundingPage from '../pages/FundingPage.vue'
 import AiCoachPage from '../pages/AiCoachPage.vue'
 import FavoritesPage from '../pages/FavoritesPage.vue'
 import AuthPage from '../pages/AuthPage.vue'
+import MapPage from '../pages/MapPage.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +21,7 @@ export const router = createRouter({
         { path: '', name: 'home', component: HomePage },
         { path: 'profile', name: 'profile', component: ProfileFormPage },
         { path: 'recommendations', name: 'recommendations', component: RecommendationPage },
+        { path: 'map', name: 'map', component: MapPage },
         { path: 'notices/:noticeId', name: 'notice-detail', component: NoticeDetailPage },
         { path: 'funding/:noticeId?', name: 'funding', component: FundingPage },
         { path: 'ai-coach/:noticeId?', name: 'ai-coach', component: AiCoachPage },
