@@ -115,11 +115,25 @@ YOUTH_POLICY_API_KEY=
 
 프론트엔드는 필요하면 `frontend/.env`에 API 주소를 지정합니다.
 
-```env
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+```bash
+cd ../frontend
+cp .env.example .env
 ```
 
-프론트 접속 주소와 백엔드 API 주소는 서로 다를 수 있습니다. 예를 들어 Vite가 `localhost` 또는 IPv6 `::1`에 바인딩된 환경에서는 프론트는 `http://localhost:5173/`로 접속하고, API만 `http://127.0.0.1:8000/api`를 바라보게 둘 수 있습니다.
+Windows PowerShell에서는 다음 명령을 사용할 수 있습니다.
+
+```powershell
+Set-Location ..\frontend
+Copy-Item .env.example .env
+```
+
+`frontend/.env` 예시는 아래와 같습니다.
+
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
+```
+
+로그인 세션은 브라우저 쿠키를 사용하므로, 프론트를 `http://localhost:5173/`로 접속한다면 API도 `http://localhost:8000/api`로 맞추는 것을 권장합니다. `localhost`와 `127.0.0.1`을 섞으면 브라우저가 세션 쿠키를 같은 사이트로 취급하지 않아 새로고침 뒤 로그인이 풀린 것처럼 보일 수 있습니다.
 
 ---
 
@@ -173,15 +187,15 @@ python manage.py load_firsthome_fixture
 ### 5-4. 백엔드 서버 실행
 
 ```bash
-python manage.py runserver 127.0.0.1:8000
+python manage.py runserver localhost:8000
 ```
 
 정상 확인 URL:
 
 ```text
-http://127.0.0.1:8000/api/dashboard
-http://127.0.0.1:8000/api/recommendations/housing
-http://127.0.0.1:8000/api/notices
+http://localhost:8000/api/dashboard
+http://localhost:8000/api/recommendations/housing
+http://localhost:8000/api/notices
 ```
 
 ---
@@ -487,7 +501,7 @@ npm.cmd run dev
 
 ### 16-4. CORS 오류
 
-백엔드는 `127.0.0.1:8000`, 프론트는 기본적으로 `localhost:5173`으로 실행합니다. 다른 주소를 쓴다면 `backend/config/settings.py`의 `CORS_ALLOWED_ORIGINS`와 `frontend/.env`의 `VITE_API_BASE_URL`을 확인하세요.
+백엔드와 프론트는 기본적으로 `localhost` 기준으로 실행합니다. 다른 주소를 쓴다면 `backend/config/settings.py`의 `CORS_ALLOWED_ORIGINS`와 `frontend/.env`의 `VITE_API_BASE_URL`을 확인하세요. 로그인 세션을 테스트할 때는 프론트와 API의 호스트명을 `localhost` 또는 `127.0.0.1` 중 하나로 통일하세요.
 
 브라우저 개발자도구 또는 Django 로그에서 `OPTIONS` 요청만 보이고 실제 `GET`/`POST`가 이어지지 않으면 CORS preflight 단계에서 막힌 것입니다. 관심목록 API는 `X-FirstHome-Client-Id` 헤더를 사용하므로 `x-firsthome-client-id`가 `CORS_ALLOW_HEADERS`에 포함되어 있어야 합니다. 설정을 바꾼 뒤에는 Django 서버를 재시작합니다.
 

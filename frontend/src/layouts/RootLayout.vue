@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { Bell, Bookmark, Bot, Building2, Home, LogOut, Search, UserRound, WalletCards } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/authStore'
@@ -9,6 +9,14 @@ import { formatMoney } from '../utils/format'
 const route = useRoute()
 const authStore = useAuthStore()
 const profileStore = useProfileStore()
+
+const displayName = computed(() => {
+  if (profileStore.profile.name) return profileStore.profile.name
+  if (authStore.user.is_authenticated && authStore.user.username) return authStore.user.username
+  return '게스트'
+})
+
+const profileStatus = computed(() => (authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중'))
 
 const menus = [
   { label: '대시보드', path: '/', icon: Home },
@@ -30,12 +38,17 @@ async function handleLogout() {
   await profileStore.hydrateProfile()
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!authStore.loaded) {
-    void authStore.hydrateAuth()
+    const session = await authStore.hydrateAuth()
+    if (session?.profile) {
+      profileStore.setLocalProfile(session.profile)
+      profileStore.loaded = true
+      return
+    }
   }
   if (!profileStore.loaded) {
-    void profileStore.hydrateProfile()
+    await profileStore.hydrateProfile()
   }
 })
 </script>
@@ -74,7 +87,7 @@ onMounted(() => {
             <p class="text-xs font-medium text-slate-400">현재 프로필</p>
             <div class="mt-3 flex items-center justify-between gap-3">
               <div class="min-w-0">
-                <p class="truncate font-semibold text-white">{{ profileStore.profile.name || '프로필 로딩 중' }}</p>
+                <p class="truncate font-semibold text-white">{{ displayName }}</p>
                 <p class="truncate text-xs text-slate-400">{{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}</p>
               </div>
               <span class="shrink-0 rounded-md bg-emerald-400/15 px-2 py-1 text-xs font-semibold text-emerald-300">
@@ -134,8 +147,8 @@ onMounted(() => {
                 AI
               </div>
               <div>
-                <p class="text-sm font-semibold">{{ authStore.user.is_authenticated ? authStore.user.username : profileStore.profile.name || '게스트' }}</p>
-                <p class="text-xs text-slate-500">{{ authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중' }}</p>
+                <p class="text-sm font-semibold">{{ displayName }}</p>
+                <p class="text-xs text-slate-500">{{ profileStatus }}</p>
               </div>
             </div>
 

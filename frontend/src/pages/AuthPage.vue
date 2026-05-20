@@ -22,13 +22,17 @@ async function submit() {
   loading.value = true
   error.value = ''
   try {
-    if (mode.value === 'login') {
-      await authStore.login({ username: form.username, password: form.password })
+    const session =
+      mode.value === 'login'
+        ? await authStore.login({ username: form.username, password: form.password })
+        : await authStore.register({ username: form.username, email: form.email, password: form.password })
+    if (session.profile) {
+      profileStore.setLocalProfile(session.profile)
+      profileStore.loaded = true
     } else {
-      await authStore.register({ username: form.username, email: form.email, password: form.password })
+      profileStore.loaded = false
+      await profileStore.hydrateProfile()
     }
-    profileStore.loaded = false
-    await profileStore.hydrateProfile()
     await router.push('/profile')
   } catch (exc: any) {
     error.value = exc?.response?.data?.detail ?? '계정 처리 중 오류가 발생했습니다.'
