@@ -1,3 +1,21 @@
 from django.contrib import admin
 
-# Register your models here.
+from apps.ai_coach.models import AiExtractionResult
+
+
+@admin.register(AiExtractionResult)
+class AiExtractionResultAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "source_type",
+        "source_id",
+        "source_title",
+        "extraction_type",
+        "status",
+        "model_name",
+        "prompt_version",
+        "updated_at",
+    )
+    list_filter = ("source_type", "extraction_type", "status", "model_name", "prompt_version")
+    search_fields = ("source_title", "source_url", "input_hash", "error_message")
+    readonly_fields = ("created_at", "updated_at")

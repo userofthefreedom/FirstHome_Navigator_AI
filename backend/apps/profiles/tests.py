@@ -152,3 +152,37 @@ class FavoriteApiTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertFalse(Favorite.objects.filter(user__isnull=True, client_id=CLIENT_ID).exists())
         self.assertTrue(Favorite.objects.filter(user__username="merge-user", favorite_type="policy", object_id=301).exists())
+
+    def test_user_profile_and_favorites_survive_logout_and_login(self):
+        self.client.post(
+            "/api/auth/register",
+            {"username": "returning", "password": "strongpass123"},
+            content_type="application/json",
+        )
+        self.client.put(
+            "/api/profile",
+            {"name": "재방문자", "birth_year": 1996, "asset": 15000000},
+            content_type="application/json",
+        )
+        self.client.post(
+            "/api/favorites",
+            {"favorite_type": "notice", "object_id": 101},
+            content_type="application/json",
+        )
+        self.client.post("/api/auth/logout")
+
+        self.assertEqual(self.client.get("/api/favorites").json(), [])
+
+        response = self.client.post(
+            "/api/auth/login",
+            {"username": "returning", "password": "strongpass123"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["profile"]["name"], "재방문자")
+        self.assertEqual(response.json()["profile"]["asset"], 15000000)
+        favorites = self.client.get("/api/favorites").json()
+        self.assertEqual(len(favorites), 1)
+        self.assertEqual(favorites[0]["favorite_type"], "notice")
+        self.assertEqual(favorites[0]["object_id"], 101)
