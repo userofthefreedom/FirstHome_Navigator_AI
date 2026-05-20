@@ -14,6 +14,24 @@ export type Profile = {
   target_months: number
 }
 
+export type AuthUser = {
+  is_authenticated: boolean
+  id?: number
+  username?: string
+  email?: string
+}
+
+export type AuthSession = {
+  user: AuthUser
+  profile?: Profile
+}
+
+export type AuthCredentials = {
+  username: string
+  password: string
+  email?: string
+}
+
 export type Notice = {
   id: number
   source_id?: string

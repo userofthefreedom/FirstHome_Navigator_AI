@@ -51,6 +51,9 @@ SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.profiles.authentication.CsrfExemptSessionAuthentication",
+    ],
 }
 
 # Application definition

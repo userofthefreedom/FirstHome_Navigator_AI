@@ -8,6 +8,7 @@ import NoticeDetailPage from '../pages/NoticeDetailPage.vue'
 import FundingPage from '../pages/FundingPage.vue'
 import AiCoachPage from '../pages/AiCoachPage.vue'
 import FavoritesPage from '../pages/FavoritesPage.vue'
+import AuthPage from '../pages/AuthPage.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -23,6 +24,7 @@ export const router = createRouter({
         { path: 'funding/:noticeId?', name: 'funding', component: FundingPage },
         { path: 'ai-coach/:noticeId?', name: 'ai-coach', component: AiCoachPage },
         { path: 'favorites', name: 'favorites', component: FavoritesPage },
+        { path: 'auth', name: 'auth', component: AuthPage },
       ],
     },
   ],

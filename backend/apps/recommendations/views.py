@@ -1,12 +1,13 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from apps.services import default_profile, funding_plan, match_policies, match_products, notices, ranked_recommendations
+from apps.profiles.services import profile_from_request
+from apps.services import funding_plan, match_policies, match_products, notices, ranked_recommendations
 
 
 @api_view(["GET"])
 def dashboard(request):
-    profile = request.session.get("profile", default_profile())
+    profile = profile_from_request(request)
     recommendations = ranked_recommendations(profile, limit=3)
     return Response(
         {
@@ -20,13 +21,13 @@ def dashboard(request):
 
 @api_view(["GET"])
 def housing_recommendations(request):
-    profile = request.session.get("profile", default_profile())
+    profile = profile_from_request(request)
     return Response(ranked_recommendations(profile, limit=3))
 
 
 @api_view(["GET"])
 def funding_recommendation(request, notice_id):
-    profile = request.session.get("profile", default_profile())
+    profile = profile_from_request(request)
     plan = funding_plan(notice_id, profile)
     if plan is None:
         return Response({"detail": "notice not found"}, status=404)
@@ -35,11 +36,11 @@ def funding_recommendation(request, notice_id):
 
 @api_view(["GET"])
 def product_recommendations(request):
-    profile = request.session.get("profile", default_profile())
+    profile = profile_from_request(request)
     return Response(match_products(profile))
 
 
 @api_view(["GET"])
 def policy_recommendations(request):
-    profile = request.session.get("profile", default_profile())
+    profile = profile_from_request(request)
     return Response(match_policies(profile))

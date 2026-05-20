@@ -20,7 +20,7 @@ from django.urls import path
 
 from apps.ai_coach.views import coach_summary_view
 from apps.notices.views import notice_detail, notice_list
-from apps.profiles.views import favorites_view, profile_view
+from apps.profiles.views import auth_me_view, favorites_view, login_view, logout_view, profile_view, register_view
 from apps.recommendations.views import (
     dashboard,
     funding_recommendation,
@@ -40,6 +40,10 @@ urlpatterns = [
     path("favicon.ico", favicon),
     path('admin/', admin.site.urls),
     path("api/dashboard", dashboard),
+    path("api/auth/me", auth_me_view),
+    path("api/auth/register", register_view),
+    path("api/auth/login", login_view),
+    path("api/auth/logout", logout_view),
     path("api/profile", profile_view),
     path("api/favorites", favorites_view),
     path("api/recommendations/housing", housing_recommendations),

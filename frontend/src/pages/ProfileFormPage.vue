@@ -85,7 +85,7 @@ watch(
         조건 입력
       </p>
       <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">첫 집 청약 추천 조건</h1>
-      <p class="mt-2 text-sm text-slate-500">저장한 조건은 백엔드 세션에 저장되고 추천, 자금 로드맵, AI 코치에 함께 반영됩니다.</p>
+      <p class="mt-2 text-sm text-slate-500">로그인하면 조건이 계정 기준으로 저장되고, 비로그인 상태에서는 임시 세션 기준으로 추천, 자금 로드맵, AI 코치에 반영됩니다.</p>
     </div>
 
     <p v-if="profileStore.error" class="rounded-lg border border-amber-100 bg-amber-50 p-4 text-sm font-semibold text-amber-800">

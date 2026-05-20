@@ -1,5 +1,7 @@
 import axios from 'axios'
 import type {
+  AuthCredentials,
+  AuthSession,
   CoachSummary,
   Dashboard,
   Favorite,
@@ -29,6 +31,26 @@ function firstHomeClientId() {
 
 function favoriteHeaders() {
   return { 'X-FirstHome-Client-Id': firstHomeClientId() }
+}
+
+export async function fetchAuthSession() {
+  const response = await api.get<AuthSession>('/auth/me')
+  return response.data
+}
+
+export async function registerToApi(credentials: AuthCredentials) {
+  const response = await api.post<AuthSession>('/auth/register', credentials, { headers: favoriteHeaders() })
+  return response.data
+}
+
+export async function loginToApi(credentials: AuthCredentials) {
+  const response = await api.post<AuthSession>('/auth/login', credentials, { headers: favoriteHeaders() })
+  return response.data
+}
+
+export async function logoutFromApi() {
+  const response = await api.post<AuthSession>('/auth/logout')
+  return response.data
 }
 
 export async function saveProfileToApi(profile: Profile) {

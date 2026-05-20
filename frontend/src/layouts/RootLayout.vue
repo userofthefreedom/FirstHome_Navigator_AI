@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { Bell, Bookmark, Bot, Building2, Home, Search, UserRound, WalletCards } from 'lucide-vue-next'
+import { Bell, Bookmark, Bot, Building2, Home, LogOut, Search, UserRound, WalletCards } from 'lucide-vue-next'
+import { useAuthStore } from '../stores/authStore'
 import { useProfileStore } from '../stores/profileStore'
 import { formatMoney } from '../utils/format'
 
 const route = useRoute()
+const authStore = useAuthStore()
 const profileStore = useProfileStore()
 
 const menus = [
@@ -22,7 +24,16 @@ function isActive(path: string) {
   return route.path.startsWith(path)
 }
 
+async function handleLogout() {
+  await authStore.logout()
+  profileStore.loaded = false
+  await profileStore.hydrateProfile()
+}
+
 onMounted(() => {
+  if (!authStore.loaded) {
+    void authStore.hydrateAuth()
+  }
   if (!profileStore.loaded) {
     void profileStore.hydrateProfile()
   }
@@ -62,14 +73,32 @@ onMounted(() => {
           <div class="rounded-lg border border-white/10 bg-white/[0.06] p-3">
             <p class="text-xs font-medium text-slate-400">현재 프로필</p>
             <div class="mt-3 flex items-center justify-between gap-3">
-              <div>
-                <p class="font-semibold text-white">{{ profileStore.profile.name || '프로필 로딩 중' }}</p>
-                <p class="text-xs text-slate-400">{{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}</p>
+              <div class="min-w-0">
+                <p class="truncate font-semibold text-white">{{ profileStore.profile.name || '프로필 로딩 중' }}</p>
+                <p class="truncate text-xs text-slate-400">{{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}</p>
               </div>
-              <span class="rounded-md bg-emerald-400/15 px-2 py-1 text-xs font-semibold text-emerald-300">
+              <span class="shrink-0 rounded-md bg-emerald-400/15 px-2 py-1 text-xs font-semibold text-emerald-300">
                 {{ formatMoney(profileStore.profile.asset) }}
               </span>
             </div>
+
+            <button
+              v-if="authStore.user.is_authenticated"
+              type="button"
+              class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/10 text-sm font-bold text-white transition hover:bg-white/15"
+              @click="handleLogout"
+            >
+              <LogOut class="h-4 w-4" />
+              로그아웃
+            </button>
+            <RouterLink
+              v-else
+              to="/auth"
+              class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-500 text-sm font-bold text-white transition hover:bg-blue-400"
+            >
+              <UserRound class="h-4 w-4" />
+              로그인
+            </RouterLink>
           </div>
         </div>
       </div>
@@ -99,15 +128,33 @@ onMounted(() => {
               <Bell class="h-4 w-4" />
               <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />
             </button>
+
             <div class="hidden items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:flex">
               <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-900 text-xs font-semibold text-white">
                 AI
               </div>
               <div>
-                <p class="text-sm font-semibold">{{ profileStore.profile.name || '프로필' }}</p>
-                <p class="text-xs text-slate-500">fixture 기반 MVP</p>
+                <p class="text-sm font-semibold">{{ authStore.user.is_authenticated ? authStore.user.username : profileStore.profile.name || '게스트' }}</p>
+                <p class="text-xs text-slate-500">{{ authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중' }}</p>
               </div>
             </div>
+
+            <button
+              v-if="authStore.user.is_authenticated"
+              type="button"
+              class="hidden h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-slate-600 shadow-sm transition hover:bg-slate-50 sm:inline-flex"
+              title="로그아웃"
+              @click="handleLogout"
+            >
+              <LogOut class="h-4 w-4" />
+            </button>
+            <RouterLink
+              v-else
+              to="/auth"
+              class="hidden h-10 items-center justify-center rounded-lg bg-blue-600 px-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 sm:inline-flex"
+            >
+              로그인
+            </RouterLink>
           </div>
         </div>
       </header>

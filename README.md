@@ -424,6 +424,10 @@ python manage.py import_lh --page-size 100 --max-pages 3 --with-supply-info --su
 | Method | Endpoint | 설명 |
 |---|---|---|
 | GET | `/api/dashboard` | 대시보드 데이터 |
+| GET | `/api/auth/me` | 현재 로그인 사용자 확인 |
+| POST | `/api/auth/register` | 회원가입 후 로그인 |
+| POST | `/api/auth/login` | 로그인 |
+| POST | `/api/auth/logout` | 로그아웃 |
 | GET/PUT | `/api/profile` | 프로필 조회/저장 |
 | GET/POST/DELETE | `/api/favorites` | 관심목록 조회/저장/삭제 |
 | GET | `/api/notices` | 공고 목록 |
@@ -433,6 +437,8 @@ python manage.py import_lh --page-size 100 --max-pages 3 --with-supply-info --su
 | GET | `/api/recommendations/products` | 금융상품 추천 |
 | GET | `/api/recommendations/policies` | 청년정책 추천 |
 | POST | `/api/ai/coach-summary` | AI 코치 요약 |
+
+로그인 사용자의 `/api/profile`과 `/api/favorites`는 Django `User` 기준으로 DB에 저장됩니다. 비로그인 사용자는 기존 시연 흐름 유지를 위해 세션 프로필과 `firsthome_client_id` 기반 관심목록 fallback을 사용합니다. 비로그인 상태에서 저장한 관심목록은 로그인/회원가입 시 계정으로 병합됩니다.
 
 ---
 
