@@ -19,6 +19,12 @@ from django.http import HttpResponse
 from django.urls import path
 
 from apps.ai_coach.views import coach_summary_view
+from apps.notice_docs.views import (
+    analyze_notice_document,
+    notice_document_status,
+    notice_eligibility_checklists,
+    notice_unit_options,
+)
 from apps.notices.views import notice_detail, notice_list
 from apps.profiles.views import auth_me_view, favorites_view, login_view, logout_view, profile_view, register_view
 from apps.recommendations.views import (
@@ -52,5 +58,9 @@ urlpatterns = [
     path("api/recommendations/policies", policy_recommendations),
     path("api/notices", notice_list),
     path("api/notices/<int:notice_id>", notice_detail),
+    path("api/notices/<int:notice_id>/documents/status", notice_document_status),
+    path("api/notices/<int:notice_id>/documents/analyze", analyze_notice_document),
+    path("api/notices/<int:notice_id>/unit-options", notice_unit_options),
+    path("api/notices/<int:notice_id>/eligibility-checklists", notice_eligibility_checklists),
     path("api/ai/coach-summary", coach_summary_view),
 ]

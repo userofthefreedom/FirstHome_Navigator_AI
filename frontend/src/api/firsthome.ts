@@ -9,7 +9,10 @@ import type {
   FinancialProduct,
   FundingPlan,
   HousingRecommendation,
+  HousingUnitOption,
   Notice,
+  NoticeAnalyzeResponse,
+  NoticeDocumentStatus,
   Policy,
   Profile,
 } from '../types/firsthome'
@@ -76,6 +79,21 @@ export async function fetchNotices(params?: { region?: string; ownership_type?: 
 
 export async function fetchNotice(noticeId: number) {
   const response = await api.get<Notice>(`/notices/${noticeId}`)
+  return response.data
+}
+
+export async function fetchNoticeDocumentStatus(noticeId: number) {
+  const response = await api.get<NoticeDocumentStatus>(`/notices/${noticeId}/documents/status`)
+  return response.data
+}
+
+export async function analyzeNoticeDocument(noticeId: number) {
+  const response = await api.post<NoticeAnalyzeResponse>(`/notices/${noticeId}/documents/analyze`)
+  return response.data
+}
+
+export async function fetchNoticeUnitOptions(noticeId: number) {
+  const response = await api.get<HousingUnitOption[]>(`/notices/${noticeId}/unit-options`)
   return response.data
 }
 

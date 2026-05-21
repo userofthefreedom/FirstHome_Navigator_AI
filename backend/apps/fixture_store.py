@@ -78,6 +78,8 @@ def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
         "is_service_target": notice.get("is_service_target", classification.is_service_target),
         "exclude_reason": notice.get("exclude_reason", classification.exclude_reason),
         "official_document_status": notice.get("official_document_status", classification.official_document_status),
+        "document_count": 0,
+        "unit_option_count": 0,
     }
 
 
@@ -148,6 +150,8 @@ def _serialize_notice(notice: Any) -> dict[str, Any]:
         "is_service_target": getattr(notice, "is_service_target", False),
         "exclude_reason": getattr(notice, "exclude_reason", ""),
         "official_document_status": getattr(notice, "official_document_status", "not_requested"),
+        "document_count": _related_count(notice, "documents"),
+        "unit_option_count": _related_count(notice, "unit_options"),
     }
     classification = classify_notice_payload(payload)
     if payload["ownership_type"] == "unknown":
@@ -157,6 +161,16 @@ def _serialize_notice(notice: Any) -> dict[str, Any]:
     if not payload["exclude_reason"]:
         payload["exclude_reason"] = classification.exclude_reason
     return payload
+
+
+def _related_count(instance: Any, related_name: str) -> int:
+    manager = getattr(instance, related_name, None)
+    if manager is None:
+        return 0
+    try:
+        return manager.count()
+    except (OperationalError, ProgrammingError, AttributeError):
+        return 0
 
 
 def _filter_notices(

@@ -139,6 +139,8 @@ onMounted(loadNotices)
             <span class="text-right">{{ notice.area || '면적 확인 필요' }}</span>
             <span>접수 마감 {{ notice.application_deadline }}</span>
             <span class="text-right font-bold text-slate-700">{{ priceLabel(notice.price) }}</span>
+            <span>주택형 옵션 {{ notice.unit_option_count ?? 0 }}개</span>
+            <span class="text-right">문서 {{ notice.document_count ?? 0 }}건</span>
           </div>
           <RouterLink
             :to="`/notices/${notice.id}`"

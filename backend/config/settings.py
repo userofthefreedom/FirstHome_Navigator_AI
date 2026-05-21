@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     # Local apps
     "apps.profiles",
     "apps.notices",
+    "apps.notice_docs",
     "apps.recommendations",
     "apps.funding",
     "apps.products",

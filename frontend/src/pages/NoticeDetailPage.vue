@@ -2,8 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft, Bookmark, Bot, CalendarDays, CheckCircle2, ExternalLink, FileCheck2, ShieldAlert, WalletCards } from 'lucide-vue-next'
-import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, removeFavorite } from '../api/firsthome'
-import type { Favorite, FundingPlan, HousingRecommendation, Notice } from '../types/firsthome'
+import { addFavorite, analyzeNoticeDocument, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeDocumentStatus, fetchNoticeUnitOptions, removeFavorite } from '../api/firsthome'
+import type { Favorite, FundingPlan, HousingRecommendation, HousingUnitOption, Notice, NoticeDocumentStatus } from '../types/firsthome'
 import { formatMoney } from '../utils/format'
 
 const route = useRoute()
@@ -11,9 +11,12 @@ const noticeId = computed(() => Number(route.params.noticeId ?? 0))
 const selectedNotice = ref<Notice | null>(null)
 const recommendation = ref<HousingRecommendation | null>(null)
 const fundingPlan = ref<FundingPlan | null>(null)
+const documentStatus = ref<NoticeDocumentStatus | null>(null)
+const unitOptions = ref<HousingUnitOption[]>([])
 const favorites = ref<Favorite[]>([])
 const loading = ref(true)
 const savingFavorite = ref(false)
+const analyzing = ref(false)
 const error = ref('')
 
 function priceLabel(price: number) {
@@ -65,10 +68,40 @@ async function loadDetail() {
     fundingPlan.value = fundingResponse
     favorites.value = favoriteResponse
     recommendation.value = recommendations.find((item) => item.notice_id === targetNoticeId) ?? null
+    await loadDocumentAnalysis(targetNoticeId)
   } catch {
     error.value = '공고 상세 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
   } finally {
     loading.value = false
+  }
+}
+
+async function loadDocumentAnalysis(targetNoticeId: number) {
+  const [statusResponse, optionResponse] = await Promise.all([
+    fetchNoticeDocumentStatus(targetNoticeId).catch(() => null),
+    fetchNoticeUnitOptions(targetNoticeId).catch(() => []),
+  ])
+  documentStatus.value = statusResponse
+  unitOptions.value = optionResponse
+}
+
+async function handleAnalyzeNotice() {
+  if (!selectedNotice.value) return
+  analyzing.value = true
+  error.value = ''
+  try {
+    const response = await analyzeNoticeDocument(selectedNotice.value.id)
+    selectedNotice.value = {
+      ...selectedNotice.value,
+      official_document_status: response.official_document_status,
+      unit_option_count: response.unit_options.length,
+    }
+    unitOptions.value = response.unit_options
+    await loadDocumentAnalysis(selectedNotice.value.id)
+  } catch {
+    error.value = '공고문 mock 분석을 실행하지 못했습니다.'
+  } finally {
+    analyzing.value = false
   }
 }
 
@@ -217,17 +250,50 @@ onMounted(loadDetail)
             </p>
             <h2 class="mt-1 text-lg font-bold text-slate-950">{{ documentStatusLabel(selectedNotice.official_document_status) }}</h2>
             <p class="mt-2 text-sm leading-6 text-slate-500">
-              실제 LLM API 연결 전 단계라 지금은 상태와 진입점만 제공합니다. 이후 이 버튼은 PDF를 임시 조회해 주택형, 분양가, 계약금, 중도금, 잔금 정보를 구조화하는 온디맨드 작업으로 연결됩니다.
+              지금은 LLM 없이 mock 분석 데이터를 생성합니다. 이후 이 버튼은 PDF를 임시 조회해 주택형, 분양가, 계약금, 중도금, 잔금 정보를 구조화하는 온디맨드 작업으로 교체됩니다.
+            </p>
+            <p v-if="documentStatus" class="mt-2 text-xs font-semibold text-slate-500">
+              문서 {{ documentStatus.document_count }}건 · 주택형 옵션 {{ documentStatus.unit_option_count }}개
             </p>
           </div>
           <button
             type="button"
-            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-bold text-white opacity-70"
-            disabled
+            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="analyzing"
+            @click="handleAnalyzeNotice"
           >
             <Bot class="h-4 w-4" />
-            분석 준비중
+            {{ analyzing ? '분석 중' : unitOptions.length ? '다시 분석' : 'mock 분석하기' }}
           </button>
+        </div>
+      </section>
+
+      <section v-if="unitOptions.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-950">주택형 옵션 mock 추출 결과</h2>
+        <p class="mt-1 text-sm text-slate-500">실제 PDF 표 추출 전, 대표 면적과 가격으로 만든 임시 데이터입니다.</p>
+        <div class="mt-5 grid gap-3 lg:grid-cols-3">
+          <article v-for="option in unitOptions" :key="option.id" class="rounded-lg border border-slate-200 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-blue-700">{{ option.unit_type }} · {{ option.floor_group }}</p>
+                <h3 class="mt-1 text-lg font-bold text-slate-950">{{ option.exclusive_area_m2 }}㎡</h3>
+              </div>
+              <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
+                신뢰도 {{ Math.round(option.confidence * 100) }}%
+              </span>
+            </div>
+            <p class="mt-3 text-sm text-slate-500">기준 분양가</p>
+            <p class="text-lg font-bold text-slate-950">{{ priceLabel(option.base_price) }}</p>
+            <div class="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-100">
+              <div v-for="schedule in option.payment_schedules" :key="schedule.id" class="grid gap-1 p-3 text-xs">
+                <div class="flex justify-between gap-2">
+                  <span class="font-bold text-slate-700">{{ schedule.label }}</span>
+                  <span class="text-slate-500">{{ schedule.due_date || '일정 확인 필요' }}</span>
+                </div>
+                <p class="text-right font-bold text-slate-950">{{ formatMoney(schedule.amount) }}</p>
+              </div>
+            </div>
+          </article>
         </div>
       </section>
 

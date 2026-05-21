@@ -48,6 +48,8 @@ export type Notice = {
   is_service_target?: boolean
   exclude_reason?: string
   official_document_status?: string
+  document_count?: number
+  unit_option_count?: number
   title: string
   provider: string
   region: string
@@ -84,6 +86,8 @@ export type HousingRecommendation = {
   is_service_target?: boolean
   exclude_reason?: string
   official_document_status?: string
+  document_count?: number
+  unit_option_count?: number
   title: string
   provider: string
   region: string
@@ -121,6 +125,64 @@ export type FundingPlan = {
   monthly_target: number
   timeline: Array<{ label: string; date: string; amount: number }>
   notice: string
+}
+
+export type NoticeDocument = {
+  id: number
+  notice_id: number
+  provider: string
+  file_id: string
+  file_name: string
+  document_url: string
+  source_url: string
+  status: string
+  error_message: string
+  fetched_at: string
+  analyzed_at: string
+}
+
+export type PaymentSchedule = {
+  id: number
+  label: string
+  due_date: string
+  amount: number
+  payment_type: string
+  sequence: number
+  evidence_text: string
+}
+
+export type HousingUnitOption = {
+  id: number
+  notice_id: number
+  document_id?: number | null
+  unit_type: string
+  exclusive_area_m2: number
+  floor_group: string
+  option_type: string
+  base_price: number
+  loan_amount: number
+  balcony_extension_price: number
+  confidence: number
+  source_page?: number | null
+  source_text: string
+  payment_schedules: PaymentSchedule[]
+}
+
+export type NoticeDocumentStatus = {
+  notice_id: number
+  official_document_status: string
+  document_count: number
+  unit_option_count: number
+  analyzed_option_count: number
+  documents: NoticeDocument[]
+}
+
+export type NoticeAnalyzeResponse = {
+  notice_id: number
+  official_document_status: string
+  document: NoticeDocument
+  unit_options: HousingUnitOption[]
+  message: string
 }
 
 export type FinancialProduct = {

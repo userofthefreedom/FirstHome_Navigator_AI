@@ -1,0 +1,16 @@
+[
+  {
+    "file_name": "lh_public_sale_namyangju_wangsuk2_a3_2026.pdf",
+    "kind": "include",
+    "ownership_type": "public_sale",
+    "source": "LH 청약플러스 공식 공고문",
+    "purpose": "공공분양주택 주택형/분양가/계약금/중도금/잔금 추출 검증"
+  },
+  {
+    "file_name": "lh_rental_happyhouse_seoul_geumcheon_2026.pdf",
+    "kind": "exclude",
+    "ownership_type": "excluded",
+    "source": "LH 청약플러스 공식 공고문",
+    "purpose": "임대보증금/월임대료/거주기간 공고가 서비스 범위 밖임을 검증"
+  }
+]
