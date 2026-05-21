@@ -12,7 +12,13 @@
     "special_conditions": ["first_home", "youth"],
     "preferred_regions": ["서울", "경기 남부"],
     "preferred_supply_types": ["공공분양", "뉴홈", "청년 공공주택"],
-    "target_months": 18
+    "target_months": 18,
+    "desired_area_min_m2": 59,
+    "desired_area_max_m2": 84,
+    "desired_price_min": 300000000,
+    "desired_price_max": 550000000,
+    "max_down_payment": 50000000,
+    "monthly_payment_capacity": 1200000
   },
   "sample_profiles": [
     {
@@ -28,7 +34,13 @@
       "special_conditions": ["first_home", "youth"],
       "preferred_regions": ["서울", "경기 남부"],
       "preferred_supply_types": ["공공분양", "뉴홈", "청년 공공주택"],
-      "target_months": 18
+      "target_months": 18,
+      "desired_area_min_m2": 59,
+      "desired_area_max_m2": 84,
+      "desired_price_min": 300000000,
+      "desired_price_max": 550000000,
+      "max_down_payment": 50000000,
+      "monthly_payment_capacity": 1200000
     },
     {
       "name": "조건부족",
@@ -43,7 +55,13 @@
       "special_conditions": ["youth"],
       "preferred_regions": ["인천", "경기 북부"],
       "preferred_supply_types": ["청년 공공주택"],
-      "target_months": 12
+      "target_months": 12,
+      "desired_area_min_m2": 46,
+      "desired_area_max_m2": 59,
+      "desired_price_min": 250000000,
+      "desired_price_max": 400000000,
+      "max_down_payment": 25000000,
+      "monthly_payment_capacity": 700000
     },
     {
       "name": "자금여유",
@@ -58,7 +76,13 @@
       "special_conditions": ["first_home"],
       "preferred_regions": ["서울", "인천"],
       "preferred_supply_types": ["공공분양", "뉴홈"],
-      "target_months": 24
+      "target_months": 24,
+      "desired_area_min_m2": 59,
+      "desired_area_max_m2": 84,
+      "desired_price_min": 300000000,
+      "desired_price_max": 650000000,
+      "max_down_payment": 80000000,
+      "monthly_payment_capacity": 1800000
     }
   ],
   "notices": [

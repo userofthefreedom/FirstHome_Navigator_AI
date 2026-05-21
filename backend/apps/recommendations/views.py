@@ -14,7 +14,7 @@ def dashboard(request):
             "profile": profile,
             "top_recommendations": recommendations,
             "notice_count": len(notices()),
-            "message": "fixture 기준으로 대표 USE CASE를 끝까지 실행할 수 있습니다.",
+            "message": "소유형 공공분양 공고만 기준으로 추천과 자금 로드맵을 계산합니다.",
         }
     )
 

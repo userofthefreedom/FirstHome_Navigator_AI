@@ -19,6 +19,12 @@ export const emptyProfile: Profile = {
   preferred_regions: [],
   preferred_supply_types: [],
   target_months: 18,
+  desired_area_min_m2: 59,
+  desired_area_max_m2: 84,
+  desired_price_min: 0,
+  desired_price_max: 0,
+  max_down_payment: 0,
+  monthly_payment_capacity: 0,
 }
 
 function readStoredProfile(): Profile {

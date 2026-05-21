@@ -12,6 +12,12 @@ export type Profile = {
   preferred_regions: string[]
   preferred_supply_types: string[]
   target_months: number
+  desired_area_min_m2: number
+  desired_area_max_m2: number
+  desired_price_min: number
+  desired_price_max: number
+  max_down_payment: number
+  monthly_payment_capacity: number
 }
 
 export type AuthUser = {
@@ -38,6 +44,10 @@ export type Notice = {
   data_source?: string
   is_price_confirmed?: boolean
   source_meta?: Record<string, any>
+  ownership_type?: string
+  is_service_target?: boolean
+  exclude_reason?: string
+  official_document_status?: string
   title: string
   provider: string
   region: string
@@ -70,6 +80,10 @@ export type HousingRecommendation = {
   data_source?: string
   is_price_confirmed?: boolean
   source_meta?: Record<string, any>
+  ownership_type?: string
+  is_service_target?: boolean
+  exclude_reason?: string
+  official_document_status?: string
   title: string
   provider: string
   region: string
@@ -85,6 +99,7 @@ export type HousingRecommendation = {
   competition: string
   source_url: string
   total_score: number
+  option_fit_score?: number
   score_detail: {
     eligibility: number
     funding: number

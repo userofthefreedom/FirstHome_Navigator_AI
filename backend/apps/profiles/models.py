@@ -17,6 +17,12 @@ class UserProfile(models.Model):
     preferred_regions = models.JSONField(default=list, blank=True)
     preferred_supply_types = models.JSONField(default=list, blank=True)
     target_months = models.PositiveSmallIntegerField(default=18)
+    desired_area_min_m2 = models.FloatField(default=0)
+    desired_area_max_m2 = models.FloatField(default=0)
+    desired_price_min = models.PositiveIntegerField(default=0)
+    desired_price_max = models.PositiveIntegerField(default=0)
+    max_down_payment = models.PositiveIntegerField(default=0)
+    monthly_payment_capacity = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

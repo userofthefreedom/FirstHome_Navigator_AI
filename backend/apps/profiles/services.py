@@ -19,6 +19,12 @@ PROFILE_FIELDS = [
     "preferred_regions",
     "preferred_supply_types",
     "target_months",
+    "desired_area_min_m2",
+    "desired_area_max_m2",
+    "desired_price_min",
+    "desired_price_max",
+    "max_down_payment",
+    "monthly_payment_capacity",
 ]
 
 

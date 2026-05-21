@@ -69,8 +69,8 @@ export async function fetchDashboard() {
   return response.data
 }
 
-export async function fetchNotices() {
-  const response = await api.get<Notice[]>('/notices')
+export async function fetchNotices(params?: { region?: string; ownership_type?: string; include_excluded?: boolean }) {
+  const response = await api.get<Notice[]>('/notices', { params })
   return response.data
 }
 

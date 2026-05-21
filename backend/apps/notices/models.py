@@ -2,6 +2,21 @@ from django.db import models
 
 
 class HousingNotice(models.Model):
+    OWNERSHIP_TYPES = [
+        ("unknown", "Unknown"),
+        ("public_sale", "Public sale"),
+        ("newlywed_public_sale", "Newlywed public sale"),
+        ("private_participation_public_sale", "Private participation public sale"),
+        ("excluded", "Excluded"),
+    ]
+
+    DOCUMENT_STATUSES = [
+        ("not_requested", "Not requested"),
+        ("pending", "Pending"),
+        ("analyzed", "Analyzed"),
+        ("failed", "Failed"),
+    ]
+
     source_id = models.CharField(max_length=80, blank=True, db_index=True)
     title = models.CharField(max_length=120)
     provider = models.CharField(max_length=60)
@@ -22,6 +37,10 @@ class HousingNotice(models.Model):
     required_documents = models.JSONField(default=list, blank=True)
     cautions = models.JSONField(default=list, blank=True)
     source_meta = models.JSONField(default=dict, blank=True)
+    ownership_type = models.CharField(max_length=40, choices=OWNERSHIP_TYPES, default="unknown", db_index=True)
+    is_service_target = models.BooleanField(default=False, db_index=True)
+    exclude_reason = models.CharField(max_length=160, blank=True)
+    official_document_status = models.CharField(max_length=24, choices=DOCUMENT_STATUSES, default="not_requested")
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:

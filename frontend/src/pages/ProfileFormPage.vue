@@ -26,12 +26,16 @@ const specialConditionOptions = [
   { label: '신혼부부', value: 'newlywed' },
 ]
 const regionOptions = ['서울', '경기 남부', '경기 북부', '인천', '부산']
-const supplyTypeOptions = ['공공분양', '뉴홈', '청년 공공주택', '민영']
+const supplyTypeOptions = ['공공분양', '뉴홈', '신혼희망타운', '민간참여형 공공분양']
 const moneyFields = [
   { key: 'annual_income', label: '연소득' },
   { key: 'asset', label: '보유 현금' },
   { key: 'debt', label: '부채' },
   { key: 'monthly_saving', label: '월 저축 가능액' },
+  { key: 'desired_price_min', label: '희망 분양가 최소' },
+  { key: 'desired_price_max', label: '희망 분양가 최대' },
+  { key: 'max_down_payment', label: '최대 계약금 준비액' },
+  { key: 'monthly_payment_capacity', label: '월 납부 감당액' },
 ] as const
 type MoneyFieldKey = (typeof moneyFields)[number]['key']
 
@@ -160,6 +164,28 @@ watch(
     <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <h2 class="flex items-center gap-2 text-lg font-bold">
         <Home class="h-5 w-5 text-blue-700" />
+        희망 주택형 범위
+      </h2>
+      <div class="mt-5 grid gap-4 md:grid-cols-2">
+        <label class="block">
+          <span class="text-sm font-medium text-slate-700">희망 전용면적 최소</span>
+          <input v-model.number="form.desired_area_min_m2" type="number" min="0" step="0.1" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+          <p class="mt-1 text-xs text-slate-500">{{ form.desired_area_min_m2 || 0 }}㎡ 이상</p>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-slate-700">희망 전용면적 최대</span>
+          <input v-model.number="form.desired_area_max_m2" type="number" min="0" step="0.1" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+          <p class="mt-1 text-xs text-slate-500">{{ form.desired_area_max_m2 || 0 }}㎡ 이하</p>
+        </label>
+      </div>
+      <p class="mt-3 text-xs leading-5 text-slate-500">
+        실제 PDF 분석 전까지는 공고 목록의 대표 면적과 대표 분양가를 기준으로 맞춤도를 계산합니다.
+      </p>
+    </section>
+
+    <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="flex items-center gap-2 text-lg font-bold">
+        <Home class="h-5 w-5 text-blue-700" />
         청약 조건
       </h2>
       <div class="mt-5 grid gap-4 md:grid-cols-3">
@@ -225,6 +251,7 @@ watch(
 
       <div class="mt-5">
         <p class="text-sm font-medium text-slate-700">공급 유형</p>
+        <p class="mt-1 text-xs text-slate-500">추천은 소유형 공공분양 범위 안에서만 계산됩니다.</p>
         <div class="mt-3 flex flex-wrap gap-2">
           <button
             v-for="type in supplyTypeOptions"

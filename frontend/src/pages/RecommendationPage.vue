@@ -70,7 +70,7 @@ onMounted(loadRecommendations)
       <div>
         <p class="text-sm font-semibold text-blue-700">추천 청약</p>
         <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">조건 기반 TOP 3</h1>
-        <p class="mt-2 text-sm text-slate-500">백엔드 추천 API가 자격 35점, 자금 25점, 지역 15점, 일정 10점, 정책 연계 15점을 합산합니다.</p>
+        <p class="mt-2 text-sm text-slate-500">소유형 공공분양만 대상으로 자격, 자금, 지역, 일정, 정책 연계를 합산하고 희망 면적·분양가 맞춤도를 함께 봅니다.</p>
       </div>
       <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button">
         <ArrowUpDown class="h-4 w-4" />
@@ -113,6 +113,7 @@ onMounted(loadRecommendations)
               <span class="rounded-md bg-slate-950 px-2 py-1 text-xs font-bold text-white">추천 {{ index + 1 }}</span>
               <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{{ item.supply_type }}</span>
               <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">{{ item.data_source ?? 'fixture' }}</span>
+              <span class="rounded-md bg-violet-50 px-2 py-1 text-xs font-semibold text-violet-700">옵션 맞춤 {{ item.option_fit_score ?? 0 }}점</span>
               <span v-if="!item.is_price_confirmed" class="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">금액 확인 필요</span>
             </div>
             <h2 class="mt-3 text-xl font-bold text-slate-950">{{ item.title }}</h2>

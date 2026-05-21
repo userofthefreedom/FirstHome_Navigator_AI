@@ -8,6 +8,8 @@ from typing import Any
 from django.conf import settings
 from django.db import OperationalError, ProgrammingError
 
+from apps.notices.services.classifier import classify_notice_payload
+
 
 FIXTURE_PATH = settings.BASE_DIR / "fixtures" / "firsthome_mvp.json"
 
@@ -26,11 +28,15 @@ def sample_profiles() -> list[dict[str, Any]]:
     return [profile.copy() for profile in load_fixture().get("sample_profiles", [])]
 
 
-def notices() -> list[dict[str, Any]]:
+def notices(
+    *,
+    include_excluded: bool = False,
+    region: str | None = None,
+    ownership_type: str | None = None,
+) -> list[dict[str, Any]]:
     db_notices = _db_notices()
-    if db_notices:
-        return db_notices
-    return [_fixture_notice(notice) for notice in load_fixture()["notices"]]
+    items = db_notices if db_notices else [_fixture_notice(notice) for notice in load_fixture()["notices"]]
+    return _filter_notices(items, include_excluded=include_excluded, region=region, ownership_type=ownership_type)
 
 
 def products() -> list[dict[str, Any]]:
@@ -48,7 +54,7 @@ def policies() -> list[dict[str, Any]]:
 
 
 def find_notice(notice_id: int) -> dict[str, Any] | None:
-    return next((notice for notice in notices() if notice["id"] == notice_id), None)
+    return next((notice for notice in notices(include_excluded=True) if notice["id"] == notice_id), None)
 
 
 def _db_notices() -> list[dict[str, Any]]:
@@ -61,12 +67,17 @@ def _db_notices() -> list[dict[str, Any]]:
 
 
 def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
+    classification = classify_notice_payload(notice)
     return {
         **notice.copy(),
         "source_id": str(notice.get("id", "")),
         "data_source": "fixture",
         "is_price_confirmed": int(notice.get("price") or 0) > 0,
         "source_meta": {},
+        "ownership_type": notice.get("ownership_type") or classification.ownership_type,
+        "is_service_target": notice.get("is_service_target", classification.is_service_target),
+        "exclude_reason": notice.get("exclude_reason", classification.exclude_reason),
+        "official_document_status": notice.get("official_document_status", classification.official_document_status),
     }
 
 
@@ -109,7 +120,7 @@ def _term_label(value: int) -> str:
 
 
 def _serialize_notice(notice: Any) -> dict[str, Any]:
-    return {
+    payload = {
         "id": notice.id,
         "source_id": notice.source_id,
         "data_source": _notice_data_source(notice),
@@ -133,7 +144,42 @@ def _serialize_notice(notice: Any) -> dict[str, Any]:
         "required_documents": notice.required_documents,
         "cautions": notice.cautions,
         "source_meta": notice.source_meta,
+        "ownership_type": getattr(notice, "ownership_type", "unknown"),
+        "is_service_target": getattr(notice, "is_service_target", False),
+        "exclude_reason": getattr(notice, "exclude_reason", ""),
+        "official_document_status": getattr(notice, "official_document_status", "not_requested"),
     }
+    classification = classify_notice_payload(payload)
+    if payload["ownership_type"] == "unknown":
+        payload["ownership_type"] = classification.ownership_type
+    if payload["ownership_type"] in {"unknown", "excluded"} or not payload["is_service_target"]:
+        payload["is_service_target"] = classification.is_service_target
+    if not payload["exclude_reason"]:
+        payload["exclude_reason"] = classification.exclude_reason
+    return payload
+
+
+def _filter_notices(
+    items: list[dict[str, Any]],
+    *,
+    include_excluded: bool,
+    region: str | None,
+    ownership_type: str | None,
+) -> list[dict[str, Any]]:
+    filtered = items
+    if not include_excluded:
+        filtered = [notice for notice in filtered if notice.get("is_service_target")]
+    if ownership_type:
+        normalized = "public_sale" if ownership_type in {"service_target", "sale"} else ownership_type
+        filtered = [
+            notice
+            for notice in filtered
+            if notice.get("ownership_type") == normalized
+            or (normalized == "public_sale" and notice.get("is_service_target"))
+        ]
+    if region:
+        filtered = [notice for notice in filtered if notice.get("region") == region]
+    return filtered
 
 
 def _serialize_product(product: Any) -> dict[str, Any]:

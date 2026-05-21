@@ -22,7 +22,9 @@ class RecommendationServiceTests(TestCase):
         self.assertEqual(plan["monthly_target"], 1333334)
 
     def test_fixture_has_enough_demo_data(self):
-        self.assertGreaterEqual(len(notices()), 10)
+        self.assertGreaterEqual(len(notices(include_excluded=True)), 10)
+        self.assertGreaterEqual(len(notices()), 3)
+        self.assertTrue(all(notice["is_service_target"] for notice in notices()))
         self.assertGreaterEqual(len(match_products(default_profile(), limit=20)), 8)
         self.assertGreaterEqual(len(match_policies(default_profile(), limit=20)), 8)
 

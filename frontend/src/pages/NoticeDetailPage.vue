@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowLeft, Bookmark, CalendarDays, CheckCircle2, ExternalLink, FileCheck2, ShieldAlert, WalletCards } from 'lucide-vue-next'
+import { ArrowLeft, Bookmark, Bot, CalendarDays, CheckCircle2, ExternalLink, FileCheck2, ShieldAlert, WalletCards } from 'lucide-vue-next'
 import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, removeFavorite } from '../api/firsthome'
 import type { Favorite, FundingPlan, HousingRecommendation, Notice } from '../types/firsthome'
 import { formatMoney } from '../utils/format'
@@ -18,6 +18,13 @@ const error = ref('')
 
 function priceLabel(price: number) {
   return price > 0 ? formatMoney(price) : '공식 확인 필요'
+}
+
+function documentStatusLabel(status?: string) {
+  if (status === 'analyzed') return '공식 공고문 분석 완료'
+  if (status === 'pending') return '공식 공고문 분석 중'
+  if (status === 'failed') return '공식 공고문 분석 실패'
+  return '공식 공고문 분석 대기'
 }
 
 const noticeFavorite = computed<Favorite | null>(() => {
@@ -107,6 +114,7 @@ onMounted(loadDetail)
               <span class="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{{ selectedNotice.supply_type }}</span>
               <span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ selectedNotice.region }}</span>
               <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{{ selectedNotice.data_source ?? 'fixture' }}</span>
+              <span class="rounded-md bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700">{{ selectedNotice.ownership_type ?? 'public_sale' }}</span>
               <span v-if="!selectedNotice.is_price_confirmed" class="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">금액 확인 필요</span>
               <span v-if="recommendation" class="rounded-md bg-slate-950 px-2.5 py-1 text-xs font-bold text-white">{{ recommendation.total_score }}점</span>
             </div>
@@ -127,6 +135,16 @@ onMounted(loadDetail)
               <WalletCards class="h-4 w-4" />
               자금 로드맵
             </RouterLink>
+            <a
+              v-if="selectedNotice.source_url"
+              :href="selectedNotice.source_url"
+              target="_blank"
+              rel="noreferrer"
+              class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+            >
+              <ExternalLink class="h-4 w-4" />
+              공식 공고문 보기
+            </a>
           </div>
         </div>
       </section>
@@ -187,6 +205,29 @@ onMounted(loadDetail)
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p class="inline-flex items-center gap-2 text-sm font-bold text-blue-700">
+              <Bot class="h-4 w-4" />
+              AI 공고문 분석 준비
+            </p>
+            <h2 class="mt-1 text-lg font-bold text-slate-950">{{ documentStatusLabel(selectedNotice.official_document_status) }}</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-500">
+              실제 LLM API 연결 전 단계라 지금은 상태와 진입점만 제공합니다. 이후 이 버튼은 PDF를 임시 조회해 주택형, 분양가, 계약금, 중도금, 잔금 정보를 구조화하는 온디맨드 작업으로 연결됩니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-bold text-white opacity-70"
+            disabled
+          >
+            <Bot class="h-4 w-4" />
+            분석 준비중
+          </button>
         </div>
       </section>
 
