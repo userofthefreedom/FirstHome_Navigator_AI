@@ -104,6 +104,7 @@ export type HousingRecommendation = {
   source_url: string
   total_score: number
   option_fit_score?: number
+  best_option?: BestUnitOption | null
   score_detail: {
     eligibility: number
     funding: number
@@ -114,16 +115,41 @@ export type HousingRecommendation = {
   reasons: string[]
 }
 
+export type BestUnitOption = {
+  option_id: number
+  unit_type: string
+  exclusive_area_m2: number
+  floor_group: string
+  option_type: string
+  base_price: number
+  loan_amount: number
+  balcony_extension_price: number
+  confidence: number
+  source_page?: number | null
+  down_payment: number
+  middle_payment: number
+  final_payment: number
+  option_fit_score: number
+}
+
 export type FundingPlan = {
   notice_id: number
   notice_title: string
+  option_id?: number | null
+  unit_type?: string
+  exclusive_area_m2?: number
+  floor_group?: string
+  option_type?: string
+  schedule_source?: string
   price: number
   down_payment: number
+  middle_payment?: number
+  final_payment?: number
   available_cash: number
   shortfall: number
   months_until_contract: number
   monthly_target: number
-  timeline: Array<{ label: string; date: string; amount: number }>
+  timeline: Array<{ label: string; date: string; amount: number; payment_type?: string; evidence_text?: string }>
   notice: string
 }
 
@@ -141,6 +167,19 @@ export type NoticeDocument = {
   analyzed_at: string
 }
 
+export type NoticeExtraction = {
+  id: number
+  notice_id: number
+  document_id: number
+  schema_version: string
+  status: string
+  confidence: number
+  source: string
+  option_count: number
+  warnings: Record<string, string[]>
+  created_at: string
+}
+
 export type PaymentSchedule = {
   id: number
   label: string
@@ -155,6 +194,10 @@ export type HousingUnitOption = {
   id: number
   notice_id: number
   document_id?: number | null
+  extraction_id?: number | null
+  extraction_schema_version?: string
+  extraction_status?: string
+  extraction_source?: string
   unit_type: string
   exclusive_area_m2: number
   floor_group: string
@@ -175,12 +218,14 @@ export type NoticeDocumentStatus = {
   unit_option_count: number
   analyzed_option_count: number
   documents: NoticeDocument[]
+  latest_extraction?: NoticeExtraction | null
 }
 
 export type NoticeAnalyzeResponse = {
   notice_id: number
   official_document_status: string
   document: NoticeDocument
+  extraction?: NoticeExtraction | null
   unit_options: HousingUnitOption[]
   message: string
 }
@@ -228,8 +273,10 @@ export type CoachChatResponse = {
   source: string
   notice_id: number
   notice_title: string
+  option_id?: number | null
   reply: string
   suggested_actions: string[]
+  context_refs?: Array<Record<string, any>>
 }
 
 export type Dashboard = {

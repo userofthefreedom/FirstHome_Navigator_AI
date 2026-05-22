@@ -109,6 +109,22 @@ FINLIFE_API_KEY=
 
 # 온통청년 Open API 키
 YOUTH_POLICY_API_KEY=
+
+# AI provider 설정
+# 기본값 template은 API 키 없이 템플릿 응답과 규칙 기반 PDF 추출만 사용합니다.
+AI_PROVIDER=template
+AI_MODEL=gpt-4o-mini
+AI_ENABLE_LLM_EXTRACTION=false
+AI_ENABLE_LLM_CHAT=false
+AI_REQUEST_TIMEOUT=30
+
+# AI_PROVIDER=openai일 때 사용
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_CHAT_PATH=/chat/completions
+
+# AI_PROVIDER=local일 때 사용
+LOCAL_LLM_ENDPOINT=
 ```
 
 > 주의: `backend/.env`에는 실제 API Key가 들어가므로 Git이나 ZIP에 포함하면 안 됩니다. 공유해야 하는 파일은 `.env`가 아니라 `.env.example`입니다.
@@ -447,12 +463,45 @@ python manage.py import_lh --page-size 100 --max-pages 3 --with-supply-info --su
 | GET | `/api/notices` | 공고 목록 |
 | GET | `/api/notices/{noticeId}` | 공고 상세 |
 | GET | `/api/recommendations/housing` | 청약/공공주택 추천 TOP 3 |
-| GET | `/api/recommendations/funding/{noticeId}` | 자금 로드맵 |
+| GET | `/api/recommendations/funding/{noticeId}` | 자금 로드맵. `option_id` query를 주면 주택형 옵션 납부 일정 기준으로 계산 |
 | GET | `/api/recommendations/products` | 금융상품 추천 |
 | GET | `/api/recommendations/policies` | 청년정책 추천 |
 | POST | `/api/ai/coach-summary` | AI 코치 요약 |
+| POST | `/api/ai/chat` | 템플릿 fallback 또는 LLM provider 기반 AI 코치 채팅 |
 
 로그인 사용자의 `/api/profile`과 `/api/favorites`는 Django `User` 기준으로 DB에 저장됩니다. 비로그인 사용자는 기존 시연 흐름 유지를 위해 세션 프로필과 `firsthome_client_id` 기반 관심목록 fallback을 사용합니다. 비로그인 상태에서 저장한 관심목록은 로그인/회원가입 시 계정으로 병합됩니다.
+
+### AI provider 동작
+
+- `AI_PROVIDER=template`: 기본값입니다. 외부 API 없이 규칙 기반 PDF 파서와 템플릿 AI 코치 응답을 사용합니다.
+- `AI_PROVIDER=openai`: OpenAI 호환 Chat Completions 엔드포인트를 호출합니다. `OPENAI_API_KEY`가 필요합니다.
+- `AI_PROVIDER=local`: `LOCAL_LLM_ENDPOINT`에 지정한 로컬 OpenAI 호환 Chat Completions 서버를 호출합니다.
+- `AI_ENABLE_LLM_EXTRACTION=true`: 규칙 기반 PDF 추출이 부족하거나 검증 경고가 있을 때 LLM structured output 추출을 시도합니다.
+- `AI_ENABLE_LLM_CHAT=true`: `/api/ai/chat`에서 LLM 답변을 우선 사용하고 실패 시 템플릿 fallback을 사용합니다.
+
+LLM 결과는 바로 확정값으로 사용하지 않고 `notice_docs` 검증 로직을 통과한 뒤 화면에 병합됩니다. 채팅 로그는 `AiChatLog`, 문서 추출 호출 로그는 `AiExtractionResult`에 저장됩니다.
+
+화면과 API에서 확인할 수 있는 source 값은 아래처럼 해석합니다.
+
+| Source | 의미 |
+|---|---|
+| `template_fallback` | 외부 LLM 없이 템플릿으로 생성한 AI 코치 응답 |
+| `llm` | 설정된 LLM provider가 생성한 AI 코치 응답 |
+| `mock-v1` / `mock` | PDF 원문 분석 전 시연용 fallback 추출 결과 |
+| `rules-v1` / `rules` | 규칙 기반 PDF 텍스트 추출과 검증 결과 |
+| `llm-v1` / `llm` | LLM structured output 추출 후 검증을 통과한 결과 |
+| `llm_cache` | 같은 입력 해시의 이전 LLM 추출 로그를 재사용한 결과 |
+
+AI 채팅 응답은 420자 이내로 잘리고, 당첨·신청 가능·대출 승인 같은 확정 표현은 서버에서 한 번 더 안전 문구로 치환됩니다. `/api/ai/chat` 응답의 `source`로 `llm` 또는 `template_fallback` 여부를 확인할 수 있습니다.
+
+공고문 분석 버튼을 누른 뒤 DB 저장 상태는 아래 API로 확인합니다.
+
+```text
+GET /api/notices/{noticeId}/documents/status
+GET /api/notices/{noticeId}/unit-options
+```
+
+`documents/status`의 `latest_extraction.schema_version`, `latest_extraction.source`, `latest_extraction.status`, `unit_option_count`를 보면 `rules-v1`, `llm-v1`, `mock-v1` 중 어떤 경로로 저장되었는지 확인할 수 있습니다.
 
 ---
 
@@ -460,7 +509,12 @@ python manage.py import_lh --page-size 100 --max-pages 3 --with-supply-info --su
 
 ```bash
 cd backend
-python manage.py test apps.profiles apps.policies apps.recommendations
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+
+cd ../frontend
+npm run build
 ```
 
 테스트는 아래 내용을 확인합니다.
@@ -469,6 +523,8 @@ python manage.py test apps.profiles apps.policies apps.recommendations
 - fixture 수량
 - 추천 점수 구조
 - 상품/정책 matcher 개인화 여부
+- `/api/ai/chat` fallback 응답, 길이 제한, 안전 문구 치환
+- 공고문 분석 후 `NoticeExtraction`, `HousingUnitOption`, `PaymentSchedule` 저장 상태와 source 표시
 
 ---
 

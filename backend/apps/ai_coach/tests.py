@@ -1,7 +1,8 @@
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
-from apps.ai_coach.models import AiExtractionResult
+from apps.ai_coach.models import AiChatLog, AiExtractionResult
+from apps.ai_coach.services.ai_client import AiProviderUnavailable, chat_completion
 
 
 class AiExtractionResultTests(TestCase):
@@ -57,3 +58,54 @@ class AiExtractionResultTests(TestCase):
 
         with self.assertRaises(IntegrityError), transaction.atomic():
             AiExtractionResult.objects.create(**payload)
+
+
+@override_settings(
+    AI_SETTINGS={
+        "PROVIDER": "template",
+        "MODEL": "test-model",
+        "OPENAI_API_KEY": "",
+        "OPENAI_BASE_URL": "https://api.openai.com/v1",
+        "OPENAI_CHAT_PATH": "/chat/completions",
+        "LOCAL_LLM_ENDPOINT": "",
+        "REQUEST_TIMEOUT": 30,
+        "ENABLE_LLM_EXTRACTION": False,
+        "ENABLE_LLM_CHAT": False,
+    }
+)
+class AiCoachChatApiTests(TestCase):
+    def test_chat_api_returns_template_fallback_response(self):
+        response = self.client.post(
+            "/api/ai/chat",
+            {"notice_id": 101, "message": "부족액 알려줘", "profile": {"asset": 8000000}},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "template_fallback")
+        self.assertEqual(payload["notice_id"], 101)
+        self.assertIn("부족액", payload["reply"])
+        self.assertGreaterEqual(len(payload["suggested_actions"]), 1)
+        self.assertEqual(AiChatLog.objects.count(), 1)
+        self.assertEqual(AiChatLog.objects.get().provider, "template")
+        self.assertLessEqual(len(payload["reply"]), 420)
+        self.assertLessEqual(len(payload["suggested_actions"]), 3)
+        self.assertIn("공식", payload["reply"])
+
+    def test_template_provider_does_not_call_external_llm(self):
+        with self.assertRaises(AiProviderUnavailable):
+            chat_completion(messages=[{"role": "user", "content": "hello"}])
+
+    def test_chat_safety_filter_replaces_confirmed_expressions(self):
+        response = self.client.post(
+            "/api/ai/chat",
+            {"notice_id": 101, "message": "신청 가능해?", "profile": {"asset": 8000000}},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        reply = response.json()["reply"]
+        self.assertNotIn("신청 가능합니다", reply)
+        self.assertNotIn("당첨됩니다", reply)
+        self.assertIn("공식", reply)

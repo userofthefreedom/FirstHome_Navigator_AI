@@ -2,14 +2,16 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Bookmark, CalendarDays, Calculator, ExternalLink, Landmark, PiggyBank, ShieldAlert, WalletCards } from 'lucide-vue-next'
-import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchPolicies, fetchProducts, removeFavorite } from '../api/firsthome'
-import type { Favorite, FinancialProduct, FundingPlan, Notice, Policy } from '../types/firsthome'
+import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeUnitOptions, fetchPolicies, fetchProducts, removeFavorite } from '../api/firsthome'
+import type { Favorite, FinancialProduct, FundingPlan, HousingUnitOption, Notice, Policy } from '../types/firsthome'
 import { formatMoney } from '../utils/format'
 
 const route = useRoute()
 const noticeId = computed(() => Number(route.params.noticeId ?? 0))
+const selectedOptionId = computed(() => Number(route.query.option_id ?? 0) || null)
 const selectedNotice = ref<Notice | null>(null)
 const fundingPlan = ref<FundingPlan | null>(null)
+const unitOptions = ref<HousingUnitOption[]>([])
 const financialProducts = ref<FinancialProduct[]>([])
 const policies = ref<Policy[]>([])
 const favorites = ref<Favorite[]>([])
@@ -62,15 +64,17 @@ async function loadFunding() {
   error.value = ''
   try {
     const targetNoticeId = await resolveNoticeId()
-    const [noticeResponse, fundingResponse, productsResponse, policiesResponse, favoriteResponse] = await Promise.all([
+    const [noticeResponse, fundingResponse, unitOptionResponse, productsResponse, policiesResponse, favoriteResponse] = await Promise.all([
       fetchNotice(targetNoticeId),
-      fetchFundingPlan(targetNoticeId),
+      fetchFundingPlan(targetNoticeId, selectedOptionId.value),
+      fetchNoticeUnitOptions(targetNoticeId).catch(() => []),
       fetchProducts(),
       fetchPolicies(),
       fetchFavorites(),
     ])
     selectedNotice.value = noticeResponse
     fundingPlan.value = fundingResponse
+    unitOptions.value = unitOptionResponse
     financialProducts.value = productsResponse
     policies.value = policiesResponse
     favorites.value = favoriteResponse
@@ -81,7 +85,7 @@ async function loadFunding() {
   }
 }
 
-watch(noticeId, loadFunding)
+watch([noticeId, selectedOptionId], loadFunding)
 onMounted(loadFunding)
 </script>
 
@@ -107,6 +111,9 @@ onMounted(loadFunding)
             <p class="mt-2 text-sm text-slate-500">{{ selectedNotice.title }} 기준으로 계산한 자금 흐름입니다.</p>
             <div class="mt-3 flex flex-wrap gap-2">
               <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ selectedNotice.data_source ?? 'fixture' }}</span>
+              <span v-if="fundingPlan.schedule_source === 'payment_schedule'" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
+                {{ fundingPlan.unit_type }} · {{ fundingPlan.floor_group }}
+              </span>
               <span v-if="!selectedNotice.is_price_confirmed" class="rounded-md bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">금액 확인 필요</span>
             </div>
           </div>
@@ -186,7 +193,35 @@ onMounted(loadFunding)
           <p class="mt-3 text-sm leading-6 text-slate-300">
             계약 예정일까지 {{ fundingPlan.months_until_contract }}개월을 기준으로 부족액을 나눠 계산했습니다.
           </p>
+          <p v-if="fundingPlan.schedule_source === 'payment_schedule'" class="mt-2 text-xs leading-5 text-blue-100">
+            선택 주택형의 공고문 납부 일정 기준입니다.
+          </p>
           <p class="mt-3 text-xs leading-5 text-slate-400">{{ fundingPlan.notice }}</p>
+        </div>
+      </section>
+
+      <section v-if="unitOptions.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-950">주택형 옵션 선택</h2>
+        <div class="mt-4 grid gap-3 lg:grid-cols-3">
+          <RouterLink
+            v-for="option in unitOptions"
+            :key="option.id"
+            :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }"
+            class="rounded-lg border p-4 transition hover:border-blue-300 hover:bg-blue-50/40"
+            :class="fundingPlan.option_id === option.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-blue-700">{{ option.unit_type }} · {{ option.floor_group }}</p>
+                <p class="mt-1 text-lg font-bold text-slate-950">{{ option.exclusive_area_m2 }}㎡</p>
+              </div>
+              <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
+                {{ Math.round(option.confidence * 100) }}%
+              </span>
+            </div>
+            <p class="mt-3 text-sm text-slate-500">기준 분양가</p>
+            <p class="font-bold text-slate-950">{{ priceLabel(option.base_price) }}</p>
+          </RouterLink>
         </div>
       </section>
 

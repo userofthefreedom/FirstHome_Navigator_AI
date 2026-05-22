@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import path
 
-from apps.ai_coach.views import coach_summary_view
+from apps.ai_coach.views import coach_chat_view, coach_summary_view
 from apps.notice_docs.views import (
     analyze_notice_document,
     notice_document_status,
@@ -63,4 +63,5 @@ urlpatterns = [
     path("api/notices/<int:notice_id>/unit-options", notice_unit_options),
     path("api/notices/<int:notice_id>/eligibility-checklists", notice_eligibility_checklists),
     path("api/ai/coach-summary", coach_summary_view),
+    path("api/ai/chat", coach_chat_view),
 ]

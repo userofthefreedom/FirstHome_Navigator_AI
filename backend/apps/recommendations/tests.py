@@ -2,6 +2,7 @@ from django.test import TestCase, override_settings
 
 from apps.fixture_store import default_profile, find_notice, notices
 from apps.funding.services.calculator import funding_plan
+from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
 from apps.notices.models import HousingNotice
 from apps.policies.models import YouthPolicy
 from apps.policies.services.matcher import match_policies
@@ -56,7 +57,7 @@ class RecommendationServiceTests(TestCase):
         self.assertNotEqual(representative_product_ids, incheon_product_ids)
 
     def test_db_data_is_used_before_fixture_when_available(self):
-        HousingNotice.objects.create(
+        notice = HousingNotice.objects.create(
             id=999,
             title="DB 우선 공고",
             provider="테스트",
@@ -108,3 +109,24 @@ class RecommendationServiceTests(TestCase):
         self.assertEqual(notices()[0]["id"], 999)
         self.assertEqual(match_products(default_profile(), limit=1)[0]["id"], 999)
         self.assertEqual(match_policies(default_profile(), limit=1)[0]["id"], 999)
+
+        option = HousingUnitOption.objects.create(
+            notice=notice,
+            unit_type="59A",
+            exclusive_area_m2=59.7,
+            floor_group="5층~최상층",
+            option_type="basic",
+            base_price=315000000,
+            confidence=0.9,
+        )
+        PaymentSchedule.objects.create(
+            unit_option=option,
+            label="계약금",
+            amount=31500000,
+            payment_type="down_payment",
+            sequence=1,
+        )
+
+        recommendation = ranked_recommendations(default_profile(), limit=1)[0]
+        self.assertEqual(recommendation["best_option"]["option_id"], option.id)
+        self.assertGreater(recommendation["best_option"]["option_fit_score"], 0)

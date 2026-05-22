@@ -1,5 +1,8 @@
 from django.test import SimpleTestCase
+from django.core.management import call_command
+from django.test import TestCase
 
+from apps.notices.models import HousingNotice
 from apps.notices.services.lh import normalize_lh_notices, supply_info_summary
 
 
@@ -91,3 +94,13 @@ class LhNoticeNormalizerTests(SimpleTestCase):
         self.assertEqual(summary["housing_type"], "36A 청년")
         self.assertEqual(summary["district"], "서울 강동 행복주택")
         self.assertEqual(summary["competition"], "15호")
+
+
+class FirstHomeFixtureLoaderTests(TestCase):
+    def test_fixture_loader_persists_service_target_classification(self):
+        call_command("load_firsthome_fixture", verbosity=0)
+
+        notice = HousingNotice.objects.get(id=101)
+
+        self.assertTrue(notice.is_service_target)
+        self.assertIn(notice.ownership_type, {"public_sale", "newlywed_public_sale", "private_participation_public_sale"})

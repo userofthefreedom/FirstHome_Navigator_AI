@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from apps.notice_docs.models import EligibilityChecklist, HousingUnitOption, NoticeDocument, PaymentSchedule
+from apps.notice_docs.models import EligibilityChecklist, HousingUnitOption, NoticeDocument, NoticeExtraction, PaymentSchedule
 
 
 def serialize_document(document: NoticeDocument) -> dict:
@@ -19,6 +19,23 @@ def serialize_document(document: NoticeDocument) -> dict:
     }
 
 
+def serialize_extraction(extraction: NoticeExtraction | None) -> dict | None:
+    if extraction is None:
+        return None
+    return {
+        "id": extraction.id,
+        "notice_id": extraction.notice_id,
+        "document_id": extraction.document_id,
+        "schema_version": extraction.schema_version,
+        "status": extraction.status,
+        "confidence": extraction.confidence,
+        "source": extraction.raw_json.get("source", "") if isinstance(extraction.raw_json, dict) else "",
+        "option_count": extraction.raw_json.get("option_count", 0) if isinstance(extraction.raw_json, dict) else 0,
+        "warnings": extraction.raw_json.get("warnings", {}) if isinstance(extraction.raw_json, dict) else {},
+        "created_at": extraction.created_at.isoformat() if extraction.created_at else "",
+    }
+
+
 def serialize_payment_schedule(schedule: PaymentSchedule) -> dict:
     return {
         "id": schedule.id,
@@ -32,10 +49,19 @@ def serialize_payment_schedule(schedule: PaymentSchedule) -> dict:
 
 
 def serialize_unit_option(option: HousingUnitOption) -> dict:
+    extraction = option.extraction
     return {
         "id": option.id,
         "notice_id": option.notice_id,
         "document_id": option.document_id,
+        "extraction_id": option.extraction_id,
+        "extraction_schema_version": extraction.schema_version if extraction else "",
+        "extraction_status": extraction.status if extraction else "",
+        "extraction_source": (
+            extraction.raw_json.get("source", "")
+            if extraction and isinstance(extraction.raw_json, dict)
+            else ""
+        ),
         "unit_type": option.unit_type,
         "exclusive_area_m2": option.exclusive_area_m2,
         "floor_group": option.floor_group,

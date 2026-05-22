@@ -30,6 +30,14 @@ function documentStatusLabel(status?: string) {
   return '공식 공고문 분석 대기'
 }
 
+function extractionLabel(schemaVersion?: string, source?: string) {
+  if (!schemaVersion) return '분석 전'
+  if (schemaVersion === 'llm-v1' || source === 'llm' || source === 'llm_cache') return 'LLM structured output'
+  if (schemaVersion === 'rules-v1') return '규칙 기반 PDF 추출'
+  if (schemaVersion === 'mock-v1') return 'mock fallback'
+  return schemaVersion
+}
+
 const noticeFavorite = computed<Favorite | null>(() => {
   if (!selectedNotice.value) return null
   return { favorite_type: 'notice', object_id: selectedNotice.value.id }
@@ -250,10 +258,13 @@ onMounted(loadDetail)
             </p>
             <h2 class="mt-1 text-lg font-bold text-slate-950">{{ documentStatusLabel(selectedNotice.official_document_status) }}</h2>
             <p class="mt-2 text-sm leading-6 text-slate-500">
-              지금은 LLM 없이 mock 분석 데이터를 생성합니다. 이후 이 버튼은 PDF를 임시 조회해 주택형, 분양가, 계약금, 중도금, 잔금 정보를 구조화하는 온디맨드 작업으로 교체됩니다.
+              공식 문서 discovery, 규칙 기반 PDF 추출, 선택적 LLM structured output을 순서대로 시도합니다. 실패 시 기존 결과를 보존하거나 mock fallback으로 시연 흐름을 유지합니다.
             </p>
             <p v-if="documentStatus" class="mt-2 text-xs font-semibold text-slate-500">
               문서 {{ documentStatus.document_count }}건 · 주택형 옵션 {{ documentStatus.unit_option_count }}개
+              <span v-if="documentStatus.latest_extraction">
+                · {{ documentStatus.latest_extraction.schema_version }} · {{ documentStatus.latest_extraction.status }}
+              </span>
             </p>
           </div>
           <button
@@ -263,14 +274,16 @@ onMounted(loadDetail)
             @click="handleAnalyzeNotice"
           >
             <Bot class="h-4 w-4" />
-            {{ analyzing ? '분석 중' : unitOptions.length ? '다시 분석' : 'mock 분석하기' }}
+            {{ analyzing ? '분석 중' : unitOptions.length ? '다시 분석' : '공고문 분석하기' }}
           </button>
         </div>
       </section>
 
       <section v-if="unitOptions.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-lg font-bold text-slate-950">주택형 옵션 mock 추출 결과</h2>
-        <p class="mt-1 text-sm text-slate-500">실제 PDF 표 추출 전, 대표 면적과 가격으로 만든 임시 데이터입니다.</p>
+        <h2 class="text-lg font-bold text-slate-950">주택형 옵션 분석 결과</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ extractionLabel(documentStatus?.latest_extraction?.schema_version, documentStatus?.latest_extraction?.source) }} 기준입니다. 공식 원문과 다르면 원문이 우선입니다.
+        </p>
         <div class="mt-5 grid gap-3 lg:grid-cols-3">
           <article v-for="option in unitOptions" :key="option.id" class="rounded-lg border border-slate-200 p-4">
             <div class="flex items-start justify-between gap-3">
@@ -282,6 +295,9 @@ onMounted(loadDetail)
                 신뢰도 {{ Math.round(option.confidence * 100) }}%
               </span>
             </div>
+            <p class="mt-2 text-xs font-bold text-slate-500">
+              {{ extractionLabel(option.extraction_schema_version, option.extraction_source) }}
+            </p>
             <p class="mt-3 text-sm text-slate-500">기준 분양가</p>
             <p class="text-lg font-bold text-slate-950">{{ priceLabel(option.base_price) }}</p>
             <div class="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-100">
@@ -293,6 +309,13 @@ onMounted(loadDetail)
                 <p class="text-right font-bold text-slate-950">{{ formatMoney(schedule.amount) }}</p>
               </div>
             </div>
+            <RouterLink
+              :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }"
+              class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
+            >
+              이 옵션으로 자금 로드맵
+              <WalletCards class="h-4 w-4" />
+            </RouterLink>
           </article>
         </div>
       </section>

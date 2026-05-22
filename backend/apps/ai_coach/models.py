@@ -81,3 +81,26 @@ class AiExtractionResult(models.Model):
         self.error_message = message
         self.raw_response = raw_response or {}
         self.save()
+
+
+class AiChatLog(models.Model):
+    notice_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    option_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
+    question = models.TextField()
+    answer = models.TextField(blank=True)
+    provider = models.CharField(max_length=40, default="template")
+    model_name = models.CharField(max_length=80, blank=True)
+    source_refs = models.JSONField(default=list, blank=True)
+    safety_flags = models.JSONField(default=list, blank=True)
+    raw_response = models.JSONField(default=dict, blank=True)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["notice_id", "option_id", "created_at"], name="ai_coach_ai_notice__f6c1b1_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"chat:{self.notice_id or 'none'}:{self.provider}"

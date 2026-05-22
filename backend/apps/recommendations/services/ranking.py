@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db import OperationalError, ProgrammingError
+
 from apps.fixture_store import default_profile, notices
 from apps.recommendations.services.scoring import score_detail, score_reasons
 
@@ -59,9 +61,96 @@ def _option_fit_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
     return min(score, 100)
 
 
+def _unit_option_fit_score(option: dict[str, Any], profile: dict[str, Any]) -> int:
+    score = 0
+    area = float(option.get("exclusive_area_m2") or 0)
+    min_area = float(profile.get("desired_area_min_m2") or 0)
+    max_area = float(profile.get("desired_area_max_m2") or 0)
+    price = int(option.get("base_price") or 0)
+    min_price = int(profile.get("desired_price_min") or 0)
+    max_price = int(profile.get("desired_price_max") or 0)
+    max_down_payment = int(profile.get("max_down_payment") or 0)
+    monthly_capacity = int(profile.get("monthly_payment_capacity") or profile.get("monthly_saving") or 0)
+    down_payment = int(option.get("down_payment") or 0)
+    middle_payment = int(option.get("middle_payment") or 0)
+
+    if area and (not min_area or area >= min_area) and (not max_area or area <= max_area):
+        score += 35
+    elif area and ((min_area and area >= min_area * 0.9) or (max_area and area <= max_area * 1.1)):
+        score += 15
+
+    if price and (not min_price or price >= min_price) and (not max_price or price <= max_price):
+        score += 35
+    elif price and ((min_price and price >= min_price * 0.9) or (max_price and price <= max_price * 1.1)):
+        score += 15
+    elif not price:
+        score += 10
+
+    if down_payment and max_down_payment and down_payment <= max_down_payment:
+        score += 20
+    elif down_payment:
+        score += 8
+    else:
+        score += 5
+
+    monthly_need = middle_payment // 24 if middle_payment else 0
+    if monthly_need and monthly_capacity and monthly_need <= monthly_capacity:
+        score += 10
+    elif monthly_need:
+        score += 4
+    else:
+        score += 5
+
+    return min(score, 100)
+
+
+def _best_unit_option(notice_id: int, profile: dict[str, Any]) -> dict[str, Any] | None:
+    try:
+        from apps.notice_docs.models import HousingUnitOption
+
+        options = (
+            HousingUnitOption.objects.filter(notice_id=notice_id)
+            .prefetch_related("payment_schedules")
+            .order_by("-confidence", "exclusive_area_m2", "id")
+        )
+        serialized = [_serialize_unit_option(option) for option in options]
+    except (OperationalError, ProgrammingError):
+        return None
+
+    if not serialized:
+        return None
+    for option in serialized:
+        option["option_fit_score"] = _unit_option_fit_score(option, profile)
+    return sorted(serialized, key=lambda item: (item["option_fit_score"], item["confidence"]), reverse=True)[0]
+
+
+def _serialize_unit_option(option: Any) -> dict[str, Any]:
+    schedules = list(option.payment_schedules.all())
+    down_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "down_payment")
+    middle_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "middle_payment")
+    final_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "final_payment")
+    return {
+        "option_id": option.id,
+        "unit_type": option.unit_type,
+        "exclusive_area_m2": option.exclusive_area_m2,
+        "floor_group": option.floor_group,
+        "option_type": option.option_type,
+        "base_price": option.base_price,
+        "loan_amount": option.loan_amount,
+        "balcony_extension_price": option.balcony_extension_price,
+        "confidence": option.confidence,
+        "source_page": option.source_page,
+        "down_payment": down_payment,
+        "middle_payment": middle_payment,
+        "final_payment": final_payment,
+    }
+
+
 def calculate_score(notice: dict[str, Any], profile: dict[str, Any] | None = None) -> dict[str, Any]:
     profile = profile or default_profile()
     detail = score_detail(notice, profile)
+    best_option = _best_unit_option(int(notice["id"]), profile)
+    option_fit_score = best_option["option_fit_score"] if best_option else _option_fit_score(notice, profile)
     return {
         "notice_id": notice["id"],
         "source_id": notice.get("source_id", ""),
@@ -87,7 +176,8 @@ def calculate_score(notice: dict[str, Any], profile: dict[str, Any] | None = Non
         "competition": notice["competition"],
         "source_url": notice.get("source_url", ""),
         "total_score": sum(detail.values()),
-        "option_fit_score": _option_fit_score(notice, profile),
+        "option_fit_score": option_fit_score,
+        "best_option": best_option,
         "score_detail": detail,
         "reasons": score_reasons(notice, profile),
     }

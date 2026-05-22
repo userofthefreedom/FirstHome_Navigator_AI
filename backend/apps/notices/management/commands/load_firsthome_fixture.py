@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 
 from apps.fixture_store import load_fixture
 from apps.notices.models import HousingNotice
+from apps.notices.services.classifier import classify_notice_payload
 from apps.policies.models import YouthPolicy
 from apps.products.models import FinancialProduct
 
@@ -27,6 +28,7 @@ class Command(BaseCommand):
         YouthPolicy.objects.all().delete()
 
         for notice in data["notices"]:
+            classification = classify_notice_payload(notice)
             HousingNotice.objects.create(
                 id=notice["id"],
                 source_id=str(notice["id"]),
@@ -49,6 +51,10 @@ class Command(BaseCommand):
                 required_documents=notice.get("required_documents", []),
                 cautions=notice.get("cautions", []),
                 source_meta={"fixture_id": notice["id"]},
+                ownership_type=notice.get("ownership_type") or classification.ownership_type,
+                is_service_target=notice.get("is_service_target", classification.is_service_target),
+                exclude_reason=notice.get("exclude_reason", classification.exclude_reason),
+                official_document_status=notice.get("official_document_status", classification.official_document_status),
             )
 
         for product in data["products"]:

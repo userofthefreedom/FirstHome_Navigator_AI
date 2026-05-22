@@ -180,6 +180,21 @@ onMounted(loadRecommendations)
             </div>
             <p class="mt-5 text-sm text-slate-500">예상 분양가</p>
             <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(item.price) }}</p>
+            <div v-if="item.best_option" class="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
+              <p class="text-xs font-bold text-blue-700">추천 주택형</p>
+              <p class="mt-1 font-bold text-slate-950">
+                {{ item.best_option.unit_type }} · {{ item.best_option.floor_group }}
+              </p>
+              <p class="mt-1 text-sm text-slate-600">
+                {{ item.best_option.exclusive_area_m2 }}㎡ · {{ priceLabel(item.best_option.base_price) }}
+              </p>
+              <RouterLink
+                :to="{ path: `/funding/${item.notice_id}`, query: { option_id: item.best_option.option_id } }"
+                class="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg bg-slate-950 text-sm font-bold text-white"
+              >
+                옵션 자금 보기
+              </RouterLink>
+            </div>
             <RouterLink
               :to="`/notices/${item.notice_id}`"
               class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"

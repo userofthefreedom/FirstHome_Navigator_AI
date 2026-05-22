@@ -102,8 +102,10 @@ export async function fetchHousingRecommendations() {
   return response.data
 }
 
-export async function fetchFundingPlan(noticeId: number) {
-  const response = await api.get<FundingPlan>(`/recommendations/funding/${noticeId}`)
+export async function fetchFundingPlan(noticeId: number, optionId?: number | null) {
+  const response = await api.get<FundingPlan>(`/recommendations/funding/${noticeId}`, {
+    params: optionId ? { option_id: optionId } : undefined,
+  })
   return response.data
 }
 
@@ -122,8 +124,8 @@ export async function fetchCoachSummary(noticeId: number, profile: Profile) {
   return response.data
 }
 
-export async function askCoachChat(noticeId: number, message: string, profile: Profile) {
-  const response = await api.post<CoachChatResponse>('/ai/chat', { notice_id: noticeId, message, profile })
+export async function askCoachChat(noticeId: number, message: string, profile: Profile, optionId?: number | null) {
+  const response = await api.post<CoachChatResponse>('/ai/chat', { notice_id: noticeId, option_id: optionId, message, profile })
   return response.data
 }
 

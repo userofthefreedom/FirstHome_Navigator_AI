@@ -8,6 +8,7 @@ type ChatMessage = {
   role: 'assistant' | 'user'
   content: string
   actions?: string[]
+  source?: string
 }
 
 const profileStore = useProfileStore()
@@ -50,6 +51,7 @@ async function sendMessage(nextMessage = draft.value) {
       role: 'assistant',
       content: `✨ ${response.reply}`,
       actions: response.suggested_actions,
+      source: response.source,
     })
   } catch {
     messages.value.push({
@@ -115,6 +117,9 @@ function handleEnter(event: KeyboardEvent) {
                 <span>{{ action }}</span>
               </li>
             </ul>
+            <p v-if="message.source" class="mt-2 border-t border-slate-200 pt-2 text-[11px] font-bold uppercase text-slate-400">
+              source: {{ message.source }}
+            </p>
           </div>
         </div>
         <div v-if="pending" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">

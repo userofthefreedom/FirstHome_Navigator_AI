@@ -38,6 +38,18 @@ EXTERNAL_API_KEYS = {
     "YOUTH_POLICY_API_KEY": os.getenv("YOUTH_POLICY_API_KEY", ""),
 }
 
+AI_SETTINGS = {
+    "PROVIDER": os.getenv("AI_PROVIDER", "template"),
+    "MODEL": os.getenv("AI_MODEL", "gpt-4o-mini"),
+    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
+    "OPENAI_BASE_URL": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+    "OPENAI_CHAT_PATH": os.getenv("OPENAI_CHAT_PATH", "/chat/completions"),
+    "LOCAL_LLM_ENDPOINT": os.getenv("LOCAL_LLM_ENDPOINT", ""),
+    "REQUEST_TIMEOUT": int(os.getenv("AI_REQUEST_TIMEOUT", "30")),
+    "ENABLE_LLM_EXTRACTION": os.getenv("AI_ENABLE_LLM_EXTRACTION", "false").lower() == "true",
+    "ENABLE_LLM_CHAT": os.getenv("AI_ENABLE_LLM_CHAT", "false").lower() == "true",
+}
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
