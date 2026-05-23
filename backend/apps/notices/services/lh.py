@@ -137,9 +137,9 @@ def normalize_lh_notices(payload: list[dict[str, Any]]) -> list[LhNotice]:
                 competition="LH 공고",
                 source_url=source_url,
                 tags=_tags(raw_supply_type, title, region),
-                required_documents=["주민등록등본", "소득금액증명원", "무주택 확인서"],
+                required_documents=["주민등록등본", "소득금액증명", "무주택 확인"],
                 cautions=[
-                    "LH API 목록 공고는 가격, 계약일, 세부 자격이 일부 누락될 수 있어 공식 공고문 확인이 필요합니다.",
+                    "LH API 목록 공고는 가격, 계약일, 세부 자격이 일부 생략될 수 있어 공식 공고문 확인이 필요합니다.",
                 ],
                 source_meta={
                     "pan_id": source_id,
@@ -177,9 +177,7 @@ def supply_info_summary(payload: list[dict[str, Any]]) -> dict[str, Any]:
     districts = _unique_values(rows, ("SBD_LGO_NM", "BZDT_NM"))
     total_units = sum(_int_value(row.get("HSH_CNT") or row.get("OCNT")) for row in rows)
 
-    summary: dict[str, Any] = {
-        "supply_rows": len(rows),
-    }
+    summary: dict[str, Any] = {"supply_rows": len(rows)}
     if areas:
         summary["area"] = ", ".join(areas[:4])
     if prices:
@@ -215,10 +213,7 @@ def _total_count(payload: list[dict[str, Any]]) -> int:
 
 
 def _is_housing_notice(row: dict[str, Any]) -> bool:
-    text = " ".join(
-        str(row.get(key) or "")
-        for key in ["PAN_NM", "AIS_TP_CD_NM", "UPP_AIS_TP_NM"]
-    )
+    text = " ".join(str(row.get(key) or "") for key in ["PAN_NM", "AIS_TP_CD_NM", "UPP_AIS_TP_NM"])
     if any(keyword in text for keyword in EXCLUDE_KEYWORDS):
         return False
     return any(keyword in text for keyword in HOUSING_KEYWORDS)

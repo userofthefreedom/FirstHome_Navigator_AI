@@ -18,16 +18,20 @@ DENY_KEYWORDS = [
     "매입임대",
     "전세",
     "장기전세",
-    "든든전세",
+    "신혼희망타운 임대",
     "분양전환",
     "10년공공임대",
     "10년 공공임대",
     "청년 공공주택",
     "일반매각",
-    "유주택자 계약 가능",
-    "유주택자 계약가능",
+    "무순위",
+    "잔여세대",
+    "잔여주택",
+    "선착순",
+    "동호지정",
     "분양광고",
-    "오피스텔 분양광고",
+    "오피스텔",
+    "상가",
 ]
 
 
@@ -48,24 +52,24 @@ def classify_notice_payload(notice: dict[str, Any]) -> NoticeClassification:
         return NoticeClassification(
             ownership_type="excluded",
             is_service_target=False,
-            exclude_reason=f"서비스 범위 밖 공고: {deny_keyword}",
+            exclude_reason=f"서비스 범위 밖의 공고: {deny_keyword}",
         )
 
-    if "신혼희망타운" in text and "공공분양" in text:
+    if "신혼희망타운" in normalized and "공공분양" in normalized:
         return NoticeClassification(
             ownership_type="newlywed_public_sale",
             is_service_target=True,
             exclude_reason="",
         )
 
-    if "민간참여형" in text and "공공분양" in text:
+    if "민간참여" in normalized and "공공분양" in normalized:
         return NoticeClassification(
             ownership_type="private_participation_public_sale",
             is_service_target=True,
             exclude_reason="",
         )
 
-    if "공공분양주택" in normalized or "공공분양" in text or "뉴홈" in text:
+    if "공공분양주택" in normalized or "공공분양" in normalized or "분양주택" in normalized:
         return NoticeClassification(
             ownership_type="public_sale",
             is_service_target=True,

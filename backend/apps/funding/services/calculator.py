@@ -7,7 +7,7 @@ from apps.fixture_store import default_profile, find_notice
 
 
 def available_cash(profile: dict[str, Any]) -> int:
-    """MVP 기준: debt는 참고 정보이고 계약금 준비 현금은 asset을 그대로 사용한다."""
+    """현재 MVP에서는 보유 자산을 계약금 준비에 바로 쓸 수 있는 현금으로 본다."""
     return max(0, int(profile.get("asset", 0)))
 
 
@@ -41,9 +41,9 @@ def calculate_funding_plan(notice: dict[str, Any], profile: dict[str, Any]) -> d
             {"label": "잔금 계획 확인", "date": notice["move_in"], "amount": final_payment},
         ],
         "notice": (
-            "자금 로드맵은 참고용이며 실제 납부 조건은 공식 공고를 확인해야 합니다."
+            "자금 로드맵은 참고용이며 실제 납부 조건은 공식 공고문과 계약 안내문에서 다시 확인해야 합니다."
             if price_confirmed
-            else "분양가 또는 보증금 정보가 API 목록에 없어 자금 계산은 제한됩니다. 공식 공고문에서 금액을 확인해야 합니다."
+            else "분양가 또는 보증금 정보가 목록에 없어 자금 계산이 제한됩니다. 공식 공고문에서 금액을 확인해야 합니다."
         ),
     }
 
@@ -88,7 +88,7 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
             for schedule in schedules
         ],
         "notice": (
-            "공식 공고문에서 추출한 주택형 옵션별 납부 일정 기준 참고 계산입니다. "
+            "공식 공고문에서 추출한 주택형별 납부 일정 기준의 참고 계산입니다. "
             "실제 계약과 납부 조건은 기관 안내와 공고문 원문을 확인해야 합니다."
         ),
     }
@@ -122,9 +122,7 @@ def funding_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
     readiness_ratio = min(plan["available_cash"] / down_payment if down_payment else 1, 1)
     saving = int(profile.get("monthly_saving", 0))
     target_months = max(int(profile.get("target_months", 1)), 1)
-    contract_days = (
-        datetime.fromisoformat(notice["contract_date"]).date() - date.today()
-    ).days
+    contract_days = (datetime.fromisoformat(notice["contract_date"]).date() - date.today()).days
 
     score = 0
     score += round(readiness_ratio * 10)

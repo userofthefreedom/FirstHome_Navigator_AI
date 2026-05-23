@@ -79,8 +79,8 @@ def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
         "is_service_target": notice.get("is_service_target", classification.is_service_target),
         "exclude_reason": notice.get("exclude_reason", classification.exclude_reason),
         "official_document_status": notice.get("official_document_status", classification.official_document_status),
-        "document_count": 0,
-        "unit_option_count": 0,
+        "document_count": int(notice.get("document_count", 0) or 0),
+        "unit_option_count": int(notice.get("unit_option_count", 0) or 0),
     }
     return {**payload, "analysis_summary": fixture_analysis_summary(payload)}
 

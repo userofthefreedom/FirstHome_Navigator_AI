@@ -45,7 +45,7 @@ def analyze_notice_document(request, notice_id):
             "document": serialize_document(result["document"]),
             "extraction": serialize_extraction(result["extraction"]),
             "unit_options": [serialize_unit_option(option) for option in result["unit_options"]],
-            "message": "공식 문서 discovery와 분석 파이프라인을 실행했습니다. source 값으로 rules-v1, llm-v1, mock-v1 여부를 확인할 수 있습니다.",
+            "message": "공식 문서 발견과 분석 파이프라인을 실행했습니다. schema_version과 source로 rules-v1, llm-v1, mock-v1 여부를 확인할 수 있습니다.",
         },
         status=201,
     )

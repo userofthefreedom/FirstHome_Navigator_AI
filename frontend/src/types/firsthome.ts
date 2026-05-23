@@ -87,7 +87,7 @@ export type AnalysisSummary = {
 }
 
 export type Favorite = {
-  favorite_type: 'notice' | 'product' | 'policy'
+  favorite_type: 'notice' | 'option' | 'product' | 'policy'
   object_id: number
   item?: Record<string, any> | null
 }

@@ -26,26 +26,21 @@ const loading = ref(true)
 const savingFavoriteKey = ref('')
 const error = ref('')
 
-function priceLabel(price: number) {
-  return price > 0 ? formatMoney(price) : '공식 확인 필요'
-}
-
 const readinessRate = computed(() => {
   if (!fundingPlan.value?.down_payment) return 0
   return Math.round((fundingPlan.value.available_cash / fundingPlan.value.down_payment) * 100)
 })
 const readinessWidth = computed(() => `${Math.min(readinessRate.value, 100)}%`)
-const optionComparisons = computed<OptionComparison[]>(() => {
-  return unitOptions.value.map((option) => ({
-    option,
-    plan: optionFundingPlans.value[option.id],
-  }))
-})
+const optionComparisons = computed<OptionComparison[]>(() => unitOptions.value.map((option) => ({ option, plan: optionFundingPlans.value[option.id] })))
 const selectedOption = computed(() => {
   if (!fundingPlan.value?.option_id) return null
   return unitOptions.value.find((option) => option.id === fundingPlan.value?.option_id) ?? null
 })
 const currentAnalysisSummary = computed(() => analysisSummary(selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status))
+
+function priceLabel(price: number) {
+  return price > 0 ? formatMoney(price) : '공식 확인 필요'
+}
 
 function favoriteKey(favoriteType: Favorite['favorite_type'], objectId: number) {
   return `${favoriteType}-${objectId}`
@@ -94,7 +89,6 @@ async function loadOptionFundingPlans(targetNoticeId: number, options: HousingUn
       }
     }),
   )
-
   optionFundingPlans.value = Object.fromEntries(entries.filter((entry): entry is readonly [number, FundingPlan] => Boolean(entry[1])))
 }
 
@@ -119,7 +113,7 @@ async function loadFunding() {
     favorites.value = favoriteResponse
     await loadOptionFundingPlans(targetNoticeId, unitOptionResponse, fundingResponse)
   } catch {
-    error.value = '백엔드 자금 로드맵 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
+    error.value = '자금 로드맵 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
   } finally {
     loading.value = false
   }
@@ -145,7 +139,7 @@ function comparisonStatusClass(plan?: FundingPlan) {
 
 function selectedOptionLabel() {
   if (!selectedOption.value) return ''
-  return `${selectedOption.value.unit_type} · ${selectedOption.value.floor_group || '기본'}`
+  return `${selectedOption.value.unit_type} · ${selectedOption.value.floor_group || '전체'}`
 }
 
 watch([noticeId, selectedOptionId], loadFunding)
@@ -171,7 +165,7 @@ onMounted(loadFunding)
               자금 로드맵
             </p>
             <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">계약금 준비 계획</h1>
-            <p class="mt-2 text-sm text-slate-500">{{ selectedNotice.title }} 기준으로 계산한 자금 흐름입니다.</p>
+            <p class="mt-2 text-sm text-slate-500">{{ selectedNotice.title }} 기준으로 필요한 현금 흐름을 계산합니다.</p>
             <div class="mt-3 flex flex-wrap gap-2">
               <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ selectedNotice.data_source ?? 'fixture' }}</span>
               <span v-if="fundingPlan.schedule_source === 'payment_schedule'" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
@@ -197,7 +191,7 @@ onMounted(loadFunding)
               @click="toggleFavorite('notice', selectedNotice.id)"
             >
               <Bookmark class="h-4 w-4" :class="isFavorite('notice', selectedNotice.id) ? 'fill-blue-600 text-blue-600' : ''" />
-              {{ isFavorite('notice', selectedNotice.id) ? '청약 저장됨' : '청약 저장' }}
+              {{ isFavorite('notice', selectedNotice.id) ? '공고 저장됨' : '공고 저장' }}
             </button>
             <RouterLink :to="`/ai-coach/${selectedNotice.id}`" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
               AI 코치 보기
@@ -257,14 +251,9 @@ onMounted(loadFunding)
           <p class="text-sm font-semibold text-slate-300">월 저축 목표</p>
           <h2 class="mt-1 text-2xl font-bold">{{ formatMoney(fundingPlan.monthly_target) }}</h2>
           <p class="mt-3 text-sm leading-6 text-slate-300">
-            계약 예정일까지 {{ fundingPlan.months_until_contract }}개월을 기준으로 부족액을 나눠 계산했습니다.
+            계약 예정일까지 {{ fundingPlan.months_until_contract }}개월을 기준으로 부족액을 나눈 계산입니다.
           </p>
-          <p v-if="fundingPlan.schedule_source === 'payment_schedule'" class="mt-2 text-xs leading-5 text-blue-100">
-            선택 주택형의 공고문 납부 일정 기준입니다.
-          </p>
-          <p class="mt-2 text-xs leading-5 text-blue-100">
-            {{ currentAnalysisSummary.next_action }}
-          </p>
+          <p class="mt-2 text-xs leading-5 text-blue-100">{{ currentAnalysisSummary.next_action }}</p>
           <p class="mt-3 text-xs leading-5 text-slate-400">{{ fundingPlan.notice }}</p>
         </div>
       </section>
@@ -273,8 +262,8 @@ onMounted(loadFunding)
         <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p class="text-sm font-semibold text-blue-700">주택형 옵션 비교</p>
-            <h2 class="mt-1 text-lg font-bold text-slate-950">분양가·계약금·부족액을 한 번에 비교</h2>
-            <p class="mt-1 text-sm text-slate-500">선택한 옵션 기준으로 상단 자금 로드맵과 납부 타임라인이 바뀝니다.</p>
+            <h2 class="mt-1 text-lg font-bold text-slate-950">분양가, 계약금, 부족액을 한 번에 비교</h2>
+            <p class="mt-1 text-sm text-slate-500">공식 공고문에서 추출한 주택형별 납부 일정 기준입니다.</p>
           </div>
           <span v-if="selectedOptionLabel()" class="rounded-md bg-slate-950 px-3 py-2 text-sm font-bold text-white">
             선택: {{ selectedOptionLabel() }}
@@ -282,21 +271,26 @@ onMounted(loadFunding)
         </div>
 
         <div class="mt-5 grid gap-3 xl:grid-cols-3">
-          <RouterLink
+          <div
             v-for="{ option, plan } in optionComparisons"
             :key="option.id"
-            :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }"
-            class="rounded-lg border p-4 transition hover:border-blue-300 hover:bg-blue-50/40"
+            class="rounded-lg border p-4 transition"
             :class="fundingPlan.option_id === option.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-200 bg-white'"
           >
             <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="text-xs font-bold text-blue-700">{{ option.unit_type }} · {{ option.floor_group || '기본' }}</p>
+              <RouterLink :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }" class="min-w-0">
+                <p class="text-xs font-bold text-blue-700">{{ option.unit_type }} · {{ option.floor_group || '전체' }}</p>
                 <p class="mt-1 text-xl font-bold text-slate-950">{{ option.exclusive_area_m2 }}㎡</p>
-              </div>
-              <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
-                {{ Math.round(option.confidence * 100) }}%
-              </span>
+              </RouterLink>
+              <button
+                type="button"
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600"
+                :disabled="savingFavoriteKey === favoriteKey('option', option.id)"
+                title="주택형 저장"
+                @click="toggleFavorite('option', option.id)"
+              >
+                <Bookmark class="h-4 w-4" :class="isFavorite('option', option.id) ? 'fill-blue-600 text-blue-600' : ''" />
+              </button>
             </div>
 
             <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
@@ -333,11 +327,7 @@ onMounted(loadFunding)
                 {{ option.extraction_source }}
               </span>
             </div>
-
-            <p v-if="option.source_text" class="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">
-              {{ option.source_page ? `${option.source_page}쪽 · ` : '' }}{{ option.source_text }}
-            </p>
-          </RouterLink>
+          </div>
         </div>
       </section>
 
@@ -347,7 +337,7 @@ onMounted(loadFunding)
           납부 타임라인
         </h2>
         <div class="mt-5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
-          <div v-for="(item, index) in fundingPlan.timeline" :key="item.label" class="grid gap-3 bg-white p-4 text-sm md:grid-cols-[72px_1fr_160px]">
+          <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="grid gap-3 bg-white p-4 text-sm md:grid-cols-[72px_1fr_160px]">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 font-bold text-blue-700">
               {{ index + 1 }}
             </div>
@@ -363,10 +353,10 @@ onMounted(loadFunding)
       <section class="rounded-lg border border-amber-100 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
         <p class="flex items-center gap-2 font-bold">
           <ShieldAlert class="h-4 w-4" />
-          참고용 안내
+          참고 안내
         </p>
         <p class="mt-2">
-          자금 로드맵은 입력값과 fixture 공고 기준의 단순 계산입니다. 실제 계약금, 중도금, 잔금 납부 조건은 공식 공고와 기관 안내를 확인해야 합니다.
+          자금 로드맵은 입력값과 공고문 추출값 기반의 참고 계산입니다. 실제 계약금, 중도금, 잔금 납부 조건은 공식 공고문과 기관 안내를 확인해야 합니다.
         </p>
         <a
           v-if="selectedNotice.source_url"
@@ -382,19 +372,15 @@ onMounted(loadFunding)
 
       <section class="grid gap-5 lg:grid-cols-2">
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 class="text-lg font-bold text-slate-950">예·적금 후보</h2>
+          <h2 class="text-lg font-bold text-slate-950">저축 상품 후보</h2>
           <div class="mt-4 grid gap-3">
             <p v-if="financialProducts.length === 0" class="rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-600">
-              조건에 맞는 상품 후보가 없습니다. 목표 기간이나 월 저축 가능액을 완화해 보세요.
+              조건에 맞는 상품 후보가 없습니다. 목표 기간이나 월 저축 가능액을 조정해보세요.
             </p>
             <div v-for="product in financialProducts" :key="product.id" class="rounded-lg border border-slate-100 bg-slate-50 p-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="font-bold text-slate-950">{{ product.name }}</p>
-                <div class="flex flex-wrap gap-2">
-                  <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ product.category }}</span>
-                  <span v-if="product.data_source" class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">{{ product.data_source }}</span>
-                  <span v-if="product.protection_status" class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">예금자보호</span>
-                </div>
+                <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ product.category }}</span>
               </div>
               <p class="mt-1 text-sm text-slate-500">{{ product.provider }} · {{ product.rate }} · {{ product.period }}</p>
               <p class="mt-2 text-sm text-slate-600">{{ product.reasons[0] }}</p>
@@ -420,10 +406,7 @@ onMounted(loadFunding)
             <div v-for="policy in policies" :key="policy.id" class="rounded-lg border border-slate-100 bg-slate-50 p-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="font-bold text-slate-950">{{ policy.name }}</p>
-                <div class="flex flex-wrap gap-2">
-                  <span v-if="policy.policy_category" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ policy.policy_category }}</span>
-                  <span v-if="policy.data_source" class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">{{ policy.data_source }}</span>
-                </div>
+                <span v-if="policy.policy_category" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ policy.policy_category }}</span>
               </div>
               <p class="mt-1 text-sm text-slate-500">{{ policy.provider }} · {{ policy.target }}</p>
               <p class="mt-2 text-sm text-slate-600">{{ policy.benefit }}</p>

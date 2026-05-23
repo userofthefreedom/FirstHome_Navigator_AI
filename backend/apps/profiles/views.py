@@ -14,6 +14,8 @@ from apps.profiles.services import (
     user_profile as _profile_for_user,
 )
 from apps.services import default_profile, find_notice, policies, products
+from apps.notice_docs.models import HousingUnitOption
+from apps.notice_docs.serializers import serialize_unit_option
 
 
 def _client_id(request) -> str:
@@ -68,6 +70,19 @@ def _favorite_item(favorite: Favorite | dict) -> dict | None:
     object_id = int(favorite.object_id if isinstance(favorite, Favorite) else favorite["object_id"])
     if favorite_type == "notice":
         return find_notice(object_id)
+    if favorite_type == "option":
+        try:
+            option = HousingUnitOption.objects.select_related("notice", "extraction").prefetch_related("payment_schedules").get(id=object_id)
+        except HousingUnitOption.DoesNotExist:
+            return None
+        return {
+            **serialize_unit_option(option),
+            "title": f"{option.notice.title} {option.unit_type}",
+            "name": f"{option.unit_type} {option.floor_group}".strip(),
+            "provider": option.notice.provider,
+            "region": option.notice.region,
+            "source_url": option.notice.source_url,
+        }
     if favorite_type == "product":
         return next((product for product in products() if product["id"] == object_id), None)
     if favorite_type == "policy":
@@ -123,7 +138,7 @@ def favorites_view(request):
 
     favorite_type = request.data.get("favorite_type")
     object_id = request.data.get("object_id")
-    if favorite_type not in {"notice", "product", "policy"} or object_id is None:
+    if favorite_type not in {"notice", "option", "product", "policy"} or object_id is None:
         return Response({"detail": "favorite_type and object_id are required"}, status=400)
 
     favorite_payload = {

@@ -11,7 +11,7 @@ MONEY_TERMS = ("주택가격", "공급금액", "분양가격", "계약금", "중
 ELIGIBILITY_TERMS = ("무주택", "소득", "자산", "청약통장", "거주", "우선공급", "특별공급", "제출서류")
 PURPOSE_QUERIES = {
     "unit_options": ("주택형 전용면적 주택가격 공급금액 계약금 중도금 잔금 융자금", MONEY_TERMS),
-    "payment_schedule": ("계약금 중도금 잔금 납부일 납부일정 회차", MONEY_TERMS),
+    "payment_schedule": ("계약금 중도금 잔금 납부 납부일정 회차", MONEY_TERMS),
     "eligibility": ("무주택 소득 자산 청약통장 거주 우선공급 특별공급 제출서류", ELIGIBILITY_TERMS),
 }
 
@@ -41,23 +41,16 @@ def build_document_chunks(
     for page in pages:
         table_blocks, remaining_text = _extract_table_blocks(page.text)
         for table_index, table_text in enumerate(table_blocks, start=1):
-            chunks.append(
-                DocumentChunk(
-                    chunk_id=f"p{page.page_no}-table-{table_index}",
-                    page_no=page.page_no,
-                    block_type="table",
-                    text=table_text,
-                )
-            )
+            chunks.append(DocumentChunk(f"p{page.page_no}-table-{table_index}", page.page_no, "table", table_text))
 
         for paragraph_index, paragraph in enumerate(_split_paragraphs(remaining_text), start=1):
             for segment_index, segment in enumerate(_window_text(paragraph, max_chars=max_chars, overlap_chars=overlap_chars), start=1):
                 chunks.append(
                     DocumentChunk(
-                        chunk_id=f"p{page.page_no}-paragraph-{paragraph_index}-{segment_index}",
-                        page_no=page.page_no,
-                        block_type="paragraph",
-                        text=segment,
+                        f"p{page.page_no}-paragraph-{paragraph_index}-{segment_index}",
+                        page.page_no,
+                        "paragraph",
+                        segment,
                     )
                 )
     return chunks
@@ -85,7 +78,7 @@ def candidate_chunks_for_notice_document(
     max_chars: int = 1800,
 ) -> list[str]:
     selected: dict[str, RankedChunk] = {}
-    for purpose, (query, keywords) in PURPOSE_QUERIES.items():
+    for query, keywords in PURPOSE_QUERIES.values():
         for ranked in search_document_chunks(pages, query, keywords=keywords, limit=limit_per_purpose):
             selected.setdefault(ranked.chunk.chunk_id, ranked)
 
@@ -94,10 +87,7 @@ def candidate_chunks_for_notice_document(
         return [_format_chunk(chunk, score=0, matched_terms=(), max_chars=max_chars) for chunk in fallback_chunks]
 
     ranked_chunks = sorted(selected.values(), key=lambda item: item.score, reverse=True)
-    return [
-        _format_chunk(item.chunk, score=item.score, matched_terms=item.matched_terms, max_chars=max_chars)
-        for item in ranked_chunks
-    ]
+    return [_format_chunk(item.chunk, score=item.score, matched_terms=item.matched_terms, max_chars=max_chars) for item in ranked_chunks]
 
 
 def _rank_chunk(chunk: DocumentChunk, query_terms: tuple[str, ...]) -> RankedChunk:

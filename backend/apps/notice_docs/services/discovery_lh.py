@@ -13,7 +13,7 @@ from apps.notices.models import HousingNotice
 
 LH_DOWNLOAD_PATH = "/lhapply/lhFile.do"
 PREFERRED_NAME_KEYWORDS = ("입주자모집", "모집공고", "공고문")
-LOW_PRIORITY_NAME_KEYWORDS = ("팸플릿", "브로셔", "위임장", "동의서", "견본주택", "안내문", "cad", "dwg")
+LOW_PRIORITY_NAME_KEYWORDS = ("팸플릿", "브로슈어", "위임장", "동의서", "견본주택", "안내문", "cad", "dwg")
 
 
 @dataclass(frozen=True)
@@ -147,5 +147,5 @@ def _dedupe_candidates(candidates: list[DocumentCandidate]) -> list[DocumentCand
 
 
 def _fallback_document_name(notice: HousingNotice) -> str:
-    title = re.sub(r"[^0-9A-Za-z가-힣_-]+", "_", notice.title).strip("_")
+    title = re.sub(r"[^0-9A-Za-z가-힣-]+", "_", notice.title).strip("_")
     return f"{title[:80]}_official.html" if title else "official_notice.html"

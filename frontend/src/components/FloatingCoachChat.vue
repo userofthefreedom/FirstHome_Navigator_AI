@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { Loader2, MessageCircle, Send, Sparkles, X } from 'lucide-vue-next'
 import { askCoachChat, fetchDashboard } from '../api/firsthome'
 import { useProfileStore } from '../stores/profileStore'
@@ -11,6 +12,7 @@ type ChatMessage = {
   source?: string
 }
 
+const route = useRoute()
 const profileStore = useProfileStore()
 const isOpen = ref(false)
 const pending = ref(false)
@@ -19,14 +21,40 @@ const activeNoticeId = ref<number | null>(null)
 const messages = ref<ChatMessage[]>([
   {
     role: 'assistant',
-    content: '🏠 추천 1순위 청약을 기준으로 부족액, 일정, 서류를 바로 점검해드릴게요.',
+    content: '추천 공고를 기준으로 계약금, 일정, 공식 공고문 확인 포인트를 바로 정리해드릴게요.',
   },
 ])
 
-const quickPrompts = ['💰 부족액', '📅 일정 알려줘', '📄 공식 PDF 확인']
+const quickPrompts = [
+  '이 공고에서 내가 가장 먼저 확인할 조건은?',
+  '선택한 옵션의 계약금 부담은 어느 정도야?',
+  '59A와 74A 중 지금 자금으로 더 현실적인 옵션은?',
+  '공식 공고문에서 확인해야 할 문장은 어디야?',
+  '이번 주에 해야 할 일을 3개로 정리해줘.',
+]
+
 const canSend = computed(() => draft.value.trim().length > 0 && !pending.value)
 
+function routeNoticeId() {
+  const raw = route.params.noticeId
+  const value = Array.isArray(raw) ? raw[0] : raw
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function routeOptionId() {
+  const raw = route.query.option_id
+  const value = Array.isArray(raw) ? raw[0] : raw
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
 async function resolveNoticeId() {
+  const fromRoute = routeNoticeId()
+  if (fromRoute) {
+    activeNoticeId.value = fromRoute
+    return fromRoute
+  }
   if (activeNoticeId.value) return activeNoticeId.value
   const dashboard = await fetchDashboard()
   activeNoticeId.value = dashboard.top_recommendations[0]?.notice_id ?? 101
@@ -46,17 +74,17 @@ async function sendMessage(nextMessage = draft.value) {
       await profileStore.hydrateProfile()
     }
     const noticeId = await resolveNoticeId()
-    const response = await askCoachChat(noticeId, content, profileStore.profile)
+    const response = await askCoachChat(noticeId, content, profileStore.profile, routeOptionId())
     messages.value.push({
       role: 'assistant',
-      content: `✨ ${response.reply}`,
+      content: response.reply,
       actions: response.suggested_actions,
       source: response.source,
     })
   } catch {
     messages.value.push({
       role: 'assistant',
-      content: '잠시 연결이 불안정해요. 백엔드 서버 상태를 확인한 뒤 다시 시도해주세요.',
+      content: '잠시 연결이 불안정합니다. 백엔드 서버 상태를 확인한 뒤 다시 시도해주세요.',
     })
   } finally {
     pending.value = false
@@ -78,15 +106,15 @@ function handleEnter(event: KeyboardEvent) {
     >
       <div class="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-950 px-4 py-3 text-white">
         <div class="flex items-center gap-2">
-          <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-2xl shadow-sm">
-            🏡
+          <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-sm font-black text-slate-950 shadow-sm">
+            AI
           </span>
           <div>
             <p class="flex items-center gap-1 text-sm font-bold text-white">
-              AI 청약 코치
+              청약 준비 코치
               <Sparkles class="h-3.5 w-3.5 text-amber-300" />
             </p>
-            <p class="text-xs text-slate-300">부족액, 일정, 서류 체크</p>
+            <p class="text-xs text-slate-300">계약금, 일정, 공고문 확인</p>
           </div>
         </div>
         <button
@@ -113,7 +141,7 @@ function handleEnter(event: KeyboardEvent) {
             <p>{{ message.content }}</p>
             <ul v-if="message.actions?.length" class="mt-2 space-y-1 border-t border-slate-200 pt-2 text-xs leading-5">
               <li v-for="action in message.actions" :key="action" class="flex gap-1.5">
-                <span>•</span>
+                <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
                 <span>{{ action }}</span>
               </li>
             </ul>
@@ -133,7 +161,7 @@ function handleEnter(event: KeyboardEvent) {
           v-for="prompt in quickPrompts"
           :key="prompt"
           type="button"
-          class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
+          class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
           :disabled="pending"
           @click="sendMessage(prompt)"
         >
@@ -146,7 +174,7 @@ function handleEnter(event: KeyboardEvent) {
           v-model="draft"
           rows="1"
           class="min-h-10 flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-          placeholder="궁금한 점 입력"
+          placeholder="궁금한 내용을 입력"
           @keydown.enter="handleEnter"
         />
         <button
@@ -164,12 +192,12 @@ function handleEnter(event: KeyboardEvent) {
       v-else
       type="button"
       class="relative flex h-16 w-16 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700"
-      title="AI 청약 코치 열기"
+      title="청약 준비 코치 열기"
       @click="isOpen = true"
     >
-      <span class="text-3xl leading-none">🏡</span>
+      <span class="text-sm font-black leading-none">AI</span>
       <span class="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500 text-xs font-bold text-white">
-        AI
+        Q
       </span>
       <MessageCircle class="absolute bottom-2 right-2 h-4 w-4" />
     </button>

@@ -1,5 +1,7 @@
 from django.test import Client, TestCase
 
+from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
+from apps.notices.models import HousingNotice
 from apps.profiles.models import Favorite, UserProfile
 
 
@@ -52,6 +54,54 @@ class FavoriteApiTests(TestCase):
 
         self.assertEqual({favorite["favorite_type"] for favorite in favorites}, {"product", "policy"})
         self.assertTrue(all(favorite["item"]["name"] for favorite in favorites))
+
+    def test_option_favorite_includes_unit_option_payload(self):
+        notice = HousingNotice.objects.create(
+            title="옵션 저장 테스트 공고",
+            provider="LH",
+            region="서울",
+            district="서울 테스트구",
+            supply_type="공공분양",
+            housing_type="공공분양주택",
+            area="59m2",
+            price=320000000,
+            contract_rate=0.1,
+            application_deadline="2026-06-01",
+            winner_date="2026-06-10",
+            contract_date="2026-07-01",
+            move_in="2028-01",
+            is_service_target=True,
+            ownership_type="public_sale",
+        )
+        option = HousingUnitOption.objects.create(
+            notice=notice,
+            unit_type="59A",
+            exclusive_area_m2=59.0,
+            floor_group="전체",
+            option_type="basic",
+            base_price=320000000,
+            confidence=0.8,
+        )
+        PaymentSchedule.objects.create(
+            unit_option=option,
+            label="계약금",
+            amount=32000000,
+            payment_type="down_payment",
+            sequence=1,
+        )
+
+        response = self.client.post(
+            "/api/favorites",
+            {"favorite_type": "option", "object_id": option.id},
+            content_type="application/json",
+            HTTP_X_FIRSTHOME_CLIENT_ID=CLIENT_ID,
+        )
+        self.assertEqual(response.status_code, 201)
+
+        favorite = self.client.get("/api/favorites", HTTP_X_FIRSTHOME_CLIENT_ID=CLIENT_ID).json()[0]
+        self.assertEqual(favorite["favorite_type"], "option")
+        self.assertEqual(favorite["item"]["unit_type"], "59A")
+        self.assertEqual(favorite["item"]["notice_id"], notice.id)
 
     def test_favorites_persist_across_clients_with_same_client_id(self):
         self.client.post(

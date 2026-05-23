@@ -33,6 +33,7 @@ class UserProfile(models.Model):
 class Favorite(models.Model):
     FAVORITE_TYPES = [
         ("notice", "Notice"),
+        ("option", "Unit option"),
         ("product", "Product"),
         ("policy", "Policy"),
     ]

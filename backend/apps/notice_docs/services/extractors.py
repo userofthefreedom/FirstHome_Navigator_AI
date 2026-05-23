@@ -8,14 +8,13 @@ from typing import Any
 from apps.notice_docs.services.pdf_parser import PdfPageText
 
 
-PRICE_SECTION_KEYWORDS = ("주택가격", "계약금", "중도금", "잔금", "공급금액")
+PRICE_SECTION_KEYWORDS = ("주택가격", "계약금", "중도금", "잔금", "공급금액", "분양가격")
 UNIT_ROW_PATTERN = re.compile(
-    r"(?P<unit>\d{2}[A-Z]\d?)"
-    r"(?P<floor>1층|2층|3층|4층|5층~최상층|최상층)"
-    r"(?P<option>기본형|마이너스옵션)"
-    r"(?P<amounts>(?:\d{1,3},\d{3}){3,12})"
+    r"(?P<unit>\d{2,3}[A-Z])"
+    r"(?P<meta>.{0,40}?)"
+    r"(?P<amounts>(?:\d{1,3}(?:,\d{3})+){3,12})"
 )
-DATE_PATTERN = re.compile(r"[‘'’]?(?P<year>\d{2})\.(?P<month>\d{2})\.(?P<day>\d{2})")
+DATE_PATTERN = re.compile(r"(?P<year>\d{2,4})[.년/-]\s*(?P<month>\d{1,2})[.월/-]\s*(?P<day>\d{1,2})")
 
 
 @dataclass
@@ -56,6 +55,8 @@ def extract_unit_options_from_pages(pages: list[PdfPageText]) -> list[ExtractedU
         compact_text = re.sub(r"\s+", "", page.text)
         for match in UNIT_ROW_PATTERN.finditer(compact_text):
             option = _option_from_match(page, match, due_dates)
+            if option.base_price <= 0:
+                continue
             key = (option.unit_type, option.floor_group, option.option_type)
             if key in seen:
                 continue
@@ -69,7 +70,7 @@ def extract_unit_options_from_pages(pages: list[PdfPageText]) -> list[ExtractedU
 
 def extract_checklist_items(pages: list[PdfPageText]) -> list[dict[str, Any]]:
     categories = [
-        ("homeless", "무주택 기준 확인", ("무주택세대구성원", "주택소유여부")),
+        ("homeless", "무주택 기준 확인", ("무주택", "세대구성", "주택소유")),
         ("income", "소득·자산 기준 확인", ("소득", "자산")),
         ("subscription", "청약통장 요건 확인", ("입주자저축", "청약통장", "납입")),
         ("residency", "지역 우선공급 확인", ("거주", "우선공급")),
@@ -94,6 +95,7 @@ def extract_checklist_items(pages: list[PdfPageText]) -> list[dict[str, Any]]:
 
 def _option_from_match(page: PdfPageText, match: re.Match[str], due_dates: list[date]) -> ExtractedUnitOption:
     unit_type = match.group("unit")
+    meta = match.group("meta")
     amounts = [_money_to_won(value) for value in re.findall(r"\d{1,3},\d{3}", match.group("amounts"))]
     base_price = amounts[0] if amounts else 0
     loan_amount = amounts[-1] if len(amounts) >= 2 else 0
@@ -104,8 +106,8 @@ def _option_from_match(page: PdfPageText, match: re.Match[str], due_dates: list[
     return ExtractedUnitOption(
         unit_type=unit_type,
         exclusive_area_m2=_exclusive_area(unit_type),
-        floor_group=match.group("floor"),
-        option_type="minus" if match.group("option") == "마이너스옵션" else "basic",
+        floor_group=_floor_group(meta),
+        option_type="minus" if "마이너스" in meta else "basic",
         base_price=base_price,
         loan_amount=loan_amount,
         balcony_extension_price=0,
@@ -166,7 +168,8 @@ def _payment_schedules(amounts: list[int], due_dates: list[date], page: PdfPageT
 def _extract_middle_due_dates(text: str) -> list[date]:
     result: list[date] = []
     for match in DATE_PATTERN.finditer(text):
-        year = 2000 + int(match.group("year"))
+        raw_year = int(match.group("year"))
+        year = raw_year if raw_year >= 1000 else 2000 + raw_year
         try:
             result.append(date(year, int(match.group("month")), int(match.group("day"))))
         except ValueError:
@@ -175,12 +178,18 @@ def _extract_middle_due_dates(text: str) -> list[date]:
 
 
 def _money_to_won(value: str) -> int:
-    return int(value.replace(",", "")) * 1000
+    amount = int(value.replace(",", ""))
+    return amount if amount >= 10_000_000 else amount * 1000
 
 
 def _exclusive_area(unit_type: str) -> float:
     match = re.match(r"(\d{2,3})", unit_type)
     return float(match.group(1)) if match else 0
+
+
+def _floor_group(meta: str) -> str:
+    floor = re.search(r"(최상층|\d{1,2}층|전체)", meta or "")
+    return floor.group(1) if floor else "전체"
 
 
 def _is_price_section(text: str) -> bool:

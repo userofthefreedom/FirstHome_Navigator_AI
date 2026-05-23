@@ -29,17 +29,17 @@ def notice_analysis_summary(notice: Any) -> dict[str, Any]:
         stage = "excluded"
         label = "서비스 제외"
         tone = "muted"
-        next_action = "공공분양 전용 범위 밖의 공고입니다."
+        next_action = "공공분양 준비 범위 밖의 공고입니다."
     elif is_mock:
         stage = "mock"
         label = "임시 추정"
         tone = "warning"
-        next_action = "공식 PDF 분석을 다시 실행해 근거 문장으로 대체하세요."
+        next_action = "공식 PDF 분석을 다시 실행해 근거 문장 기반 결과로 교체하세요."
     elif official_status == "analyzed" and unit_option_count > 0 and extraction_status == "needs_review":
         stage = "needs_review"
         label = "근거 검토 필요"
         tone = "warning"
-        next_action = "추출된 금액과 일정의 원문 근거를 확인하세요."
+        next_action = "추출 금액과 일정의 원문 근거를 확인하세요."
     elif official_status == "analyzed" and unit_option_count > 0:
         stage = "verified"
         label = "공식 분석 완료"
@@ -54,7 +54,7 @@ def notice_analysis_summary(notice: Any) -> dict[str, Any]:
         stage = "pending"
         label = "분석 중"
         tone = "info"
-        next_action = "분석 요청이 진행 중입니다."
+        next_action = "공식 문서 분석이 진행 중입니다."
     elif document_count > 0:
         stage = "discovered"
         label = "문서 발견"
@@ -64,7 +64,7 @@ def notice_analysis_summary(notice: Any) -> dict[str, Any]:
         stage = "not_requested"
         label = "분석 필요"
         tone = "muted"
-        next_action = "공식 문서 discovery와 PDF 분석을 실행하세요."
+        next_action = "공식 문서 발견과 PDF 분석을 실행하세요."
 
     return {
         "stage": stage,
@@ -90,17 +90,17 @@ def fixture_analysis_summary(notice: dict[str, Any] | Any) -> dict[str, Any]:
     unit_option_count = int(getter("unit_option_count", 0) or 0)
 
     if not is_service_target:
-        stage, label, tone, next_action = ("excluded", "서비스 제외", "muted", "공공분양 전용 범위 밖의 공고입니다.")
+        stage, label, tone, next_action = ("excluded", "서비스 제외", "muted", "공공분양 준비 범위 밖의 공고입니다.")
     elif official_status == "analyzed" and unit_option_count > 0:
         stage, label, tone, next_action = ("verified", "공식 분석 완료", "success", "주택형 옵션과 자금 일정을 비교할 수 있습니다.")
     elif official_status == "failed":
         stage, label, tone, next_action = ("failed", "분석 실패", "danger", "공식 PDF 발견 또는 추출 조건을 확인하세요.")
     elif official_status == "pending":
-        stage, label, tone, next_action = ("pending", "분석 중", "info", "분석 요청이 진행 중입니다.")
+        stage, label, tone, next_action = ("pending", "분석 중", "info", "공식 문서 분석이 진행 중입니다.")
     elif document_count > 0:
         stage, label, tone, next_action = ("discovered", "문서 발견", "info", "PDF 분석을 실행해 주택형 옵션을 추출하세요.")
     else:
-        stage, label, tone, next_action = ("not_requested", "분석 필요", "muted", "공식 문서 discovery와 PDF 분석을 실행하세요.")
+        stage, label, tone, next_action = ("not_requested", "분석 필요", "muted", "공식 문서 발견과 PDF 분석을 실행하세요.")
 
     return {
         "stage": stage,

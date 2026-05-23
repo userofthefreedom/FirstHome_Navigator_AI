@@ -69,12 +69,7 @@ def analyze_notice_document(notice: HousingNotice, *, pdf_path: str | Path | Non
             )
 
     failure_reason = document.error_message or "분석 가능한 로컬 PDF가 없거나 주택형 표를 찾지 못했습니다."
-    return _analysis_failed_with_preserved_result(
-        notice,
-        document,
-        failure_reason,
-        previous_result,
-    )
+    return _analysis_failed_with_preserved_result(notice, document, failure_reason, previous_result)
 
 
 def analyze_notice_with_mock_data(notice: HousingNotice) -> dict[str, Any]:
@@ -248,11 +243,7 @@ def _create_mock_analysis(notice: HousingNotice, document: NoticeDocument, *, re
         schema_version="mock-v1",
         status="mock",
         confidence=0.62,
-        raw_json={
-            "source": "mock",
-            "reason": reason,
-            "notice_id": notice.id,
-        },
+        raw_json={"source": "mock", "reason": reason, "notice_id": notice.id},
     )
 
     options = _mock_unit_options(notice, document, extraction)
@@ -268,11 +259,7 @@ def _create_mock_analysis(notice: HousingNotice, document: NoticeDocument, *, re
     notice.official_document_status = "analyzed"
     notice.save(update_fields=["official_document_status", "updated_at"])
 
-    return {
-        "document": document,
-        "extraction": extraction,
-        "unit_options": options,
-    }
+    return {"document": document, "extraction": extraction, "unit_options": options}
 
 
 def _select_document(notice: HousingNotice, documents: list[NoticeDocument]) -> NoticeDocument:
@@ -336,7 +323,7 @@ def _local_pdf_for_document(document: NoticeDocument) -> Path | None:
 
 
 def _document_name(notice: HousingNotice) -> str:
-    title = re.sub(r"[^0-9A-Za-z가-힣_-]+", "_", notice.title).strip("_")
+    title = re.sub(r"[^0-9A-Za-z가-힣-]+", "_", notice.title).strip("_")
     return f"{title[:80]}_mock.pdf" if title else "official_notice_mock.pdf"
 
 
@@ -357,7 +344,7 @@ def _mock_unit_options(
         option, _created = HousingUnitOption.objects.update_or_create(
             notice=notice,
             unit_type=unit_type,
-            floor_group="대표",
+            floor_group="전체",
             option_type="basic",
             defaults={
                 "document": document,
@@ -368,7 +355,7 @@ def _mock_unit_options(
                 "balcony_extension_price": 0,
                 "confidence": 0.55 if price else 0.35,
                 "source_page": 4,
-                "source_text": "mock: 공식 공고문 표 추출 전 대표 면적/가격 기반 임시 옵션",
+                "source_text": "mock: 공식 공고문 추출 전 대표 면적/가격 기반 임시 옵션",
             },
         )
         _replace_payment_schedule(option, notice, price)

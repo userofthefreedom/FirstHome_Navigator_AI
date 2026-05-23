@@ -136,9 +136,9 @@ def _unit_option_fit_reasons(option: dict[str, Any], profile: dict[str, Any]) ->
 
     monthly_need = middle_payment // 24 if middle_payment else 0
     if monthly_need and monthly_capacity and monthly_need <= monthly_capacity:
-        reasons.append("중도금 월 환산 부담이 월 저축 여력 안에 있습니다.")
+        reasons.append("중도금 예상 부담이 월 저축 여력 안에 있습니다.")
     elif monthly_need:
-        reasons.append("중도금 납부 계획은 추가 점검이 필요합니다.")
+        reasons.append("중도금 납부 계획은 추가 자금 점검이 필요합니다.")
 
     return reasons[:4]
 

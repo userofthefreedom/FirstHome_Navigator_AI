@@ -279,4 +279,7 @@ frontend/.chrome-check/
 frontend/.chrome-check-mobile/
 frontend/.visual-check/
 
+# Local analysis reports
+backend/reports/
+
 # End of https://www.toptal.com/developers/gitignore/api/python,django,vuejs

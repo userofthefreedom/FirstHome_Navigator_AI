@@ -1,4 +1,5 @@
 import tempfile
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, patch
 
@@ -232,3 +233,63 @@ class NoticeDocsMockExtractionTests(TestCase):
 
     def test_batch_analysis_command_supports_dry_run(self):
         call_command("analyze_notice_documents", "--dry-run", "--limit=1")
+
+    def test_batch_analysis_command_writes_pipeline_reports(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            json_path = f"{temp_dir}/analysis_report.json"
+            md_path = f"{temp_dir}/analysis_report.md"
+
+            call_command(
+                "analyze_notice_documents",
+                "--dry-run",
+                "--limit=1",
+                f"--report-json={json_path}",
+                f"--report-md={md_path}",
+            )
+
+            with open(json_path, encoding="utf-8") as report_file:
+                report = json.load(report_file)
+            with open(md_path, encoding="utf-8") as report_file:
+                markdown = report_file.read()
+
+        self.assertEqual(len(report["rows"]), 1)
+        self.assertIn("pipeline_stage", report["rows"][0])
+        self.assertIn("LH 분석 준비도 리포트", markdown)
+
+    def test_representative_flow_command_completes_p0_scenario(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            json_path = f"{temp_dir}/representative_flow.json"
+
+            call_command("check_representative_flow", f"--report-json={json_path}")
+
+            with open(json_path, encoding="utf-8") as report_file:
+                report = json.load(report_file)
+
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["notice_id"], 101)
+        self.assertIn(report["analysis_stage"], {"verified", "needs_review"})
+        self.assertGreater(report["option_id"], 0)
+        self.assertEqual(
+            [step["name"] for step in report["steps"]],
+            [
+                "profile_saved",
+                "recommendation_loaded",
+                "notice_detail_loaded",
+                "official_analysis_ready",
+                "unit_option_loaded",
+                "option_funding_loaded",
+                "ai_questions_answered",
+                "favorite_saved",
+            ],
+        )
+
+    def test_sample_pdf_expected_manifest_covers_current_regression_samples(self):
+        expected_path = settings.BASE_DIR / "fixtures" / "sample_pdfs" / "expected.json"
+        data = json.loads(expected_path.read_text(encoding="utf-8"))
+        samples = data["samples"]
+
+        self.assertGreaterEqual(len(samples), 5)
+        self.assertTrue(any(sample["kind"] == "include" for sample in samples))
+        self.assertTrue(any(sample["kind"] == "exclude" for sample in samples))
+        for sample in samples:
+            self.assertTrue((settings.BASE_DIR / "fixtures" / "sample_pdfs" / sample["file_name"]).exists())

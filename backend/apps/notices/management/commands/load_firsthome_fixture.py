@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 
 from django.core.management.base import BaseCommand
+from django.conf import settings
 
 from apps.fixture_store import load_fixture
+from apps.notice_docs.services.analysis import analyze_notice_document
 from apps.notices.models import HousingNotice
 from apps.notices.services.classifier import classify_notice_payload
 from apps.policies.models import YouthPolicy
@@ -19,6 +21,13 @@ def parse_date(value: str | None):
 
 class Command(BaseCommand):
     help = "Load FirstHome MVP fixture data into the local database."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--with-demo-analysis",
+            action="store_true",
+            help="Analyze the representative fixture notice with the bundled sample PDF.",
+        )
 
     def handle(self, *args, **options):
         data = load_fixture()
@@ -88,9 +97,25 @@ class Command(BaseCommand):
                 reasons=policy.get("reasons", []),
             )
 
+        demo_message = ""
+        if options["with_demo_analysis"]:
+            demo_message = self._load_demo_analysis()
+
         self.stdout.write(
             self.style.SUCCESS(
                 "Loaded FirstHome fixture: "
                 f"{len(data['notices'])} notices, {len(data['products'])} products, {len(data['policies'])} policies."
+                f"{demo_message}"
             )
         )
+
+    def _load_demo_analysis(self) -> str:
+        sample_pdf = settings.BASE_DIR / "fixtures" / "sample_pdfs" / "public_sale_notice_611.pdf"
+        if not sample_pdf.exists():
+            return " Demo analysis skipped: sample PDF is missing."
+        try:
+            notice = HousingNotice.objects.get(id=101)
+        except HousingNotice.DoesNotExist:
+            return " Demo analysis skipped: notice #101 is missing."
+        result = analyze_notice_document(notice, pdf_path=sample_pdf)
+        return f" Demo analysis loaded for notice #101 with {len(result.get('unit_options', []))} option(s)."
