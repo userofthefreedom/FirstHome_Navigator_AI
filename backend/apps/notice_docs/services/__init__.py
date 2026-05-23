@@ -9,6 +9,7 @@ from apps.notice_docs.services.discovery_lh import (
     parse_lh_document_candidates,
 )
 from apps.notice_docs.services.llm_extractors import extract_notice_document_with_llm
+from apps.notice_docs.services.status import fixture_analysis_summary, notice_analysis_summary
 
 __all__ = [
     "DocumentCandidate",
@@ -16,6 +17,8 @@ __all__ = [
     "analyze_notice_with_mock_data",
     "discover_documents_for_notice",
     "extract_notice_document_with_llm",
+    "fixture_analysis_summary",
     "document_status",
+    "notice_analysis_summary",
     "parse_lh_document_candidates",
 ]

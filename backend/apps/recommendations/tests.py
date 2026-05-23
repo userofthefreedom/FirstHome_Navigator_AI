@@ -36,6 +36,7 @@ class RecommendationServiceTests(TestCase):
         self.assertEqual(top["notice_id"], find_notice(top["notice_id"])["id"])
         self.assertEqual(set(top["score_detail"]), {"eligibility", "funding", "location", "schedule", "policy_link"})
         self.assertEqual(top["total_score"], sum(top["score_detail"].values()))
+        self.assertIn("analysis_summary", top)
         self.assertGreaterEqual(len(top["reasons"]), 3)
 
     def test_product_and_policy_matchers_change_by_profile(self):
@@ -129,4 +130,6 @@ class RecommendationServiceTests(TestCase):
 
         recommendation = ranked_recommendations(default_profile(), limit=1)[0]
         self.assertEqual(recommendation["best_option"]["option_id"], option.id)
+        self.assertEqual(recommendation["top_options"][0]["option_id"], option.id)
         self.assertGreater(recommendation["best_option"]["option_fit_score"], 0)
+        self.assertGreaterEqual(len(recommendation["best_option"]["fit_reasons"]), 1)

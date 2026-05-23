@@ -1,3 +1,5 @@
 *.pdf
+!public_sale_notice_611.pdf
+!rent_notice_506.pdf
 !README.md
 !manifest.json

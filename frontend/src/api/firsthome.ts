@@ -13,6 +13,7 @@ import type {
   Notice,
   NoticeAnalyzeResponse,
   NoticeDocumentStatus,
+  NoticeEligibilityChecklist,
   Policy,
   Profile,
 } from '../types/firsthome'
@@ -94,6 +95,11 @@ export async function analyzeNoticeDocument(noticeId: number) {
 
 export async function fetchNoticeUnitOptions(noticeId: number) {
   const response = await api.get<HousingUnitOption[]>(`/notices/${noticeId}/unit-options`)
+  return response.data
+}
+
+export async function fetchNoticeEligibilityChecklists(noticeId: number) {
+  const response = await api.get<NoticeEligibilityChecklist[]>(`/notices/${noticeId}/eligibility-checklists`)
   return response.data
 }
 

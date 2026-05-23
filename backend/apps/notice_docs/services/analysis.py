@@ -18,7 +18,14 @@ from apps.notice_docs.models import (
 from apps.notice_docs.services.discovery_lh import discover_documents_for_notice
 from apps.notice_docs.services.extractors import ExtractedUnitOption, extract_checklist_items, extract_unit_options_from_pages
 from apps.notice_docs.services.llm_extractors import extract_notice_document_with_llm
-from apps.notice_docs.services.pdf_parser import PdfParserUnavailable, parse_pdf_text, resolve_local_pdf_path
+from apps.notice_docs.services.pdf_parser import (
+    PdfParserUnavailable,
+    RemotePdfFetchError,
+    download_remote_pdf,
+    parse_pdf_text,
+    resolve_local_pdf_path,
+)
+from apps.notice_docs.services.status import notice_analysis_summary
 from apps.notice_docs.services.validators import extraction_confidence, extraction_status, validate_unit_options
 from apps.notices.models import HousingNotice
 
@@ -61,10 +68,11 @@ def analyze_notice_document(notice: HousingNotice, *, pdf_path: str | Path | Non
                 source_meta=source_meta,
             )
 
+    failure_reason = document.error_message or "분석 가능한 로컬 PDF가 없거나 주택형 표를 찾지 못했습니다."
     return _analysis_failed_with_preserved_result(
         notice,
         document,
-        "분석 가능한 로컬 PDF가 없거나 주택형 표를 찾지 못했습니다.",
+        failure_reason,
         previous_result,
     )
 
@@ -80,6 +88,7 @@ def document_status(notice: HousingNotice) -> dict[str, Any]:
     return {
         "notice_id": notice.id,
         "official_document_status": notice.official_document_status,
+        "analysis_summary": notice_analysis_summary(notice),
         "document_count": len(documents),
         "unit_option_count": unit_options.count(),
         "analyzed_option_count": unit_options.filter(confidence__gt=0).count(),
@@ -303,11 +312,27 @@ def _document_for_notice(notice: HousingNotice) -> NoticeDocument:
 
 
 def _local_pdf_for_document(document: NoticeDocument) -> Path | None:
-    return (
+    local_path = (
         resolve_local_pdf_path(document.document_url)
         or resolve_local_pdf_path(document.source_url)
         or resolve_local_pdf_path(document.file_name)
     )
+    if local_path:
+        return local_path
+
+    for url in [document.document_url, document.source_url]:
+        try:
+            remote_path = download_remote_pdf(url, suggested_name=document.file_name)
+        except RemotePdfFetchError as exc:
+            document.error_message = str(exc)[:240]
+            document.save(update_fields=["error_message", "updated_at"])
+            continue
+        if remote_path:
+            document.fetched_at = timezone.now()
+            document.error_message = ""
+            document.save(update_fields=["fetched_at", "error_message", "updated_at"])
+            return remote_path
+    return None
 
 
 def _document_name(notice: HousingNotice) -> str:

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ChevronRight, FileSearch, ListChecks, MapPin } from 'lucide-vue-next'
 import { fetchNotices } from '../api/firsthome'
 import type { Notice } from '../types/firsthome'
+import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus'
 import { formatMoney } from '../utils/format'
 
 const notices = ref<Notice[]>([])
@@ -31,7 +32,7 @@ const selectedNotices = computed(() => {
 })
 
 const analyzedCount = computed(() => {
-  return selectedNotices.value.filter((notice) => notice.official_document_status === 'analyzed').length
+  return selectedNotices.value.filter((notice) => ['verified', 'needs_review'].includes(analysisSummary(notice.analysis_summary, notice.official_document_status).stage)).length
 })
 
 function priceLabel(price: number) {
@@ -130,8 +131,8 @@ onMounted(loadNotices)
               <p class="text-xs font-bold text-blue-700">{{ notice.supply_type }}</p>
               <h2 class="mt-1 text-sm font-bold leading-5 text-slate-950">{{ notice.title }}</h2>
             </div>
-            <span class="shrink-0 rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">
-              {{ notice.official_document_status === 'analyzed' ? '분석 완료' : '분석 대기' }}
+            <span class="shrink-0 rounded-md px-2 py-1 text-xs font-bold" :class="analysisBadgeClass(analysisSummary(notice.analysis_summary, notice.official_document_status))">
+              {{ analysisSummary(notice.analysis_summary, notice.official_document_status).label }}
             </span>
           </div>
           <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
@@ -142,6 +143,9 @@ onMounted(loadNotices)
             <span>주택형 옵션 {{ notice.unit_option_count ?? 0 }}개</span>
             <span class="text-right">문서 {{ notice.document_count ?? 0 }}건</span>
           </div>
+          <p class="mt-2 text-xs leading-5 text-slate-500">
+            {{ analysisSummary(notice.analysis_summary, notice.official_document_status).next_action }}
+          </p>
           <RouterLink
             :to="`/notices/${notice.id}`"
             class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"

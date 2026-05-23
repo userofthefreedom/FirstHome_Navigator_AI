@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.notices.models import HousingNotice
+from apps.notices.services.classifier import classify_notice_payload
 from apps.notices.services.lh import fetch_all_lh_notices, fetch_lh_supply_payload, supply_info_summary
 
 
@@ -72,28 +73,35 @@ class Command(BaseCommand):
             price = self._notice_price(notice, summary)
             if price <= 0:
                 missing_price_count += 1
+            defaults = {
+                "title": notice.title,
+                "region": notice.region,
+                "district": summary.get("district", notice.district),
+                "supply_type": notice.supply_type,
+                "housing_type": summary.get("housing_type", notice.housing_type),
+                "area": summary.get("area", notice.area),
+                "price": price,
+                "contract_rate": notice.contract_rate,
+                "application_deadline": notice.application_deadline,
+                "winner_date": notice.winner_date,
+                "contract_date": notice.contract_date,
+                "move_in": notice.move_in,
+                "competition": summary.get("competition", notice.competition),
+                "source_url": notice.source_url,
+                "tags": notice.tags,
+                "required_documents": notice.required_documents,
+                "cautions": notice.cautions,
+                "source_meta": {**notice.source_meta, "supply_summary": summary} if summary else notice.source_meta,
+            }
+            classification = classify_notice_payload({**defaults, "provider": notice.provider, "source_id": notice.source_id})
             _instance, created = HousingNotice.objects.update_or_create(
                 provider=notice.provider,
                 source_id=notice.source_id,
                 defaults={
-                    "title": notice.title,
-                    "region": notice.region,
-                    "district": summary.get("district", notice.district),
-                    "supply_type": notice.supply_type,
-                    "housing_type": summary.get("housing_type", notice.housing_type),
-                    "area": summary.get("area", notice.area),
-                    "price": price,
-                    "contract_rate": notice.contract_rate,
-                    "application_deadline": notice.application_deadline,
-                    "winner_date": notice.winner_date,
-                    "contract_date": notice.contract_date,
-                    "move_in": notice.move_in,
-                    "competition": summary.get("competition", notice.competition),
-                    "source_url": notice.source_url,
-                    "tags": notice.tags,
-                    "required_documents": notice.required_documents,
-                    "cautions": notice.cautions,
-                    "source_meta": {**notice.source_meta, "supply_summary": summary} if summary else notice.source_meta,
+                    **defaults,
+                    "ownership_type": classification.ownership_type,
+                    "is_service_target": classification.is_service_target,
+                    "exclude_reason": classification.exclude_reason,
                 },
             )
             if created:

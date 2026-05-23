@@ -4,7 +4,13 @@ import { useRoute } from 'vue-router'
 import { Bookmark, CalendarDays, Calculator, ExternalLink, Landmark, PiggyBank, ShieldAlert, WalletCards } from 'lucide-vue-next'
 import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeUnitOptions, fetchPolicies, fetchProducts, removeFavorite } from '../api/firsthome'
 import type { Favorite, FinancialProduct, FundingPlan, HousingUnitOption, Notice, Policy } from '../types/firsthome'
+import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus'
 import { formatMoney } from '../utils/format'
+
+type OptionComparison = {
+  option: HousingUnitOption
+  plan?: FundingPlan
+}
 
 const route = useRoute()
 const noticeId = computed(() => Number(route.params.noticeId ?? 0))
@@ -12,6 +18,7 @@ const selectedOptionId = computed(() => Number(route.query.option_id ?? 0) || nu
 const selectedNotice = ref<Notice | null>(null)
 const fundingPlan = ref<FundingPlan | null>(null)
 const unitOptions = ref<HousingUnitOption[]>([])
+const optionFundingPlans = ref<Record<number, FundingPlan>>({})
 const financialProducts = ref<FinancialProduct[]>([])
 const policies = ref<Policy[]>([])
 const favorites = ref<Favorite[]>([])
@@ -28,6 +35,17 @@ const readinessRate = computed(() => {
   return Math.round((fundingPlan.value.available_cash / fundingPlan.value.down_payment) * 100)
 })
 const readinessWidth = computed(() => `${Math.min(readinessRate.value, 100)}%`)
+const optionComparisons = computed<OptionComparison[]>(() => {
+  return unitOptions.value.map((option) => ({
+    option,
+    plan: optionFundingPlans.value[option.id],
+  }))
+})
+const selectedOption = computed(() => {
+  if (!fundingPlan.value?.option_id) return null
+  return unitOptions.value.find((option) => option.id === fundingPlan.value?.option_id) ?? null
+})
+const currentAnalysisSummary = computed(() => analysisSummary(selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status))
 
 function favoriteKey(favoriteType: Favorite['favorite_type'], objectId: number) {
   return `${favoriteType}-${objectId}`
@@ -59,6 +77,27 @@ async function resolveNoticeId() {
   return recommendations[0]?.notice_id ?? 101
 }
 
+async function loadOptionFundingPlans(targetNoticeId: number, options: HousingUnitOption[], currentPlan: FundingPlan) {
+  if (options.length === 0) {
+    optionFundingPlans.value = {}
+    return
+  }
+
+  const entries = await Promise.all(
+    options.map(async (option) => {
+      if (currentPlan.option_id === option.id) return [option.id, currentPlan] as const
+      try {
+        const plan = await fetchFundingPlan(targetNoticeId, option.id)
+        return [option.id, plan] as const
+      } catch {
+        return [option.id, undefined] as const
+      }
+    }),
+  )
+
+  optionFundingPlans.value = Object.fromEntries(entries.filter((entry): entry is readonly [number, FundingPlan] => Boolean(entry[1])))
+}
+
 async function loadFunding() {
   loading.value = true
   error.value = ''
@@ -78,11 +117,35 @@ async function loadFunding() {
     financialProducts.value = productsResponse
     policies.value = policiesResponse
     favorites.value = favoriteResponse
+    await loadOptionFundingPlans(targetNoticeId, unitOptionResponse, fundingResponse)
   } catch {
     error.value = '백엔드 자금 로드맵 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
   } finally {
     loading.value = false
   }
+}
+
+function readinessForPlan(plan?: FundingPlan) {
+  if (!plan?.down_payment) return 0
+  return Math.round((plan.available_cash / plan.down_payment) * 100)
+}
+
+function comparisonStatus(plan?: FundingPlan) {
+  if (!plan) return '계산 대기'
+  if (plan.shortfall <= 0) return '계약금 준비 완료'
+  if (plan.monthly_target <= 0) return '추가 목표 없음'
+  return `월 ${formatMoney(plan.monthly_target)} 목표`
+}
+
+function comparisonStatusClass(plan?: FundingPlan) {
+  if (!plan) return 'bg-slate-100 text-slate-500'
+  if (plan.shortfall <= 0) return 'bg-emerald-50 text-emerald-700'
+  return 'bg-blue-50 text-blue-700'
+}
+
+function selectedOptionLabel() {
+  if (!selectedOption.value) return ''
+  return `${selectedOption.value.unit_type} · ${selectedOption.value.floor_group || '기본'}`
 }
 
 watch([noticeId, selectedOptionId], loadFunding)
@@ -113,6 +176,9 @@ onMounted(loadFunding)
               <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ selectedNotice.data_source ?? 'fixture' }}</span>
               <span v-if="fundingPlan.schedule_source === 'payment_schedule'" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
                 {{ fundingPlan.unit_type }} · {{ fundingPlan.floor_group }}
+              </span>
+              <span class="rounded-md px-2 py-1 text-xs font-bold" :class="analysisBadgeClass(currentAnalysisSummary)">
+                {{ currentAnalysisSummary.label }}
               </span>
               <span v-if="!selectedNotice.is_price_confirmed" class="rounded-md bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">금액 확인 필요</span>
             </div>
@@ -196,31 +262,81 @@ onMounted(loadFunding)
           <p v-if="fundingPlan.schedule_source === 'payment_schedule'" class="mt-2 text-xs leading-5 text-blue-100">
             선택 주택형의 공고문 납부 일정 기준입니다.
           </p>
+          <p class="mt-2 text-xs leading-5 text-blue-100">
+            {{ currentAnalysisSummary.next_action }}
+          </p>
           <p class="mt-3 text-xs leading-5 text-slate-400">{{ fundingPlan.notice }}</p>
         </div>
       </section>
 
-      <section v-if="unitOptions.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-lg font-bold text-slate-950">주택형 옵션 선택</h2>
-        <div class="mt-4 grid gap-3 lg:grid-cols-3">
+      <section v-if="optionComparisons.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-blue-700">주택형 옵션 비교</p>
+            <h2 class="mt-1 text-lg font-bold text-slate-950">분양가·계약금·부족액을 한 번에 비교</h2>
+            <p class="mt-1 text-sm text-slate-500">선택한 옵션 기준으로 상단 자금 로드맵과 납부 타임라인이 바뀝니다.</p>
+          </div>
+          <span v-if="selectedOptionLabel()" class="rounded-md bg-slate-950 px-3 py-2 text-sm font-bold text-white">
+            선택: {{ selectedOptionLabel() }}
+          </span>
+        </div>
+
+        <div class="mt-5 grid gap-3 xl:grid-cols-3">
           <RouterLink
-            v-for="option in unitOptions"
+            v-for="{ option, plan } in optionComparisons"
             :key="option.id"
             :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }"
             class="rounded-lg border p-4 transition hover:border-blue-300 hover:bg-blue-50/40"
-            :class="fundingPlan.option_id === option.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'"
+            :class="fundingPlan.option_id === option.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-200 bg-white'"
           >
             <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-bold text-blue-700">{{ option.unit_type }} · {{ option.floor_group }}</p>
-                <p class="mt-1 text-lg font-bold text-slate-950">{{ option.exclusive_area_m2 }}㎡</p>
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-blue-700">{{ option.unit_type }} · {{ option.floor_group || '기본' }}</p>
+                <p class="mt-1 text-xl font-bold text-slate-950">{{ option.exclusive_area_m2 }}㎡</p>
               </div>
               <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
                 {{ Math.round(option.confidence * 100) }}%
               </span>
             </div>
-            <p class="mt-3 text-sm text-slate-500">기준 분양가</p>
-            <p class="font-bold text-slate-950">{{ priceLabel(option.base_price) }}</p>
+
+            <div class="mt-4 grid grid-cols-2 gap-2 text-sm">
+              <div class="rounded-lg bg-slate-50 p-3">
+                <p class="text-xs font-bold text-slate-500">분양가</p>
+                <p class="mt-1 font-bold text-slate-950">{{ priceLabel(plan?.price ?? option.base_price) }}</p>
+              </div>
+              <div class="rounded-lg bg-slate-50 p-3">
+                <p class="text-xs font-bold text-slate-500">계약금</p>
+                <p class="mt-1 font-bold text-slate-950">{{ plan ? formatMoney(plan.down_payment) : '-' }}</p>
+              </div>
+              <div class="rounded-lg bg-slate-50 p-3">
+                <p class="text-xs font-bold text-slate-500">부족액</p>
+                <p class="mt-1 font-bold text-blue-700">{{ plan ? formatMoney(plan.shortfall) : '-' }}</p>
+              </div>
+              <div class="rounded-lg bg-slate-50 p-3">
+                <p class="text-xs font-bold text-slate-500">준비율</p>
+                <p class="mt-1 font-bold text-slate-950">{{ readinessForPlan(plan) }}%</p>
+              </div>
+            </div>
+
+            <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-blue-600" :style="{ width: `${Math.min(readinessForPlan(plan), 100)}%` }" />
+            </div>
+
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <span class="rounded-md px-2 py-1 text-xs font-bold" :class="comparisonStatusClass(plan)">
+                {{ comparisonStatus(plan) }}
+              </span>
+              <span v-if="fundingPlan.option_id === option.id" class="rounded-md bg-slate-950 px-2 py-1 text-xs font-bold text-white">
+                현재 선택
+              </span>
+              <span v-if="option.extraction_source" class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
+                {{ option.extraction_source }}
+              </span>
+            </div>
+
+            <p v-if="option.source_text" class="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">
+              {{ option.source_page ? `${option.source_page}쪽 · ` : '' }}{{ option.source_text }}
+            </p>
           </RouterLink>
         </div>
       </section>

@@ -48,6 +48,7 @@ export type Notice = {
   is_service_target?: boolean
   exclude_reason?: string
   official_document_status?: string
+  analysis_summary?: AnalysisSummary
   document_count?: number
   unit_option_count?: number
   title: string
@@ -70,6 +71,21 @@ export type Notice = {
   cautions: string[]
 }
 
+export type AnalysisSummary = {
+  stage: string
+  label: string
+  tone: 'success' | 'warning' | 'danger' | 'info' | 'muted' | string
+  next_action: string
+  is_mock: boolean
+  source: string
+  schema_version: string
+  extraction_status: string
+  document_status: string
+  document_count: number
+  unit_option_count: number
+  latest_error: string
+}
+
 export type Favorite = {
   favorite_type: 'notice' | 'product' | 'policy'
   object_id: number
@@ -86,6 +102,7 @@ export type HousingRecommendation = {
   is_service_target?: boolean
   exclude_reason?: string
   official_document_status?: string
+  analysis_summary?: AnalysisSummary
   document_count?: number
   unit_option_count?: number
   title: string
@@ -105,6 +122,7 @@ export type HousingRecommendation = {
   total_score: number
   option_fit_score?: number
   best_option?: BestUnitOption | null
+  top_options?: BestUnitOption[]
   score_detail: {
     eligibility: number
     funding: number
@@ -130,6 +148,7 @@ export type BestUnitOption = {
   middle_payment: number
   final_payment: number
   option_fit_score: number
+  fit_reasons?: string[]
 }
 
 export type FundingPlan = {
@@ -177,7 +196,16 @@ export type NoticeExtraction = {
   source: string
   option_count: number
   warnings: Record<string, string[]>
+  evidence: ExtractionEvidence[]
   created_at: string
+}
+
+export type ExtractionEvidence = {
+  id: number
+  field_path: string
+  page_no?: number | null
+  source_text: string
+  confidence: number
 }
 
 export type PaymentSchedule = {
@@ -211,9 +239,21 @@ export type HousingUnitOption = {
   payment_schedules: PaymentSchedule[]
 }
 
+export type NoticeEligibilityChecklist = {
+  id: number
+  notice_id: number
+  document_id?: number | null
+  category: string
+  title: string
+  condition_text: string
+  evidence_text: string
+  confidence: number
+}
+
 export type NoticeDocumentStatus = {
   notice_id: number
   official_document_status: string
+  analysis_summary: AnalysisSummary
   document_count: number
   unit_option_count: number
   analyzed_option_count: number

@@ -8,11 +8,11 @@ from apps.ai_coach.models import AiExtractionResult
 from apps.ai_coach.services.ai_client import AiClientError, chat_completion, llm_enabled
 from apps.notice_docs.services.extractors import ExtractedSchedule, ExtractedUnitOption
 from apps.notice_docs.services.pdf_parser import PdfPageText
+from apps.notice_docs.services.retrieval import candidate_chunks_for_notice_document
 from apps.notice_docs.services.schemas import NOTICE_DOCUMENT_EXTRACTION_SCHEMA
 from apps.notices.models import HousingNotice
 
 
-CHUNK_KEYWORDS = ("주택가격", "공급금액", "계약금", "중도금", "잔금", "무주택", "소득", "자산", "청약통장")
 PROMPT_VERSION = "notice-doc-llm-v1"
 
 
@@ -108,13 +108,7 @@ def _prompt_input(notice: HousingNotice, pages: list[PdfPageText]) -> str:
 
 
 def _candidate_chunks(pages: list[PdfPageText], *, limit: int = 8, max_chars: int = 1800) -> list[str]:
-    candidates: list[PdfPageText] = []
-    for page in pages:
-        if any(keyword in page.text for keyword in CHUNK_KEYWORDS):
-            candidates.append(page)
-    if not candidates:
-        candidates = pages[:limit]
-    return [f"[page {page.page_no}]\n{page.text[:max_chars]}" for page in candidates[:limit]]
+    return candidate_chunks_for_notice_document(pages, limit_per_purpose=max(1, limit // 3), max_chars=max_chars)[:limit]
 
 
 def _option_from_payload(item: dict[str, Any]) -> ExtractedUnitOption:

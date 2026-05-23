@@ -9,6 +9,7 @@ from django.conf import settings
 from django.db import OperationalError, ProgrammingError
 
 from apps.notices.services.classifier import classify_notice_payload
+from apps.notice_docs.services.status import fixture_analysis_summary, notice_analysis_summary
 
 
 FIXTURE_PATH = settings.BASE_DIR / "fixtures" / "firsthome_mvp.json"
@@ -68,7 +69,7 @@ def _db_notices() -> list[dict[str, Any]]:
 
 def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
     classification = classify_notice_payload(notice)
-    return {
+    payload = {
         **notice.copy(),
         "source_id": str(notice.get("id", "")),
         "data_source": "fixture",
@@ -81,6 +82,7 @@ def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
         "document_count": 0,
         "unit_option_count": 0,
     }
+    return {**payload, "analysis_summary": fixture_analysis_summary(payload)}
 
 
 def _fixture_product(product: dict[str, Any]) -> dict[str, Any]:
@@ -160,6 +162,7 @@ def _serialize_notice(notice: Any) -> dict[str, Any]:
         payload["is_service_target"] = classification.is_service_target
     if not payload["exclude_reason"]:
         payload["exclude_reason"] = classification.exclude_reason
+    payload["analysis_summary"] = notice_analysis_summary(notice)
     return payload
 
 

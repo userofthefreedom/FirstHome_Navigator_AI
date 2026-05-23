@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { ArrowUpDown, Bookmark, CalendarDays, CheckCircle2, ChevronRight, Clock3, ExternalLink, MapPin, ShieldAlert, Sparkles } from 'lucide-vue-next'
+import { ArrowUpDown, Bookmark, CalendarDays, CheckCircle2, ChevronRight, Clock3, ExternalLink, MapPin, Sparkles } from 'lucide-vue-next'
 import { addFavorite, fetchFavorites, fetchHousingRecommendations, removeFavorite } from '../api/firsthome'
-import type { Favorite, HousingRecommendation } from '../types/firsthome'
+import type { BestUnitOption, Favorite, HousingRecommendation } from '../types/firsthome'
+import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus'
 import { formatMoney } from '../utils/format'
 import { useProfileStore } from '../stores/profileStore'
 
@@ -23,6 +24,11 @@ function favoriteKey(noticeId: number) {
 
 function isFavorite(noticeId: number) {
   return favorites.value.some((favorite) => favorite.favorite_type === 'notice' && favorite.object_id === noticeId)
+}
+
+function recommendationOptions(item: HousingRecommendation): BestUnitOption[] {
+  if (item.top_options?.length) return item.top_options
+  return item.best_option ? [item.best_option] : []
 }
 
 async function toggleFavorite(noticeId: number) {
@@ -114,6 +120,9 @@ onMounted(loadRecommendations)
               <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{{ item.supply_type }}</span>
               <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">{{ item.data_source ?? 'fixture' }}</span>
               <span class="rounded-md bg-violet-50 px-2 py-1 text-xs font-semibold text-violet-700">옵션 맞춤 {{ item.option_fit_score ?? 0 }}점</span>
+              <span class="rounded-md px-2 py-1 text-xs font-semibold" :class="analysisBadgeClass(analysisSummary(item.analysis_summary, item.official_document_status))">
+                {{ analysisSummary(item.analysis_summary, item.official_document_status).label }}
+              </span>
               <span v-if="!item.is_price_confirmed" class="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">금액 확인 필요</span>
             </div>
             <h2 class="mt-3 text-xl font-bold text-slate-950">{{ item.title }}</h2>
@@ -175,18 +184,50 @@ onMounted(loadRecommendations)
                   <Clock3 class="h-4 w-4" />
                   공식 확인
                 </span>
-                <ShieldAlert class="h-4 w-4 text-amber-600" />
+                <span class="rounded-md px-2 py-1 text-xs font-bold" :class="analysisBadgeClass(analysisSummary(item.analysis_summary, item.official_document_status))">
+                  {{ analysisSummary(item.analysis_summary, item.official_document_status).label }}
+                </span>
               </div>
             </div>
+            <p class="mt-3 rounded-lg bg-white p-3 text-xs leading-5 text-slate-600">
+              {{ analysisSummary(item.analysis_summary, item.official_document_status).next_action }}
+            </p>
             <p class="mt-5 text-sm text-slate-500">예상 분양가</p>
             <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(item.price) }}</p>
-            <div v-if="item.best_option" class="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
+            <div v-if="item.top_options?.length" class="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
+              <p class="text-xs font-bold text-blue-700">추천 주택형 옵션</p>
+              <div class="mt-2 space-y-2">
+                <RouterLink
+                  v-for="option in recommendationOptions(item)"
+                  :key="option.option_id"
+                  :to="{ path: `/funding/${item.notice_id}`, query: { option_id: option.option_id } }"
+                  class="block rounded-lg bg-white p-3 text-sm transition hover:bg-blue-100"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <p class="font-bold text-slate-950">{{ option.unit_type }} · {{ option.floor_group || '기본' }}</p>
+                      <p class="mt-1 text-xs text-slate-600">{{ option.exclusive_area_m2 }}㎡ · {{ priceLabel(option.base_price) }}</p>
+                      <p v-if="option.fit_reasons?.length" class="mt-2 text-xs leading-5 text-slate-500">
+                        {{ option.fit_reasons[0] }}
+                      </p>
+                    </div>
+                    <span class="rounded-md bg-slate-950 px-2 py-1 text-xs font-bold text-white">
+                      {{ option.option_fit_score }}점
+                    </span>
+                  </div>
+                </RouterLink>
+              </div>
+            </div>
+            <div v-if="item.best_option && !item.top_options?.length" class="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
               <p class="text-xs font-bold text-blue-700">추천 주택형</p>
               <p class="mt-1 font-bold text-slate-950">
                 {{ item.best_option.unit_type }} · {{ item.best_option.floor_group }}
               </p>
               <p class="mt-1 text-sm text-slate-600">
                 {{ item.best_option.exclusive_area_m2 }}㎡ · {{ priceLabel(item.best_option.base_price) }}
+              </p>
+              <p v-if="item.best_option.fit_reasons?.length" class="mt-2 text-xs leading-5 text-slate-500">
+                {{ item.best_option.fit_reasons[0] }}
               </p>
               <RouterLink
                 :to="{ path: `/funding/${item.notice_id}`, query: { option_id: item.best_option.option_id } }"

@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from apps.notice_docs.models import EligibilityChecklist, HousingUnitOption, NoticeDocument, NoticeExtraction, PaymentSchedule
+from apps.notice_docs.models import (
+    EligibilityChecklist,
+    ExtractionEvidence,
+    HousingUnitOption,
+    NoticeDocument,
+    NoticeExtraction,
+    PaymentSchedule,
+)
 
 
 def serialize_document(document: NoticeDocument) -> dict:
@@ -32,7 +39,21 @@ def serialize_extraction(extraction: NoticeExtraction | None) -> dict | None:
         "source": extraction.raw_json.get("source", "") if isinstance(extraction.raw_json, dict) else "",
         "option_count": extraction.raw_json.get("option_count", 0) if isinstance(extraction.raw_json, dict) else 0,
         "warnings": extraction.raw_json.get("warnings", {}) if isinstance(extraction.raw_json, dict) else {},
+        "evidence": [
+            serialize_evidence(evidence)
+            for evidence in extraction.evidence.order_by("id")
+        ],
         "created_at": extraction.created_at.isoformat() if extraction.created_at else "",
+    }
+
+
+def serialize_evidence(evidence: ExtractionEvidence) -> dict:
+    return {
+        "id": evidence.id,
+        "field_path": evidence.field_path,
+        "page_no": evidence.page_no,
+        "source_text": evidence.source_text,
+        "confidence": evidence.confidence,
     }
 
 
