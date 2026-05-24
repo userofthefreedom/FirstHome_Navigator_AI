@@ -13,7 +13,7 @@
       }
     },
     {
-      "file_name": "★260430_왕숙2지구아테라입주자모집공고(최종).pdf",
+      "file_name": "private_public_sale_wangsuk_atera_a1_20260430.pdf",
       "kind": "include",
       "ownership_type": "private_participation_public_sale",
       "case_type": "lh_private_participation_public_sale",
@@ -25,7 +25,19 @@
       }
     },
     {
-      "file_name": "시흥하중A1블록신혼희망타운(공공분양)입주자모집공고문.pdf",
+      "file_name": "newlywed_public_sale_siheung_hajung_a1_20260430.pdf",
+      "kind": "include",
+      "ownership_type": "newlywed_public_sale",
+      "case_type": "lh_newlywed_public_sale",
+      "expected": {
+        "min_unit_options": 1,
+        "min_payment_schedules_per_option": 3,
+        "required_schedule_types": ["down_payment", "middle_payment", "final_payment"],
+        "required_keywords": ["신혼희망타운", "공공분양", "계약금", "중도금", "잔금"]
+      }
+    },
+    {
+      "file_name": "newlywed_public_sale_incheon_gyeyang_a9_20260430.pdf",
       "kind": "include",
       "ownership_type": "newlywed_public_sale",
       "case_type": "lh_newlywed_public_sale",
@@ -44,43 +56,7 @@
       "expected": {
         "exclude_keywords": ["행복주택", "임대"]
       }
-    },
-    {
-      "file_name": "(20260522)영월주천국민임대주택예비입주자모집공고문.pdf",
-      "kind": "exclude",
-      "ownership_type": "excluded",
-      "case_type": "lh_national_rent",
-      "expected": {
-        "exclude_keywords": ["국민임대", "임대"]
-      }
-    },
-    {
-      "file_name": "아산배방LH4단지오피스텔잔여세대선착순동호지정공고(계약금500만원,3년무이자할부)(26.05.21.).pdf",
-      "kind": "exclude",
-      "ownership_type": "excluded",
-      "case_type": "lh_officetel_remaining_units",
-      "expected": {
-        "exclude_keywords": ["오피스텔", "잔여세대", "선착순"]
-      }
-    },
-    {
-      "file_name": "서귀포혁신1단지선착순동호지정공고문(260330게시).pdf",
-      "kind": "exclude",
-      "ownership_type": "excluded",
-      "case_type": "lh_remaining_units_general_sale",
-      "expected": {
-        "exclude_keywords": ["잔여세대", "일반매각", "선착순"]
-      }
-    },
-    {
-      "file_name": "진해석동우림필유잔여주택일반매각공고문(2026.04.30.).pdf",
-      "kind": "exclude",
-      "ownership_type": "excluded",
-      "case_type": "lh_remaining_house_general_sale",
-      "expected": {
-        "exclude_keywords": ["잔여주택", "일반매각"]
-      }
     }
   ],
-  "notes": "v6.1 P0 PDF 회귀 세트입니다. include는 공공분양 추천/옵션/납부일정 추출 대상이고, exclude는 현재 MVP 범위 밖으로 분류되어야 하는 공고입니다."
+  "notes": "Regression set intentionally favors official LH ownership-sale PDFs that are bundled in this repository. Additional downloaded ownership PDFs may remain in manifest.json as parser-expansion candidates."
 }
