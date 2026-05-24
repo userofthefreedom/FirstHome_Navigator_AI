@@ -9,6 +9,7 @@ from django.test import TestCase, override_settings
 
 from apps.notice_docs.models import HousingUnitOption, NoticeDocument, PaymentSchedule
 from apps.notice_docs.services import analyze_notice_document, analyze_notice_with_mock_data, parse_lh_document_candidates
+from apps.notice_docs.services.extractors import extract_unit_options_from_pages
 from apps.notice_docs.services.pdf_parser import PdfPageText, download_remote_pdf, extract_pdf_table_text
 from apps.notice_docs.services.retrieval import (
     build_document_chunks,
@@ -200,6 +201,51 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertIn("59A", ranked[0].chunk.text)
         self.assertTrue(any("matched" in chunk and "주택가격" in chunk for chunk in prompt_chunks))
         self.assertTrue(any("무주택" in chunk for chunk in prompt_chunks))
+
+    def test_rules_extractor_normalizes_unit_type_and_skips_invalid_area(self):
+        pages = [
+            PdfPageText(
+                page_no=4,
+                text=(
+                    "공급금액 및 납부일정\n"
+                    "[table 1]\n"
+                    "주택형 층 선택 주택가격 계약금 중도금 잔금 융자금\n"
+                    "059A 1층 기본형 320,000 32,000 192,000 96,000 0\n"
+                    "200A 1층 잘못된행 320,000 32,000 192,000 96,000 0"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual([option.unit_type for option in options], ["59A"])
+        self.assertEqual(options[0].exclusive_area_m2, 59.0)
+
+    def test_rules_extractor_reads_area_prefix_rows_without_treating_area_code_as_unit(self):
+        pages = [
+            PdfPageText(
+                page_no=6,
+                text=(
+                    "공급금액 및 납부일정\n"
+                    "주택가격 계약금 중도금 잔금 융자금\n"
+                    "B1블록 (1단지) 074.9400A 74A 101동(3호) 1층 3 "
+                    "495,516,000 24,775,000 148,654,000 247,087,000 75,000,000\n"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual(len(options), 1)
+        self.assertEqual(options[0].unit_type, "74A")
+        self.assertEqual(options[0].exclusive_area_m2, 74.0)
+        self.assertEqual(options[0].floor_group, "B1블록 1층")
+        self.assertEqual(options[0].base_price, 495516000)
+        self.assertEqual(options[0].loan_amount, 75000000)
+        self.assertEqual(
+            [schedule.payment_type for schedule in options[0].payment_schedules],
+            ["down_payment", "middle_payment", "final_payment"],
+        )
 
     def test_reanalysis_preserves_previous_result_when_pdf_is_unavailable(self):
         first_result = analyze_notice_with_mock_data(self.notice)

@@ -101,7 +101,7 @@ onMounted(loadNotices)
         <div>
           <p class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700">
             <ListChecks class="h-4 w-4" />
-            지역 공고
+            지역별 소유형 공고
           </p>
           <h1 class="mt-1 text-2xl font-bold text-slate-950">{{ selectedRegion }}</h1>
         </div>
@@ -111,7 +111,7 @@ onMounted(loadNotices)
       </div>
 
       <p class="mt-2 text-sm text-slate-500">
-        지도 숫자는 임대형 공고를 제외한 소유형 공공분양만 계산합니다.
+        지도 숫자는 임대형 공고를 제외한 소유형 공공분양만 계산하며, 상세 화면에서 주택형 옵션과 공식 분석 상태를 이어서 확인합니다.
       </p>
 
       <div v-if="loading" class="mt-5 rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-600">
@@ -150,7 +150,7 @@ onMounted(loadNotices)
             :to="`/notices/${notice.id}`"
             class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
           >
-            상세보기
+            옵션 보기
             <ChevronRight class="h-4 w-4" />
           </RouterLink>
         </article>
@@ -162,7 +162,7 @@ onMounted(loadNotices)
           PDF 분석 상태
         </p>
         <p class="mt-1">
-          오늘 구현 범위에서는 공식 공고문을 자동 대량 다운로드하지 않고, 상세 페이지의 분석 준비 상태까지만 연결합니다.
+          지도는 지역 탐색용입니다. 공식 공고문 분석, 주택형 옵션, 계약금 부족액은 상세와 자금 화면에서 확인합니다.
         </p>
       </div>
     </aside>

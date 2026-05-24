@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from time import perf_counter
 from typing import Any
 
 from apps.ai_coach.models import AiChatLog
@@ -54,7 +55,8 @@ def coach_chat(
     if notice is None or plan is None:
         return None
 
-    llm_response = _coach_chat_with_llm(notice, plan, profile, message)
+    official_context = _official_context(notice_id, plan.get("option_id"))
+    llm_response = _coach_chat_with_llm(notice, plan, profile, message, official_context=official_context)
     if llm_response:
         return llm_response
 
@@ -95,10 +97,7 @@ def coach_chat(
         "option_id": plan.get("option_id"),
         "reply": sanitize_reply(reply),
         "suggested_actions": sanitize_actions(actions),
-        "context_refs": [
-            {"type": "notice", "notice_id": notice_id},
-            {"type": "funding_plan", "notice_id": notice_id, "option_id": plan.get("option_id")},
-        ],
+        "context_refs": official_context["refs"],
     }
     _save_chat_log(response, message, provider="template", safety_flags=safety_flags(reply))
     return response
@@ -109,11 +108,14 @@ def _coach_chat_with_llm(
     plan: dict[str, Any],
     profile: dict[str, Any],
     message: str,
+    *,
+    official_context: dict[str, Any],
 ) -> dict[str, Any] | None:
     if not llm_enabled("chat"):
         return None
 
-    context = _chat_context(notice, plan, profile)
+    context = _chat_context(notice, plan, profile, official_context=official_context)
+    started_at = perf_counter()
     try:
         ai_response = chat_completion(
             messages=[
@@ -132,7 +134,9 @@ def _coach_chat_with_llm(
             response_schema=COACH_CHAT_SCHEMA,
             temperature=0.2,
         )
+        latency_ms = round((perf_counter() - started_at) * 1000)
     except AiClientError as exc:
+        latency_ms = round((perf_counter() - started_at) * 1000)
         _save_chat_log(
             {
                 "notice_id": notice["id"],
@@ -144,6 +148,7 @@ def _coach_chat_with_llm(
             message,
             provider="llm_failed",
             error_message=str(exc),
+            latency_ms=latency_ms,
         )
         return None
 
@@ -155,7 +160,7 @@ def _coach_chat_with_llm(
         "option_id": plan.get("option_id"),
         "reply": sanitize_reply(str(payload.get("reply", ""))),
         "suggested_actions": sanitize_actions([str(action) for action in payload.get("suggested_actions", [])]),
-        "context_refs": payload.get("context_refs", []),
+        "context_refs": payload.get("context_refs") or official_context["refs"],
     }
     if not response["reply"]:
         return None
@@ -166,6 +171,7 @@ def _coach_chat_with_llm(
         model_name=ai_response.model,
         raw_response=ai_response.raw_response,
         safety_flags=safety_flags(str(payload.get("reply", ""))),
+        latency_ms=latency_ms,
     )
     return response
 
@@ -218,11 +224,19 @@ def _unit_label(plan: dict[str, Any]) -> str:
     return f"{plan.get('unit_type', '')} {plan.get('floor_group', '')}".strip()
 
 
-def _chat_context(notice: dict[str, Any], plan: dict[str, Any], profile: dict[str, Any]) -> str:
+def _chat_context(
+    notice: dict[str, Any],
+    plan: dict[str, Any],
+    profile: dict[str, Any],
+    *,
+    official_context: dict[str, Any],
+) -> str:
     timeline = "\n".join(
         f"- {row.get('label')}: {row.get('date')} / {int(row.get('amount') or 0):,}원"
         for row in plan.get("timeline", [])[:8]
     )
+    evidence = "\n".join(official_context["evidence_lines"][:6]) or "- 공식 근거 문장은 아직 연결되지 않았습니다."
+    checklists = "\n".join(official_context["checklist_lines"][:5]) or "- 공식 체크리스트는 아직 연결되지 않았습니다."
     return (
         f"공고: {notice['title']}\n"
         f"지역/공급유형: {notice['region']} {notice['district']} / {notice['supply_type']}\n"
@@ -233,8 +247,63 @@ def _chat_context(notice: dict[str, Any], plan: dict[str, Any], profile: dict[st
         f"월 준비 목표: {plan.get('monthly_target', 0):,}원\n"
         f"사용자 자산: {int(profile.get('asset') or 0):,}원\n"
         f"월 저축 가능액: {int(profile.get('monthly_saving') or 0):,}원\n"
-        f"타임라인:\n{timeline}"
+        f"타임라인:\n{timeline}\n"
+        f"공식 근거 후보:\n{evidence}\n"
+        f"공식 확인 체크리스트:\n{checklists}"
     )
+
+
+def _official_context(notice_id: int, option_id: int | None) -> dict[str, Any]:
+    refs: list[dict[str, str]] = [
+        {"type": "notice", "id": str(notice_id), "label": "공고 기본 정보"},
+        {"type": "funding_plan", "id": f"notice:{notice_id}:option:{option_id or 'representative'}", "label": "자금 로드맵"},
+    ]
+    evidence_lines: list[str] = []
+    checklist_lines: list[str] = []
+    try:
+        from apps.notice_docs.models import EligibilityChecklist, ExtractionEvidence, HousingUnitOption
+
+        option = None
+        if option_id:
+            option = (
+                HousingUnitOption.objects.filter(id=option_id, notice_id=notice_id)
+                .prefetch_related("payment_schedules")
+                .first()
+            )
+        if option is None:
+            option = (
+                HousingUnitOption.objects.filter(notice_id=notice_id)
+                .prefetch_related("payment_schedules")
+                .order_by("-confidence", "exclusive_area_m2", "id")
+                .first()
+            )
+        if option is not None:
+            refs.append({"type": "unit_option", "id": str(option.id), "label": f"{option.unit_type} {option.floor_group}".strip()})
+            if option.source_text:
+                evidence_lines.append(_source_line("주택형/분양가", option.source_page, option.source_text))
+            for schedule in option.payment_schedules.all()[:6]:
+                refs.append({"type": "payment_schedule", "id": str(schedule.id), "label": schedule.label})
+                if schedule.evidence_text:
+                    evidence_lines.append(_source_line(schedule.label, option.source_page, schedule.evidence_text))
+
+        for item in EligibilityChecklist.objects.filter(notice_id=notice_id).order_by("category", "id")[:5]:
+            refs.append({"type": "checklist", "id": str(item.id), "label": item.title})
+            checklist_lines.append(f"- {item.title}: {item.condition_text}")
+            if item.evidence_text:
+                evidence_lines.append(_source_line(item.title, None, item.evidence_text))
+
+        for evidence in ExtractionEvidence.objects.filter(extraction__notice_id=notice_id).order_by("id")[:5]:
+            refs.append({"type": "evidence", "id": str(evidence.id), "label": evidence.field_path})
+            evidence_lines.append(_source_line(evidence.field_path, evidence.page_no, evidence.source_text))
+    except Exception:
+        return {"refs": refs, "evidence_lines": evidence_lines, "checklist_lines": checklist_lines}
+    return {"refs": refs, "evidence_lines": evidence_lines, "checklist_lines": checklist_lines}
+
+
+def _source_line(label: str, page_no: int | None, text: str) -> str:
+    page = f"{page_no}쪽" if page_no else "페이지 확인 필요"
+    snippet = " ".join(str(text or "").split())[:220]
+    return f"- {label} ({page}): {snippet}"
 
 
 def _save_chat_log(
@@ -246,16 +315,33 @@ def _save_chat_log(
     raw_response: dict[str, Any] | None = None,
     error_message: str = "",
     safety_flags: list[str] | None = None,
+    latency_ms: int = 0,
 ) -> None:
+    answer = str(response.get("reply", ""))
     AiChatLog.objects.create(
         notice_id=response.get("notice_id"),
         option_id=response.get("option_id"),
         question=question,
-        answer=str(response.get("reply", "")),
+        answer=answer,
         provider=provider,
         model_name=model_name,
         source_refs=response.get("context_refs", []),
         safety_flags=safety_flags or [],
         raw_response=raw_response or {},
         error_message=error_message,
+        latency_ms=max(0, latency_ms),
+        prompt_chars=len(question),
+        response_chars=len(answer),
+        estimated_cost_krw=_estimated_cost_krw(raw_response or {}),
     )
+
+
+def _estimated_cost_krw(raw_response: dict[str, Any]) -> int:
+    usage = raw_response.get("usage") if isinstance(raw_response, dict) else None
+    if not isinstance(usage, dict):
+        return 0
+    prompt_tokens = int(usage.get("prompt_tokens") or 0)
+    completion_tokens = int(usage.get("completion_tokens") or 0)
+    if prompt_tokens <= 0 and completion_tokens <= 0:
+        return 0
+    return round((prompt_tokens * 0.0002 + completion_tokens * 0.0006) * 1400 / 1000)

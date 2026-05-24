@@ -10,6 +10,7 @@ type ChatMessage = {
   content: string
   actions?: string[]
   source?: string
+  contextRefs?: Array<Record<string, any>>
 }
 
 const route = useRoute()
@@ -21,15 +22,15 @@ const activeNoticeId = ref<number | null>(null)
 const messages = ref<ChatMessage[]>([
   {
     role: 'assistant',
-    content: '추천 공고를 기준으로 계약금, 일정, 공식 공고문 확인 포인트를 바로 정리해드릴게요.',
+    content: '선택한 공고와 주택형 옵션을 기준으로 계약금 부족액, 납부 일정, 공식 확인 포인트를 정리해드릴게요.',
   },
 ])
 
 const quickPrompts = [
-  '이 공고에서 내가 가장 먼저 확인할 조건은?',
+  '이 옵션에서 내가 가장 먼저 확인할 조건은?',
   '선택한 옵션의 계약금 부담은 어느 정도야?',
   '59A와 74A 중 지금 자금으로 더 현실적인 옵션은?',
-  '공식 공고문에서 확인해야 할 문장은 어디야?',
+  '공식 공고문에서 확인해야 할 근거는 어디야?',
   '이번 주에 해야 할 일을 3개로 정리해줘.',
 ]
 
@@ -80,6 +81,7 @@ async function sendMessage(nextMessage = draft.value) {
       content: response.reply,
       actions: response.suggested_actions,
       source: response.source,
+      contextRefs: response.context_refs,
     })
   } catch {
     messages.value.push({
@@ -96,6 +98,20 @@ function handleEnter(event: KeyboardEvent) {
   event.preventDefault()
   void sendMessage()
 }
+
+function contextLabel(ref: Record<string, any>) {
+  const labels: Record<string, string> = {
+    notice: '공고',
+    funding_plan: '자금계산',
+    unit_option: '주택형',
+    payment_schedule: '납부일정',
+    checklist: '체크리스트',
+    evidence: '근거문장',
+  }
+  const type = String(ref.type ?? '')
+  const label = String(ref.label ?? ref.id ?? '')
+  return `${(labels[type] ?? type) || '근거'}: ${label}`
+}
 </script>
 
 <template>
@@ -111,10 +127,10 @@ function handleEnter(event: KeyboardEvent) {
           </span>
           <div>
             <p class="flex items-center gap-1 text-sm font-bold text-white">
-              청약 준비 코치
+              주택형 자금 코치
               <Sparkles class="h-3.5 w-3.5 text-amber-300" />
             </p>
-            <p class="text-xs text-slate-300">계약금, 일정, 공고문 확인</p>
+            <p class="text-xs text-slate-300">옵션별 계약금, 일정, 공식 근거</p>
           </div>
         </div>
         <button
@@ -148,6 +164,21 @@ function handleEnter(event: KeyboardEvent) {
             <p v-if="message.source" class="mt-2 border-t border-slate-200 pt-2 text-[11px] font-bold uppercase text-slate-400">
               source: {{ message.source }}
             </p>
+            <div
+              v-if="message.contextRefs?.length"
+              class="mt-2 border-t border-slate-200 pt-2 text-[11px] text-slate-500"
+            >
+              <p class="font-bold text-slate-400">사용한 근거</p>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <span
+                  v-for="ref in message.contextRefs.slice(0, 4)"
+                  :key="`${ref.type}-${ref.id}`"
+                  class="rounded border border-slate-200 bg-white px-1.5 py-0.5"
+                >
+                  {{ contextLabel(ref) }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
         <div v-if="pending" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
@@ -192,7 +223,7 @@ function handleEnter(event: KeyboardEvent) {
       v-else
       type="button"
       class="relative flex h-16 w-16 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700"
-      title="청약 준비 코치 열기"
+      title="주택형 자금 코치 열기"
       @click="isOpen = true"
     >
       <span class="text-sm font-black leading-none">AI</span>

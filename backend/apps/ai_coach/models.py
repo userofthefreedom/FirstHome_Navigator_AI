@@ -94,6 +94,10 @@ class AiChatLog(models.Model):
     safety_flags = models.JSONField(default=list, blank=True)
     raw_response = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)
+    latency_ms = models.PositiveIntegerField(default=0)
+    prompt_chars = models.PositiveIntegerField(default=0)
+    response_chars = models.PositiveIntegerField(default=0)
+    estimated_cost_krw = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

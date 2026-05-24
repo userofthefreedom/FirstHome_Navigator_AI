@@ -74,9 +74,9 @@ onMounted(loadRecommendations)
   <div class="space-y-5">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p class="text-sm font-semibold text-blue-700">추천 청약</p>
-        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">조건 기반 TOP 3</h1>
-        <p class="mt-2 text-sm text-slate-500">소유형 공공분양만 대상으로 자격, 자금, 지역, 일정, 정책 연계를 합산하고 희망 면적·분양가 맞춤도를 함께 봅니다.</p>
+        <p class="text-sm font-semibold text-blue-700">주택형 옵션 추천</p>
+        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">검토할 후보 TOP 3</h1>
+        <p class="mt-2 text-sm text-slate-500">소유형 공공분양만 대상으로 자격, 자금, 지역, 일정, 정책 연계를 합산하고 공고 안의 주택형 옵션 맞춤도를 함께 봅니다.</p>
       </div>
       <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button">
         <ArrowUpDown class="h-4 w-4" />
@@ -93,7 +93,7 @@ onMounted(loadRecommendations)
     </section>
 
     <section v-else-if="recommendations.length === 0" class="rounded-lg border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-600 shadow-sm">
-      조건에 맞는 추천 후보가 없습니다. 희망 지역이나 공급 유형을 완화해 보세요.
+      조건에 맞는 검토 후보가 없습니다. 희망 지역, 면적, 분양가 범위를 조금 넓혀 보세요.
     </section>
 
     <section v-else class="space-y-4">
@@ -103,8 +103,8 @@ onMounted(loadRecommendations)
             <Sparkles class="h-5 w-5" />
           </div>
           <div>
-            <p class="font-bold text-slate-950">{{ recommendations.length }}개 청약 후보가 조건과 맞습니다</p>
-            <p class="text-sm text-slate-500">{{ profileStore.profile.name || '현재 사용자' }}님의 백엔드 세션 조건이 추천 점수에 반영됩니다.</p>
+            <p class="font-bold text-slate-950">{{ recommendations.length }}개 공고에서 검토할 주택형을 찾았습니다</p>
+            <p class="text-sm text-slate-500">{{ profileStore.profile.name || '현재 사용자' }}님의 자금, 희망 면적, 분양가 조건이 추천 점수에 반영됩니다.</p>
           </div>
         </div>
         <RouterLink to="/profile" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700">
@@ -155,7 +155,7 @@ onMounted(loadRecommendations)
             </div>
 
             <div class="mt-5 space-y-2">
-              <p class="text-sm font-semibold text-slate-700">추천 근거</p>
+              <p class="text-sm font-semibold text-slate-700">검토 근거</p>
               <div v-for="reason in item.reasons" :key="reason" class="flex items-start gap-2 text-sm text-slate-600">
                 <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 <span>{{ reason }}</span>
@@ -195,7 +195,7 @@ onMounted(loadRecommendations)
             <p class="mt-5 text-sm text-slate-500">예상 분양가</p>
             <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(item.price) }}</p>
             <div v-if="item.top_options?.length" class="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
-              <p class="text-xs font-bold text-blue-700">추천 주택형 옵션</p>
+              <p class="text-xs font-bold text-blue-700">우선 검토할 주택형 옵션</p>
               <div class="mt-2 space-y-2">
                 <RouterLink
                   v-for="option in recommendationOptions(item)"
@@ -219,7 +219,7 @@ onMounted(loadRecommendations)
               </div>
             </div>
             <div v-if="item.best_option && !item.top_options?.length" class="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
-              <p class="text-xs font-bold text-blue-700">추천 주택형</p>
+              <p class="text-xs font-bold text-blue-700">우선 검토할 주택형</p>
               <p class="mt-1 font-bold text-slate-950">
                 {{ item.best_option.unit_type }} · {{ item.best_option.floor_group }}
               </p>
@@ -233,14 +233,14 @@ onMounted(loadRecommendations)
                 :to="{ path: `/funding/${item.notice_id}`, query: { option_id: item.best_option.option_id } }"
                 class="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg bg-slate-950 text-sm font-bold text-white"
               >
-                옵션 자금 보기
+                이 옵션 자금 보기
               </RouterLink>
             </div>
             <RouterLink
               :to="`/notices/${item.notice_id}`"
               class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
             >
-              공고 상세 보기
+              공식 근거 보기
               <ChevronRight class="h-4 w-4" />
             </RouterLink>
             <button
@@ -250,7 +250,7 @@ onMounted(loadRecommendations)
               @click="toggleFavorite(item.notice_id)"
             >
               <Bookmark class="h-4 w-4" :class="isFavorite(item.notice_id) ? 'fill-blue-600 text-blue-600' : ''" />
-              {{ isFavorite(item.notice_id) ? '청약 저장됨' : '청약 저장' }}
+              {{ isFavorite(item.notice_id) ? '공고 저장됨' : '공고 저장' }}
             </button>
             <a
               v-if="item.source_url"
@@ -267,7 +267,7 @@ onMounted(loadRecommendations)
       </article>
 
       <div class="rounded-lg border border-amber-100 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
-        추천 결과는 fixture 기반 참고 정보이며 청약 당첨, 정책 수급, 대출 승인을 보장하지 않습니다. 실제 신청 전 공식 공고문을 확인하세요.
+        추천 결과는 공식 공고문 분석과 입력 조건 기반의 참고 정보이며 청약 당첨, 정책 수급, 대출 승인을 보장하지 않습니다. 실제 신청 전 공식 공고문을 확인하세요.
       </div>
     </section>
   </div>

@@ -162,10 +162,10 @@ onMounted(loadFunding)
           <div>
             <p class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700">
               <WalletCards class="h-4 w-4" />
-              자금 로드맵
+              옵션 자금 로드맵
             </p>
-            <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">계약금 준비 계획</h1>
-            <p class="mt-2 text-sm text-slate-500">{{ selectedNotice.title }} 기준으로 필요한 현금 흐름을 계산합니다.</p>
+            <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">계약금 부족액과 납부 일정</h1>
+            <p class="mt-2 text-sm text-slate-500">{{ selectedNotice.title }}의 선택 주택형 기준으로 필요한 현금 흐름을 계산합니다.</p>
             <div class="mt-3 flex flex-wrap gap-2">
               <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ selectedNotice.data_source ?? 'fixture' }}</span>
               <span v-if="fundingPlan.schedule_source === 'payment_schedule'" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
@@ -179,10 +179,10 @@ onMounted(loadFunding)
           </div>
           <div class="flex flex-wrap gap-2">
             <RouterLink to="/recommendations" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">
-              추천 다시 보기
+              추천 옵션 다시 보기
             </RouterLink>
             <RouterLink :to="`/notices/${selectedNotice.id}`" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700">
-              공고 상세
+              공식 근거
             </RouterLink>
             <button
               type="button"
@@ -194,7 +194,7 @@ onMounted(loadFunding)
               {{ isFavorite('notice', selectedNotice.id) ? '공고 저장됨' : '공고 저장' }}
             </button>
             <RouterLink :to="`/ai-coach/${selectedNotice.id}`" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
-              AI 코치 보기
+              AI에게 물어보기
             </RouterLink>
           </div>
         </div>
@@ -263,7 +263,7 @@ onMounted(loadFunding)
           <div>
             <p class="text-sm font-semibold text-blue-700">주택형 옵션 비교</p>
             <h2 class="mt-1 text-lg font-bold text-slate-950">분양가, 계약금, 부족액을 한 번에 비교</h2>
-            <p class="mt-1 text-sm text-slate-500">공식 공고문에서 추출한 주택형별 납부 일정 기준입니다.</p>
+            <p class="mt-1 text-sm text-slate-500">공식 공고문에서 추출한 주택형별 분양가와 납부 일정 기준입니다.</p>
           </div>
           <span v-if="selectedOptionLabel()" class="rounded-md bg-slate-950 px-3 py-2 text-sm font-bold text-white">
             선택: {{ selectedOptionLabel() }}

@@ -92,7 +92,7 @@ onMounted(loadCoach)
       <section class="rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-sm sm:p-6">
         <p class="inline-flex items-center gap-2 text-sm font-semibold text-blue-200">
           <Bot class="h-4 w-4" />
-          AI 첫집 코치
+          AI 주택형 자금 코치
         </p>
         <div class="mt-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
@@ -115,7 +115,7 @@ onMounted(loadCoach)
               @click="toggleFavorite"
             >
               <Bookmark class="h-4 w-4" :class="isFavorite ? 'fill-blue-600 text-blue-600' : ''" />
-              {{ isFavorite ? '관심 저장됨' : '관심 저장' }}
+              {{ isFavorite ? '공고 저장됨' : '공고 저장' }}
             </button>
           </div>
         </div>
@@ -125,7 +125,7 @@ onMounted(loadCoach)
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <h2 class="flex items-center gap-2 text-lg font-bold text-slate-950">
             <ClipboardCheck class="h-5 w-5 text-blue-700" />
-            이번 주 체크리스트
+            이번 주 확인할 일
           </h2>
           <ol class="mt-5 space-y-3">
             <li v-for="(todo, index) in aiCoach.todo_this_week" :key="todo" class="flex gap-3 rounded-lg border border-slate-100 bg-slate-50 p-4">
@@ -145,7 +145,7 @@ onMounted(loadCoach)
           <div class="mt-5 grid gap-3">
             <div v-for="item in aiCoach.official_checklist" :key="item" class="rounded-lg border border-slate-100 bg-slate-50 p-4">
               <p class="font-bold text-slate-800">{{ item }}</p>
-              <p class="mt-1 text-xs leading-5 text-slate-500">추천 결과와 별개로 공식 공고문에서 직접 확인해야 합니다.</p>
+              <p class="mt-1 text-xs leading-5 text-slate-500">AI 답변과 별개로 공식 공고문에서 직접 확인해야 합니다.</p>
             </div>
           </div>
         </div>

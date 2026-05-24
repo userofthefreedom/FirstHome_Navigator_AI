@@ -14,6 +14,23 @@ const noticeFavorites = computed(() => favorites.value.filter((favorite) => favo
 const optionFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'option'))
 const productFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'product'))
 const policyFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'policy'))
+const savedOptionRows = computed(() => {
+  return optionFavorites.value
+    .map((favorite) => ({
+      favorite,
+      name: itemName(favorite),
+      noticeId: Number(favorite.item?.notice_id ?? 0),
+      unitType: String(favorite.item?.unit_type ?? ''),
+      floorGroup: String(favorite.item?.floor_group ?? '전체'),
+      area: Number(favorite.item?.exclusive_area_m2 ?? 0),
+      price: Number(favorite.item?.base_price ?? 0),
+      downPayment: downPayment(favorite),
+      middlePayment: paymentAmount(favorite, 'middle_payment'),
+      finalPayment: paymentAmount(favorite, 'final_payment'),
+      confidence: Number(favorite.item?.confidence ?? 0),
+    }))
+    .sort((a, b) => a.downPayment - b.downPayment || a.price - b.price)
+})
 
 function favoriteKey(favorite: Favorite) {
   return `${favorite.favorite_type}-${favorite.object_id}`
@@ -57,9 +74,15 @@ function itemDescription(favorite: Favorite) {
 }
 
 function downPayment(favorite: Favorite) {
+  return paymentAmount(favorite, 'down_payment')
+}
+
+function paymentAmount(favorite: Favorite, paymentType: string) {
   const schedules = favorite.item?.payment_schedules ?? []
-  const row = Array.isArray(schedules) ? schedules.find((item) => item.payment_type === 'down_payment') : null
-  return Number(row?.amount ?? 0)
+  if (!Array.isArray(schedules)) return 0
+  return schedules
+    .filter((item) => item.payment_type === paymentType)
+    .reduce((total, item) => total + Number(item.amount ?? 0), 0)
 }
 
 function sourceUrl(favorite: Favorite) {
@@ -99,11 +122,11 @@ onMounted(loadFavorites)
           <Bookmark class="h-4 w-4" />
           관심 목록
         </p>
-        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">저장한 공고와 자금 후보</h1>
-        <p class="mt-2 text-sm text-slate-500">공고, 주택형 옵션, 금융상품, 정책을 한곳에서 다시 확인합니다.</p>
+        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">저장한 주택형과 준비 후보</h1>
+        <p class="mt-2 text-sm text-slate-500">공고, 주택형 옵션, 금융상품, 정책을 한곳에서 다시 비교합니다.</p>
       </div>
       <RouterLink to="/recommendations" class="inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-bold text-white">
-        추천 보러 가기
+        추천 옵션 보러 가기
       </RouterLink>
     </div>
 
@@ -117,7 +140,7 @@ onMounted(loadFavorites)
 
     <section v-else-if="favorites.length === 0" class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <p class="font-bold text-slate-950">아직 저장한 항목이 없습니다.</p>
-      <p class="mt-2 text-sm text-slate-500">추천, 공고 상세, 자금 로드맵 화면에서 관심 항목을 저장할 수 있습니다.</p>
+      <p class="mt-2 text-sm text-slate-500">추천, 공고 상세, 자금 로드맵 화면에서 검토할 공고와 주택형 옵션을 저장할 수 있습니다.</p>
     </section>
 
     <template v-else>
@@ -127,7 +150,7 @@ onMounted(loadFavorites)
           <p class="mt-2 text-2xl font-bold text-slate-950">{{ noticeFavorites.length }}건</p>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm font-semibold text-slate-500">저장 주택형</p>
+          <p class="text-sm font-semibold text-slate-500">저장 옵션</p>
           <p class="mt-2 text-2xl font-bold text-slate-950">{{ optionFavorites.length }}건</p>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -137,6 +160,55 @@ onMounted(loadFavorites)
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-sm font-semibold text-slate-500">저장 정책</p>
           <p class="mt-2 text-2xl font-bold text-slate-950">{{ policyFavorites.length }}건</p>
+        </div>
+      </section>
+
+      <section v-if="savedOptionRows.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-blue-700">저장 옵션 비교</p>
+            <h2 class="mt-1 text-lg font-bold text-slate-950">계약금이 낮은 순서로 다시 보기</h2>
+            <p class="mt-1 text-sm text-slate-500">저장한 주택형의 분양가, 계약금, 중도금, 잔금을 한눈에 비교합니다.</p>
+          </div>
+          <span class="rounded-md bg-slate-950 px-3 py-2 text-sm font-bold text-white">{{ savedOptionRows.length }}개 옵션</span>
+        </div>
+
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-[760px] w-full text-left text-sm">
+            <thead class="border-b border-slate-200 text-xs font-bold text-slate-500">
+              <tr>
+                <th class="py-3 pr-3">주택형</th>
+                <th class="px-3 py-3">면적</th>
+                <th class="px-3 py-3">분양가</th>
+                <th class="px-3 py-3">계약금</th>
+                <th class="px-3 py-3">중도금</th>
+                <th class="px-3 py-3">잔금</th>
+                <th class="py-3 pl-3 text-right">이동</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-for="row in savedOptionRows" :key="favoriteKey(row.favorite)" class="align-top">
+                <td class="py-3 pr-3">
+                  <p class="font-bold text-slate-950">{{ row.unitType }} · {{ row.floorGroup }}</p>
+                  <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ row.name }}</p>
+                </td>
+                <td class="px-3 py-3 font-semibold text-slate-700">{{ row.area }}㎡</td>
+                <td class="px-3 py-3 font-semibold text-slate-950">{{ formatMoney(row.price) }}</td>
+                <td class="px-3 py-3 font-bold text-blue-700">{{ formatMoney(row.downPayment) }}</td>
+                <td class="px-3 py-3 text-slate-700">{{ formatMoney(row.middlePayment) }}</td>
+                <td class="px-3 py-3 text-slate-700">{{ formatMoney(row.finalPayment) }}</td>
+                <td class="py-3 pl-3 text-right">
+                  <RouterLink
+                    v-if="row.noticeId"
+                    :to="{ path: `/funding/${row.noticeId}`, query: { option_id: row.favorite.object_id } }"
+                    class="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-bold text-white"
+                  >
+                    자금 보기
+                  </RouterLink>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -179,7 +251,7 @@ onMounted(loadFavorites)
               class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700"
             >
               <WalletCards class="h-4 w-4" />
-              자금 로드맵
+              공고 자금 보기
             </RouterLink>
             <RouterLink
               v-if="favorite.favorite_type === 'option' && favorite.item?.notice_id"
@@ -187,7 +259,7 @@ onMounted(loadFavorites)
               class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white"
             >
               <WalletCards class="h-4 w-4" />
-              옵션 자금 보기
+              저장 옵션 자금 보기
             </RouterLink>
             <a
               v-if="sourceUrl(favorite)"

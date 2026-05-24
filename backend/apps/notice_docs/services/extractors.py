@@ -14,6 +14,15 @@ UNIT_ROW_PATTERN = re.compile(
     r"(?P<meta>.{0,40}?)"
     r"(?P<amounts>(?:\d{1,3}(?:,\d{3})+){3,12})"
 )
+AREA_PREFIX_ROW_PATTERN = re.compile(
+    r"(?P<block>B\d블록(?:\s*\([^)]*\))?)?\s*"
+    r"0?\d{2,3}\.\d{4}[A-Z]?\s+"
+    r"(?P<unit>\d{2,3}[A-Z])\s+"
+    r"(?P<meta>.*?)"
+    r"(?P<floor>최상층|\d{1,2}층|전체)\s+"
+    r"(?P<count>\d+)\s+"
+    r"(?P<amounts>\d{1,3}(?:,\d{3})+(?:\s+\d{1,3}(?:,\d{3})+){3,})"
+)
 DATE_PATTERN = re.compile(r"(?P<year>\d{2,4})[.년/-]\s*(?P<month>\d{1,2})[.월/-]\s*(?P<day>\d{1,2})")
 
 
@@ -52,10 +61,20 @@ def extract_unit_options_from_pages(pages: list[PdfPageText]) -> list[ExtractedU
         if not _is_price_section(page.text):
             continue
         due_dates = _extract_middle_due_dates(page.text)
+        for option in _options_from_area_prefix_rows(page, due_dates):
+            if not _is_valid_base_price(option.base_price) or not _is_valid_exclusive_area(option.exclusive_area_m2):
+                continue
+            key = (option.unit_type, option.floor_group, option.option_type)
+            if key in seen:
+                continue
+            seen.add(key)
+            options.append(option)
+            if len(options) >= 20:
+                return options
         compact_text = re.sub(r"\s+", "", page.text)
         for match in UNIT_ROW_PATTERN.finditer(compact_text):
             option = _option_from_match(page, match, due_dates)
-            if option.base_price <= 0:
+            if not _is_valid_base_price(option.base_price) or not _is_valid_exclusive_area(option.exclusive_area_m2):
                 continue
             key = (option.unit_type, option.floor_group, option.option_type)
             if key in seen:
@@ -66,6 +85,56 @@ def extract_unit_options_from_pages(pages: list[PdfPageText]) -> list[ExtractedU
                 return options
 
     return options
+
+
+def _options_from_area_prefix_rows(page: PdfPageText, due_dates: list[date]) -> list[ExtractedUnitOption]:
+    options: list[ExtractedUnitOption] = []
+    active_block = ""
+    for raw_line in page.text.splitlines():
+        line = re.sub(r"\s+", " ", raw_line).strip()
+        block_match = re.search(r"B\d블록", line)
+        if block_match:
+            active_block = block_match.group(0)
+        for match in AREA_PREFIX_ROW_PATTERN.finditer(line):
+            block = _clean_block_label(match.group("block") or active_block)
+            option = _option_from_area_prefix_match(page, match, due_dates, line, block)
+            options.append(option)
+    return options
+
+
+def _option_from_area_prefix_match(
+    page: PdfPageText,
+    match: re.Match[str],
+    due_dates: list[date],
+    source_text: str,
+    block: str,
+) -> ExtractedUnitOption:
+    unit_type = _normalize_unit_type(match.group("unit"))
+    meta = match.group("meta")
+    amounts = [_money_to_won(value) for value in re.findall(r"\d{1,3},\d{3}(?:,\d{3})?", match.group("amounts"))]
+    base_price = amounts[0] if amounts else 0
+    loan_amount = amounts[-1] if len(amounts) >= 5 else 0
+    payment_amounts = amounts[1:-1] if len(amounts) >= 5 else amounts[1:]
+    schedules = _payment_schedules(payment_amounts, due_dates, page)
+    floor_group = " ".join(part for part in [block, match.group("floor")] if part).strip() or _floor_group(meta)
+
+    return ExtractedUnitOption(
+        unit_type=unit_type,
+        exclusive_area_m2=_exclusive_area(unit_type),
+        floor_group=floor_group,
+        option_type="minus" if "마이너스" in meta else "basic",
+        base_price=base_price,
+        loan_amount=loan_amount,
+        balcony_extension_price=0,
+        confidence=0.82 if base_price and schedules else 0.58,
+        source_page=page.page_no,
+        source_text=source_text,
+        payment_schedules=schedules,
+        evidence=[
+            {"field_path": "unit_option.base_price", "page_no": page.page_no, "source_text": source_text, "confidence": 0.82},
+            {"field_path": "unit_option.payment_schedule", "page_no": page.page_no, "source_text": source_text, "confidence": 0.74},
+        ],
+    )
 
 
 def extract_checklist_items(pages: list[PdfPageText]) -> list[dict[str, Any]]:
@@ -94,7 +163,7 @@ def extract_checklist_items(pages: list[PdfPageText]) -> list[dict[str, Any]]:
 
 
 def _option_from_match(page: PdfPageText, match: re.Match[str], due_dates: list[date]) -> ExtractedUnitOption:
-    unit_type = match.group("unit")
+    unit_type = _normalize_unit_type(match.group("unit"))
     meta = match.group("meta")
     amounts = [_money_to_won(value) for value in re.findall(r"\d{1,3},\d{3}", match.group("amounts"))]
     base_price = amounts[0] if amounts else 0
@@ -185,6 +254,24 @@ def _money_to_won(value: str) -> int:
 def _exclusive_area(unit_type: str) -> float:
     match = re.match(r"(\d{2,3})", unit_type)
     return float(match.group(1)) if match else 0
+
+
+def _normalize_unit_type(unit_type: str) -> str:
+    match = re.match(r"0*(\d{2,3})([A-Z])", unit_type or "")
+    return f"{int(match.group(1))}{match.group(2)}" if match else unit_type
+
+
+def _clean_block_label(value: str) -> str:
+    match = re.search(r"B\d블록", value or "")
+    return match.group(0) if match else ""
+
+
+def _is_valid_exclusive_area(value: float) -> bool:
+    return 20 <= value <= 120
+
+
+def _is_valid_base_price(value: int) -> bool:
+    return value >= 100_000_000
 
 
 def _floor_group(meta: str) -> str:

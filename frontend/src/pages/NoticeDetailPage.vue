@@ -219,11 +219,11 @@ onMounted(loadDetail)
               @click="toggleFavorite"
             >
               <Bookmark class="h-4 w-4" :class="isFavorite ? 'fill-blue-600 text-blue-600' : ''" />
-              {{ isFavorite ? '관심 저장됨' : '관심 저장' }}
+              {{ isFavorite ? '공고 저장됨' : '공고 저장' }}
             </button>
             <RouterLink :to="`/funding/${selectedNotice.id}`" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
               <WalletCards class="h-4 w-4" />
-              자금 로드맵
+              옵션 자금 보기
             </RouterLink>
             <a
               v-if="selectedNotice.source_url"
@@ -233,7 +233,7 @@ onMounted(loadDetail)
               class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
             >
               <ExternalLink class="h-4 w-4" />
-              공식 공고문 보기
+              공식 원문 보기
             </a>
           </div>
         </div>
@@ -321,7 +321,7 @@ onMounted(loadDetail)
           <div>
             <p class="inline-flex items-center gap-2 text-sm font-bold text-blue-700">
               <Bot class="h-4 w-4" />
-              AI 공고문 분석 준비
+              공식 공고문 분석 상태
             </p>
             <div class="mt-1 flex flex-wrap items-center gap-2">
               <h2 class="text-lg font-bold text-slate-950">{{ currentAnalysisSummary.label }}</h2>
@@ -381,7 +381,7 @@ onMounted(loadDetail)
       </section>
 
       <section v-if="unitOptions.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-lg font-bold text-slate-950">주택형 옵션 분석 결과</h2>
+        <h2 class="text-lg font-bold text-slate-950">검토 가능한 주택형 옵션</h2>
         <p class="mt-1 text-sm text-slate-500">
           {{ extractionLabel(documentStatus?.latest_extraction?.schema_version, documentStatus?.latest_extraction?.source) }} 기준입니다. 공식 원문과 다르면 원문이 우선입니다.
         </p>
@@ -423,7 +423,7 @@ onMounted(loadDetail)
               :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }"
               class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
             >
-              이 옵션으로 자금 로드맵
+              이 옵션 자금 보기
               <WalletCards class="h-4 w-4" />
             </RouterLink>
           </article>
@@ -436,8 +436,8 @@ onMounted(loadDetail)
           참고용 안내
         </p>
         <p class="mt-2">
-          추천 결과는 fixture 기반 참고 정보이며 청약 당첨, 정책 수급, 대출 승인을 보장하지 않습니다.
-          실제 신청 전 공식 공고문에서 소득·자산·무주택·접수 일정을 확인해야 합니다.
+          분석 결과는 공식 공고문과 입력 조건 기반의 참고 정보이며 청약 당첨, 정책 수급, 대출 승인을 보장하지 않습니다.
+          실제 신청 전 공식 공고문에서 소득·자산·무주택·납부 일정을 확인해야 합니다.
         </p>
         <a
           v-if="selectedNotice.source_url"

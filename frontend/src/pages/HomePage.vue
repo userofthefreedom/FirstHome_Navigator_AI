@@ -136,10 +136,10 @@ const preApplyTasks = computed(() => {
   if (!selected.value) return []
   return [
     {
-      title: '청약 자격과 배점 확인',
+      title: '주택형 옵션의 공식 자격 확인',
       date: '오늘',
       status: '진행',
-      description: `${selected.value.supply_type} 조건, 무주택 기준, 청약통장 가입기간을 공식 공고문 기준으로 다시 확인합니다.`,
+      description: `${selected.value.supply_type} 조건, 무주택 기준, 청약통장 가입기간을 선택 후보의 공식 공고문 기준으로 다시 확인합니다.`,
     },
     {
       title: '필수 서류 발급 가능 여부 확인',
@@ -148,16 +148,16 @@ const preApplyTasks = computed(() => {
       description: `${selected.value.required_documents.slice(0, 3).join(', ')} 발급 시점과 유효 기간을 확인합니다.`,
     },
     {
-      title: '청약 접수 완료',
+      title: '접수 전 공식 일정 고정',
       date: selected.value.application_deadline,
       status: '마감',
-      description: '접수 번호와 신청 화면을 저장하고 당첨자 발표 일정을 알림으로 남깁니다.',
+      description: '접수 마감, 당첨자 발표, 계약일을 공식 공고문 기준으로 다시 확인하고 일정에 남깁니다.',
     },
     {
-      title: '계약금 계좌 분리',
+      title: '계약금 부족액 준비',
       date: selected.value.contract_date,
       status: '예정',
-      description: `부족액 ${formatMoney(selectedPlan.value?.shortfall ?? 0)}을 기준으로 월 저축 목표를 점검합니다.`,
+      description: `부족액 ${formatMoney(selectedPlan.value?.shortfall ?? 0)}을 기준으로 계약 전까지 필요한 월 저축 목표를 점검합니다.`,
     },
   ]
 })
@@ -276,13 +276,13 @@ onMounted(loadDashboard)
             <div class="min-w-0">
               <div class="mb-5 inline-flex items-center gap-2 rounded-md bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-normal text-blue-700">
                 <Sparkles class="h-4 w-4" />
-                API 기반 청약 대시보드
+                주택형 옵션 준비 대시보드
               </div>
               <h1 class="max-w-3xl break-words text-3xl font-bold leading-tight text-slate-950 sm:text-4xl">
-                {{ dashboard?.profile.name || '게스트' }}님의 청약 준비 현황
+                {{ dashboard?.profile.name || '게스트' }}님의 첫 집 준비 현황
               </h1>
               <p class="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
-                추천 후보, 접수 마감, 계약금 부족액을 우선순위대로 정리했습니다.
+                소유형 공공분양 안에서 검토할 주택형 옵션, 계약금 부족액, 공식 확인 항목을 우선순위대로 정리했습니다.
               </p>
             </div>
             <RouterLink to="/profile" class="inline-flex h-10 items-center justify-center rounded-lg bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800">
@@ -292,7 +292,7 @@ onMounted(loadDashboard)
 
           <div class="mt-7 grid gap-3 md:grid-cols-4">
             <div class="rounded-lg bg-slate-50 p-4">
-              <p class="text-xs font-bold text-slate-500">추천</p>
+              <p class="text-xs font-bold text-slate-500">검토 후보</p>
               <p class="mt-2 text-2xl font-bold text-slate-950">{{ recommendations.length }}</p>
             </div>
             <div class="rounded-lg bg-slate-50 p-4">
@@ -344,10 +344,10 @@ onMounted(loadDashboard)
           </div>
           <div class="mt-5 flex flex-wrap gap-2">
             <RouterLink :to="`/notices/${selected.id}`" class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-950">
-              공고 상세
+              공고문 근거
             </RouterLink>
             <RouterLink :to="`/funding/${selected.id}`" class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white">
-              자금 보기
+              옵션 자금
             </RouterLink>
           </div>
         </div>
@@ -357,8 +357,8 @@ onMounted(loadDashboard)
         <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div class="flex items-center justify-between gap-3 border-b border-slate-200 p-5">
             <div>
-              <h2 class="text-lg font-bold text-slate-950">청약 순위 요약</h2>
-              <p class="mt-1 text-sm text-slate-500">후보를 선택하면 오른쪽 일정과 하단 준비 계획이 함께 바뀝니다.</p>
+              <h2 class="text-lg font-bold text-slate-950">검토 후보 요약</h2>
+              <p class="mt-1 text-sm text-slate-500">후보를 선택하면 공식 일정과 계약금 준비 계획이 함께 바뀝니다.</p>
             </div>
             <Trophy class="h-5 w-5 text-blue-600" />
           </div>
@@ -489,7 +489,7 @@ onMounted(loadDashboard)
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-lg font-bold text-slate-950">선택 청약 상세 요약</h2>
+              <h2 class="text-lg font-bold text-slate-950">선택 후보 상세 요약</h2>
               <p class="mt-1 text-sm text-slate-500">{{ selected.title }} 기준</p>
             </div>
             <RouterLink :to="`/notices/${selected.id}`" class="text-sm font-bold text-blue-700 hover:text-blue-800">상세 보기</RouterLink>
@@ -523,8 +523,8 @@ onMounted(loadDashboard)
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-5 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-lg font-bold text-slate-950">접수 전 해야 할 일</h2>
-              <p class="mt-1 text-sm text-slate-500">선택한 청약의 신청 준비 계획입니다.</p>
+              <h2 class="text-lg font-bold text-slate-950">이번 주 확인할 일</h2>
+              <p class="mt-1 text-sm text-slate-500">선택한 후보를 실제로 검토하기 위한 준비 계획입니다.</p>
             </div>
             <ClipboardList class="h-5 w-5 text-slate-400" />
           </div>
@@ -553,9 +553,9 @@ onMounted(loadDashboard)
             <div class="flex items-start gap-3">
               <FileCheck2 class="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
               <div>
-                <p class="font-bold text-slate-950">AI 코치로 다음 행동을 확인할 수 있습니다</p>
+                <p class="font-bold text-slate-950">AI 코치로 옵션별 다음 행동을 확인할 수 있습니다</p>
                 <p class="mt-1 text-sm text-slate-600">
-                  추천 사유, 이번 주 할 일, 공식 확인 항목을 같은 후보 기준으로 이어서 봅니다.
+                  계약금 부족액, 이번 주 할 일, 공식 확인 항목을 같은 주택형 기준으로 이어서 봅니다.
                 </p>
               </div>
             </div>

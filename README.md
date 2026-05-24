@@ -512,6 +512,9 @@ cd backend
 python manage.py check
 python manage.py makemigrations --check --dry-run
 python manage.py test
+python manage.py check_sample_pdf_regression --report-json=reports/sample_pdf_regression_review.json
+python manage.py check_representative_flow --report-json=reports/representative_flow_review.json
+python manage.py check_ai_chat_smoke --report-json=reports/ai_chat_smoke_review.json
 
 cd ../frontend
 npm run build
@@ -525,6 +528,24 @@ npm run build
 - 상품/정책 matcher 개인화 여부
 - `/api/ai/chat` fallback 응답, 길이 제한, 안전 문구 치환
 - 공고문 분석 후 `NoticeExtraction`, `HousingUnitOption`, `PaymentSchedule` 저장 상태와 source 표시
+
+DB 상태를 명확히 나누어 확인할 때는 아래 기준을 사용합니다.
+
+```bash
+cd backend
+
+# 발표/개발용 fixture 상태로 되돌림
+python manage.py load_firsthome_fixture --with-demo-analysis
+
+# 실제 LH 수집 상태로 전환하거나 보강
+python manage.py import_lh --page-size 100 --max-pages 3 --with-supply-info --supply-limit 50
+python manage.py analyze_notice_documents --limit 10 --report-json=reports/lh_actual_readiness_review.json
+
+# AI 채팅 LLM 연결까지 강제 확인하고 싶을 때
+python manage.py check_ai_chat_smoke --require-llm --report-json=reports/ai_chat_smoke_review.json
+```
+
+`check_ai_chat_smoke`는 기본적으로 template fallback도 정상 smoke로 인정합니다. 실제 LLM 호출을 필수로 볼 때만 `--require-llm`을 붙입니다.
 
 ---
 

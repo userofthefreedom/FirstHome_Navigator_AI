@@ -49,6 +49,30 @@
       }
     },
     {
+      "file_name": "public_sale_namyangju_wangsuk2_a3_corrected_20260430.pdf",
+      "kind": "include",
+      "ownership_type": "public_sale",
+      "case_type": "lh_public_sale_corrected",
+      "expected": {
+        "min_unit_options": 1,
+        "min_payment_schedules_per_option": 3,
+        "required_schedule_types": ["down_payment", "middle_payment", "final_payment"],
+        "required_keywords": ["공공분양", "주택가격", "계약금", "중도금", "잔금"]
+      }
+    },
+    {
+      "file_name": "private_public_sale_wangsuk_prugio_b2_20250729.pdf",
+      "kind": "include",
+      "ownership_type": "private_participation_public_sale",
+      "case_type": "lh_private_participation_public_sale_area_prefix",
+      "expected": {
+        "min_unit_options": 1,
+        "min_payment_schedules_per_option": 3,
+        "required_schedule_types": ["down_payment", "middle_payment", "final_payment"],
+        "required_keywords": ["민간참여", "공공분양", "계약금", "중도금", "잔금"]
+      }
+    },
+    {
       "file_name": "rent_notice_506.pdf",
       "kind": "exclude",
       "ownership_type": "excluded",

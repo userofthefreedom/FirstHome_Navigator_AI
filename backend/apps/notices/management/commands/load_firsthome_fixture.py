@@ -4,6 +4,7 @@ from datetime import datetime
 
 from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.test import override_settings
 
 from apps.fixture_store import load_fixture
 from apps.notice_docs.services.analysis import analyze_notice_document
@@ -117,5 +118,8 @@ class Command(BaseCommand):
             notice = HousingNotice.objects.get(id=101)
         except HousingNotice.DoesNotExist:
             return " Demo analysis skipped: notice #101 is missing."
-        result = analyze_notice_document(notice, pdf_path=sample_pdf)
+        ai_settings = getattr(settings, "AI_SETTINGS", {}).copy()
+        ai_settings["ENABLE_LLM_EXTRACTION"] = False
+        with override_settings(AI_SETTINGS=ai_settings):
+            result = analyze_notice_document(notice, pdf_path=sample_pdf)
         return f" Demo analysis loaded for notice #101 with {len(result.get('unit_options', []))} option(s)."

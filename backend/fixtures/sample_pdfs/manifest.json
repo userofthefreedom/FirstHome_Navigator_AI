@@ -42,21 +42,21 @@
   },
   {
     "file_name": "public_sale_namyangju_wangsuk2_a3_corrected_20260430.pdf",
-    "kind": "candidate",
+    "kind": "include",
     "ownership_type": "public_sale",
     "source": "LH official notice PDF, fileid 66758428",
     "source_url": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=66758428",
     "official_page": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?aisTpCd=05&ccrCnntSysDsCd=02&mi=1027&panId=0000061086&uppAisTpCd=05",
-    "purpose": "Candidate fixture for parser-expansion checks on corrected standard public-sale notices."
+    "purpose": "Verify corrected standard public-sale notices with multiple ownership options."
   },
   {
     "file_name": "private_public_sale_wangsuk_prugio_b2_20250729.pdf",
-    "kind": "candidate",
+    "kind": "include",
     "ownership_type": "private_participation_public_sale",
     "source": "LH official notice PDF, fileid 62857739",
     "source_url": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=62857739",
     "official_page": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?aisTpCd=05&ccrCnntSysDsCd=02&mi=1027&panId=0000060928&uppAisTpCd=05",
-    "purpose": "Candidate fixture for parser-expansion checks on private-participation public-sale notices."
+    "purpose": "Verify private-participation public-sale extraction when rows start with detailed area codes before the unit type."
   },
   {
     "file_name": "rent_notice_506.pdf",
