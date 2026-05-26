@@ -36,7 +36,8 @@ def notices(
     ownership_type: str | None = None,
 ) -> list[dict[str, Any]]:
     db_notices = _db_notices()
-    items = db_notices if db_notices else [_fixture_notice(notice) for notice in load_fixture()["notices"]]
+    fixture_notices = [_fixture_notice(notice) for notice in load_fixture()["notices"]]
+    items = _notices_with_fixture_supplement(db_notices, fixture_notices)
     return _filter_notices(items, include_excluded=include_excluded, region=region, ownership_type=ownership_type)
 
 
@@ -83,6 +84,40 @@ def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
         "unit_option_count": int(notice.get("unit_option_count", 0) or 0),
     }
     return {**payload, "analysis_summary": fixture_analysis_summary(payload)}
+
+
+def _notices_with_fixture_supplement(
+    db_notices: list[dict[str, Any]],
+    fixture_notices: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not db_notices:
+        return fixture_notices
+
+    fallback_settings = getattr(settings, "FIRSTHOME_FIXTURE_FALLBACK", {})
+    if not fallback_settings.get("ENABLE_SUPPLEMENT", True):
+        return db_notices
+
+    min_service_notices = int(fallback_settings.get("MIN_SERVICE_NOTICES", 3) or 0)
+    if min_service_notices <= 0:
+        return db_notices
+
+    db_service_count = sum(1 for notice in db_notices if notice.get("is_service_target"))
+    if db_service_count >= min_service_notices:
+        return db_notices
+
+    existing_ids = {str(notice.get("id")) for notice in db_notices}
+    existing_source_ids = {str(notice.get("source_id")) for notice in db_notices if notice.get("source_id")}
+    needed = min_service_notices - db_service_count
+    supplements: list[dict[str, Any]] = []
+    for notice in fixture_notices:
+        if not notice.get("is_service_target"):
+            continue
+        if str(notice.get("id")) in existing_ids or str(notice.get("source_id")) in existing_source_ids:
+            continue
+        supplements.append({**notice, "data_source": "fixture fallback"})
+        if len(supplements) >= needed:
+            break
+    return [*db_notices, *supplements]
 
 
 def _fixture_product(product: dict[str, Any]) -> dict[str, Any]:

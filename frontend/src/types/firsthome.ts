@@ -144,6 +144,7 @@ export type BestUnitOption = {
   balcony_extension_price: number
   confidence: number
   source_page?: number | null
+  extraction_source?: string
   down_payment: number
   middle_payment: number
   final_payment: number
@@ -164,6 +165,8 @@ export type FundingPlan = {
   down_payment: number
   middle_payment?: number
   final_payment?: number
+  installment_payment?: number
+  loan_amount?: number
   available_cash: number
   shortfall: number
   months_until_contract: number

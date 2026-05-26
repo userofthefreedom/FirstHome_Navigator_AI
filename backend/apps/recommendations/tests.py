@@ -133,3 +133,65 @@ class RecommendationServiceTests(TestCase):
         self.assertEqual(recommendation["top_options"][0]["option_id"], option.id)
         self.assertGreater(recommendation["best_option"]["option_fit_score"], 0)
         self.assertGreaterEqual(len(recommendation["best_option"]["fit_reasons"]), 1)
+
+    @override_settings(FIRSTHOME_FIXTURE_FALLBACK={"ENABLE_SUPPLEMENT": True, "MIN_SERVICE_NOTICES": 3})
+    def test_fixture_supplements_when_real_service_notices_are_too_few(self):
+        HousingNotice.objects.create(
+            id=998,
+            source_id="LH-REAL-ONE",
+            title="실제 LH 공공분양 1건",
+            provider="LH",
+            region="경기 남부",
+            district="남양주",
+            supply_type="공공분양",
+            housing_type="분양주택",
+            area="59.95",
+            price=493040000,
+            contract_rate=0.1,
+            application_deadline="2026-06-01",
+            winner_date="2026-06-10",
+            contract_date="2026-07-01",
+            move_in="2028-01",
+            competition="350호",
+            source_url="https://apply.lh.or.kr",
+            tags=["LH", "공공분양"],
+            required_documents=[],
+            cautions=[],
+            ownership_type="public_sale",
+            is_service_target=True,
+        )
+
+        service_notices = notices()
+
+        self.assertEqual(service_notices[0]["id"], 998)
+        self.assertGreaterEqual(len(service_notices), 3)
+        self.assertTrue(any(notice["data_source"] == "fixture fallback" for notice in service_notices[1:]))
+
+    @override_settings(FIRSTHOME_FIXTURE_FALLBACK={"ENABLE_SUPPLEMENT": False, "MIN_SERVICE_NOTICES": 3})
+    def test_fixture_supplement_can_be_disabled(self):
+        HousingNotice.objects.create(
+            id=997,
+            source_id="LH-REAL-ONLY",
+            title="실제 LH 공공분양 단독",
+            provider="LH",
+            region="경기 남부",
+            district="남양주",
+            supply_type="공공분양",
+            housing_type="분양주택",
+            area="59.95",
+            price=493040000,
+            contract_rate=0.1,
+            application_deadline="2026-06-01",
+            winner_date="2026-06-10",
+            contract_date="2026-07-01",
+            move_in="2028-01",
+            competition="350호",
+            source_url="https://apply.lh.or.kr",
+            tags=["LH", "공공분양"],
+            required_documents=[],
+            cautions=[],
+            ownership_type="public_sale",
+            is_service_target=True,
+        )
+
+        self.assertEqual([notice["id"] for notice in notices()], [997])

@@ -50,6 +50,11 @@ AI_SETTINGS = {
     "ENABLE_LLM_CHAT": os.getenv("AI_ENABLE_LLM_CHAT", "false").lower() == "true",
 }
 
+FIRSTHOME_FIXTURE_FALLBACK = {
+    "ENABLE_SUPPLEMENT": os.getenv("FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT", "true").lower() == "true",
+    "MIN_SERVICE_NOTICES": int(os.getenv("FIRSTHOME_MIN_SERVICE_NOTICES", "3")),
+}
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",

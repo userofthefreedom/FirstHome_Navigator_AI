@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
@@ -166,16 +167,17 @@ def supply_info_summary(payload: list[dict[str, Any]]) -> dict[str, Any]:
     if not rows:
         return {}
 
-    areas = _unique_values(rows, ("DDO_AR", "SPL_AR", "SIL_AR"))
+    areas = _unique_values(rows, ("RSDN_DDO_AR", "DDO_AR", "SIL_AR", "SPL_AR"))
     prices = [
         amount
         for row in rows
-        for key in ("LS_GMY", "RFE", "XPC_PR", "SPL_AMT", "LTTOT_TOP_AMOUNT")
+        for key in ("SIL_AMT", "SPL_AMT", "LTTOT_TOP_AMOUNT", "XPC_PR", "LS_GMY", "RFE")
         if (amount := _money(row.get(key))) > 0
     ]
-    housing_types = _unique_values(rows, ("HTY_NNA", "SST_NM", "SBD_LGO_NM", "BZDT_NM"))
+    housing_types = _unique_values(rows, ("HTY_NM", "HTY_NNA", "SST_NM", "SBD_LGO_NM", "BZDT_NM"))
     districts = _unique_values(rows, ("SBD_LGO_NM", "BZDT_NM"))
-    total_units = sum(_int_value(row.get("HSH_CNT") or row.get("OCNT")) for row in rows)
+    total_units = sum(_int_value(row.get("SIL_HSH_CNT") or row.get("TOT_HSH_CNT") or row.get("HSH_CNT") or row.get("OCNT")) for row in rows)
+    unit_options = _supply_unit_options(rows)
 
     summary: dict[str, Any] = {"supply_rows": len(rows)}
     if areas:
@@ -188,6 +190,8 @@ def supply_info_summary(payload: list[dict[str, Any]]) -> dict[str, Any]:
         summary["district"] = districts[0][:80]
     if total_units:
         summary["competition"] = f"{total_units}호"
+    if unit_options:
+        summary["unit_options"] = unit_options
     return summary
 
 
@@ -197,7 +201,7 @@ def _extract_supply_rows(payload: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not isinstance(block, dict):
             continue
         for key, value in block.items():
-            if key.startswith("dsList") and key != "dsList01Nm" and isinstance(value, list):
+            if key.startswith("dsList") and not key.endswith("Nm") and isinstance(value, list):
                 rows.extend(item for item in value if isinstance(item, dict))
     return rows
 
@@ -224,10 +228,62 @@ def _unique_values(rows: list[dict[str, Any]], keys: tuple[str, ...]) -> list[st
     for row in rows:
         for key in keys:
             value = str(row.get(key) or "").strip()
-            if value and value != "공고문 참조":
+            if value and value != "공고문 참조" and value not in {"전용면적(㎡)", "공급면적", "단지명", "주택형"}:
                 values.append(value)
                 break
     return list(dict.fromkeys(values))
+
+
+def _supply_unit_options(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    options: list[dict[str, Any]] = []
+    seen: set[tuple[str, int]] = set()
+    for row in rows:
+        price = _first_money(row, ("SIL_AMT", "SPL_AMT", "LTTOT_TOP_AMOUNT", "XPC_PR"))
+        unit_type = _normalize_unit_type(str(row.get("HTY_NM") or row.get("HTY_NNA") or "").strip())
+        exclusive_area = _float_value(row.get("RSDN_DDO_AR") or row.get("DDO_AR") or row.get("SIL_AR"))
+        if not unit_type or price <= 0:
+            continue
+        key = (unit_type, price)
+        if key in seen:
+            continue
+        seen.add(key)
+        options.append(
+            {
+                "unit_type": unit_type,
+                "raw_unit_type": str(row.get("HTY_NM") or row.get("HTY_NNA") or "").strip(),
+                "exclusive_area_m2": exclusive_area,
+                "supply_area_m2": _float_value(row.get("SPL_AR")),
+                "base_price": price,
+                "household_count": _int_value(row.get("SIL_HSH_CNT") or row.get("TOT_HSH_CNT") or row.get("HSH_CNT")),
+                "district": str(row.get("BZDT_NM") or row.get("SBD_LGO_NM") or "").strip(),
+            }
+        )
+    return options
+
+
+def _first_money(row: dict[str, Any], keys: tuple[str, ...]) -> int:
+    for key in keys:
+        amount = _money(row.get(key))
+        if amount > 0:
+            return amount
+    return 0
+
+
+def _float_value(value: Any) -> float:
+    text = str(value or "").replace(",", "").strip()
+    try:
+        return float(text)
+    except ValueError:
+        return 0
+
+
+def _normalize_unit_type(value: str) -> str:
+    text = value.strip()
+    match = re.match(r"(?P<area>\d{2,3})(?:\.\d+)?(?P<suffix>[A-Za-z]?)", text)
+    if not match:
+        return text[:24]
+    suffix = match.group("suffix").upper() or "A"
+    return f"{int(match.group('area'))}{suffix}"
 
 
 def _money(value: Any) -> int:

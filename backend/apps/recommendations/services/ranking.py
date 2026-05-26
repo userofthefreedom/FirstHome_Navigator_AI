@@ -169,6 +169,12 @@ def _serialize_unit_option(option: Any) -> dict[str, Any]:
     down_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "down_payment")
     middle_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "middle_payment")
     final_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "final_payment")
+    extraction = getattr(option, "extraction", None)
+    extraction_source = (
+        extraction.raw_json.get("source", "")
+        if extraction and isinstance(getattr(extraction, "raw_json", None), dict)
+        else _option_fallback_source(option)
+    )
     return {
         "option_id": option.id,
         "unit_type": option.unit_type,
@@ -180,10 +186,17 @@ def _serialize_unit_option(option: Any) -> dict[str, Any]:
         "balcony_extension_price": option.balcony_extension_price,
         "confidence": option.confidence,
         "source_page": option.source_page,
+        "extraction_source": extraction_source,
         "down_payment": down_payment,
         "middle_payment": middle_payment,
         "final_payment": final_payment,
     }
+
+
+def _option_fallback_source(option: Any) -> str:
+    if str(getattr(option, "source_text", "") or "").startswith("LH 공급정보 API"):
+        return "lh_supply_info"
+    return ""
 
 
 def calculate_score(notice: dict[str, Any], profile: dict[str, Any] | None = None) -> dict[str, Any]:

@@ -37,6 +37,10 @@ const selectedOption = computed(() => {
   return unitOptions.value.find((option) => option.id === fundingPlan.value?.option_id) ?? null
 })
 const currentAnalysisSummary = computed(() => analysisSummary(selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status))
+const middleSchedules = computed(() => fundingPlan.value?.timeline.filter((item) => item.payment_type === 'middle_payment') ?? [])
+const totalMiddlePayment = computed(() => middleSchedules.value.reduce((total, item) => total + Number(item.amount || 0), 0))
+const installmentSchedules = computed(() => fundingPlan.value?.timeline.filter((item) => item.payment_type === 'installment_payment') ?? [])
+const totalInstallmentPayment = computed(() => installmentSchedules.value.reduce((total, item) => total + Number(item.amount || 0), 0))
 
 function priceLabel(price: number) {
   return price > 0 ? formatMoney(price) : '공식 확인 필요'
@@ -137,9 +141,43 @@ function comparisonStatusClass(plan?: FundingPlan) {
   return 'bg-blue-50 text-blue-700'
 }
 
+function middleScheduleRows(plan?: FundingPlan) {
+  return plan?.timeline.filter((item) => item.payment_type === 'middle_payment') ?? []
+}
+
+function middlePaymentSummary(plan?: FundingPlan) {
+  const rows = middleScheduleRows(plan)
+  if (!plan) return '-'
+  if (rows.length === 0) return '없음'
+  const total = rows.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  return `${rows.length}회 · ${formatMoney(total)}`
+}
+
 function selectedOptionLabel() {
   if (!selectedOption.value) return ''
   return `${selectedOption.value.unit_type} · ${selectedOption.value.floor_group || '전체'}`
+}
+
+function paymentTypeLabel(type?: string) {
+  if (type === 'down_payment') return '계약금'
+  if (type === 'middle_payment') return '중도금'
+  if (type === 'final_payment') return '잔금'
+  if (type === 'installment_payment') return '할부금'
+  if (type === 'move_in_balance') return '입주잔금'
+  if (type === 'loan') return '융자금'
+  if (type === 'application') return '접수'
+  if (type === 'winner') return '발표'
+  return '일정'
+}
+
+function paymentTypeClass(type?: string) {
+  if (type === 'down_payment') return 'bg-blue-50 text-blue-700'
+  if (type === 'middle_payment') return 'bg-violet-50 text-violet-700'
+  if (type === 'final_payment') return 'bg-amber-50 text-amber-700'
+  if (type === 'installment_payment') return 'bg-emerald-50 text-emerald-700'
+  if (type === 'move_in_balance') return 'bg-cyan-50 text-cyan-700'
+  if (type === 'loan') return 'bg-slate-200 text-slate-700'
+  return 'bg-slate-100 text-slate-600'
 }
 
 watch([noticeId, selectedOptionId], loadFunding)
@@ -303,6 +341,10 @@ onMounted(loadFunding)
                 <p class="mt-1 font-bold text-slate-950">{{ plan ? formatMoney(plan.down_payment) : '-' }}</p>
               </div>
               <div class="rounded-lg bg-slate-50 p-3">
+                <p class="text-xs font-bold text-slate-500">중도금</p>
+                <p class="mt-1 font-bold text-slate-950">{{ middlePaymentSummary(plan) }}</p>
+              </div>
+              <div class="rounded-lg bg-slate-50 p-3">
                 <p class="text-xs font-bold text-slate-500">부족액</p>
                 <p class="mt-1 font-bold text-blue-700">{{ plan ? formatMoney(plan.shortfall) : '-' }}</p>
               </div>
@@ -332,18 +374,39 @@ onMounted(loadFunding)
       </section>
 
       <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="flex items-center gap-2 text-lg font-bold text-slate-950">
-          <CalendarDays class="h-5 w-5 text-slate-400" />
-          납부 타임라인
-        </h2>
+        <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 class="flex items-center gap-2 text-lg font-bold text-slate-950">
+              <CalendarDays class="h-5 w-5 text-slate-400" />
+              납부 타임라인
+            </h2>
+            <p class="mt-1 text-sm text-slate-500">
+              중도금 회차가 여러 개인 공고는 회차별 금액과 일정을 나누어 표시합니다.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <div v-if="middleSchedules.length" class="rounded-lg bg-violet-50 px-3 py-2 text-right text-xs font-bold text-violet-700">
+              중도금 {{ middleSchedules.length }}회 · {{ formatMoney(totalMiddlePayment) }}
+            </div>
+            <div v-if="installmentSchedules.length" class="rounded-lg bg-emerald-50 px-3 py-2 text-right text-xs font-bold text-emerald-700">
+              할부금 {{ installmentSchedules.length }}회 · {{ formatMoney(totalInstallmentPayment) }}
+            </div>
+          </div>
+        </div>
         <div class="mt-5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
-          <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="grid gap-3 bg-white p-4 text-sm md:grid-cols-[72px_1fr_160px]">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 font-bold text-blue-700">
+          <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="grid gap-3 bg-white p-4 text-sm md:grid-cols-[64px_120px_minmax(0,1fr)_160px] md:items-start">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 font-bold text-slate-700">
               {{ index + 1 }}
             </div>
+            <span class="inline-flex w-fit rounded-md px-2 py-1 text-xs font-bold" :class="paymentTypeClass(item.payment_type)">
+              {{ paymentTypeLabel(item.payment_type) }}
+            </span>
             <div>
               <p class="font-bold text-slate-950">{{ item.label }}</p>
               <p class="mt-1 text-slate-500">{{ item.date }}</p>
+              <p v-if="item.evidence_text" class="mt-2 rounded-md bg-slate-50 p-2 text-xs leading-5 text-slate-500">
+                {{ item.evidence_text }}
+              </p>
             </div>
             <p class="font-bold text-slate-950 md:text-right">{{ formatMoney(item.amount) }}</p>
           </div>

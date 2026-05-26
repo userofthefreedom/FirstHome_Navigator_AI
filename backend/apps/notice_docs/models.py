@@ -86,6 +86,8 @@ class PaymentSchedule(models.Model):
         ("down_payment", "Down payment"),
         ("middle_payment", "Middle payment"),
         ("final_payment", "Final payment"),
+        ("installment_payment", "Installment payment"),
+        ("move_in_balance", "Move-in balance"),
         ("loan", "Loan"),
         ("other", "Other"),
     ]

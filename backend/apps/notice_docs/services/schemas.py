@@ -36,7 +36,17 @@ NOTICE_DOCUMENT_EXTRACTION_SCHEMA = {
                                     "amount": {"type": "integer"},
                                     "payment_type": {
                                         "type": "string",
-                                        "enum": ["application", "winner", "down_payment", "middle_payment", "final_payment", "loan", "other"],
+                                        "enum": [
+                                            "application",
+                                            "winner",
+                                            "down_payment",
+                                            "middle_payment",
+                                            "final_payment",
+                                            "installment_payment",
+                                            "move_in_balance",
+                                            "loan",
+                                            "other",
+                                        ],
                                     },
                                     "sequence": {"type": "integer"},
                                     "evidence_text": {"type": "string"},

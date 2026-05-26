@@ -71,6 +71,11 @@ def serialize_payment_schedule(schedule: PaymentSchedule) -> dict:
 
 def serialize_unit_option(option: HousingUnitOption) -> dict:
     extraction = option.extraction
+    extraction_source = (
+        extraction.raw_json.get("source", "")
+        if extraction and isinstance(extraction.raw_json, dict)
+        else _option_fallback_source(option)
+    )
     return {
         "id": option.id,
         "notice_id": option.notice_id,
@@ -78,11 +83,7 @@ def serialize_unit_option(option: HousingUnitOption) -> dict:
         "extraction_id": option.extraction_id,
         "extraction_schema_version": extraction.schema_version if extraction else "",
         "extraction_status": extraction.status if extraction else "",
-        "extraction_source": (
-            extraction.raw_json.get("source", "")
-            if extraction and isinstance(extraction.raw_json, dict)
-            else ""
-        ),
+        "extraction_source": extraction_source,
         "unit_type": option.unit_type,
         "exclusive_area_m2": option.exclusive_area_m2,
         "floor_group": option.floor_group,
@@ -98,6 +99,12 @@ def serialize_unit_option(option: HousingUnitOption) -> dict:
             for schedule in option.payment_schedules.all()
         ],
     }
+
+
+def _option_fallback_source(option: HousingUnitOption) -> str:
+    if str(option.source_text or "").startswith("LH 공급정보 API"):
+        return "lh_supply_info"
+    return ""
 
 
 def serialize_checklist(item: EligibilityChecklist) -> dict:

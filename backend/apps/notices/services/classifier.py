@@ -10,7 +10,7 @@ SERVICE_TARGET_TYPES = {
     "private_participation_public_sale",
 }
 
-DENY_KEYWORDS = [
+HARD_DENY_KEYWORDS = [
     "임대",
     "행복주택",
     "국민임대",
@@ -24,14 +24,17 @@ DENY_KEYWORDS = [
     "10년 공공임대",
     "청년 공공주택",
     "일반매각",
+    "분양광고",
+    "오피스텔",
+    "상가",
+]
+
+RESIDUAL_SALE_KEYWORDS = [
     "무순위",
     "잔여세대",
     "잔여주택",
     "선착순",
     "동호지정",
-    "분양광고",
-    "오피스텔",
-    "상가",
 ]
 
 
@@ -47,14 +50,16 @@ def classify_notice_payload(notice: dict[str, Any]) -> NoticeClassification:
     text = _notice_text(notice)
     normalized = text.replace(" ", "")
 
-    deny_keyword = _first_match(text, DENY_KEYWORDS)
-    if deny_keyword:
+    scope_deny_keyword = _first_match(text, ["오피스텔", "상가", "토지"])
+    if scope_deny_keyword:
         return NoticeClassification(
             ownership_type="excluded",
             is_service_target=False,
-            exclude_reason=f"서비스 범위 밖의 공고: {deny_keyword}",
+            exclude_reason=f"서비스 범위 밖의 공고: {scope_deny_keyword}",
         )
 
+    # 잔여세대/선착순 공고라도 공공분양 소유형이면 실제 서비스 대상 데이터로 활용한다.
+    # 다만 오피스텔/상가/토지처럼 주택 청약 범위 밖인 공고는 위에서 먼저 제외한다.
     if "신혼희망타운" in normalized and "공공분양" in normalized:
         return NoticeClassification(
             ownership_type="newlywed_public_sale",
@@ -74,6 +79,22 @@ def classify_notice_payload(notice: dict[str, Any]) -> NoticeClassification:
             ownership_type="public_sale",
             is_service_target=True,
             exclude_reason="",
+        )
+
+    deny_keyword = _first_match(text, HARD_DENY_KEYWORDS)
+    if deny_keyword:
+        return NoticeClassification(
+            ownership_type="excluded",
+            is_service_target=False,
+            exclude_reason=f"서비스 범위 밖의 공고: {deny_keyword}",
+        )
+
+    residual_keyword = _first_match(text, RESIDUAL_SALE_KEYWORDS)
+    if residual_keyword:
+        return NoticeClassification(
+            ownership_type="unknown",
+            is_service_target=False,
+            exclude_reason=f"잔여/선착순 공고이나 공공분양 여부 확인 필요: {residual_keyword}",
         )
 
     return NoticeClassification(

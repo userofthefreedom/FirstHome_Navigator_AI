@@ -247,6 +247,159 @@ class NoticeDocsMockExtractionTests(TestCase):
             ["down_payment", "middle_payment", "final_payment"],
         )
 
+    def test_rules_extractor_allows_no_middle_payment_schedule(self):
+        pages = [
+            PdfPageText(
+                page_no=4,
+                text=(
+                    "공급금액 및 납부일정\n"
+                    "[table 1]\n"
+                    "주택형 층 선택 주택가격 계약금 잔금\n"
+                    "59A 전체 기본형 320,000 32,000 288,000"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual(len(options), 1)
+        self.assertEqual(
+            [schedule.payment_type for schedule in options[0].payment_schedules],
+            ["down_payment", "final_payment"],
+        )
+        self.assertEqual(options[0].loan_amount, 0)
+
+    def test_rules_extractor_allows_no_middle_payment_with_loan_column(self):
+        pages = [
+            PdfPageText(
+                page_no=4,
+                text=(
+                    "공급금액 및 납부일정\n"
+                    "[table 1]\n"
+                    "주택형 층 선택 주택가격 계약금 잔금 융자금\n"
+                    "59A 전체 기본형 320,000 32,000 248,000 40,000"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual(len(options), 1)
+        self.assertEqual(
+            [schedule.payment_type for schedule in options[0].payment_schedules],
+            ["down_payment", "final_payment"],
+        )
+        self.assertEqual(options[0].loan_amount, 40000000)
+
+    def test_rules_extractor_allows_single_middle_payment_schedule(self):
+        pages = [
+            PdfPageText(
+                page_no=4,
+                text=(
+                    "공급금액 및 납부일정\n"
+                    "[table 1]\n"
+                    "주택형 층 선택 주택가격 계약금 중도금 잔금\n"
+                    "59A 전체 기본형 320,000 32,000 192,000 96,000"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual(len(options), 1)
+        middle_schedules = [schedule for schedule in options[0].payment_schedules if schedule.payment_type == "middle_payment"]
+        self.assertEqual(len(middle_schedules), 1)
+        self.assertEqual(middle_schedules[0].label, "중도금 1차")
+        self.assertEqual(options[0].loan_amount, 0)
+
+    def test_rules_extractor_allows_many_middle_payment_schedules(self):
+        dates = " ".join(f"2027.{month:02d}.01" for month in range(1, 11))
+        middle_amounts = " ".join(["35,000"] * 10)
+        pages = [
+            PdfPageText(
+                page_no=4,
+                text=(
+                    "공급금액 및 납부일정\n"
+                    f"중도금 납부일 {dates}\n"
+                    "[table 1]\n"
+                    "주택형 층 선택 주택가격 계약금 중도금 잔금\n"
+                    f"59A 전체 기본형 500,000 50,000 {middle_amounts} 100,000"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual(len(options), 1)
+        middle_schedules = [schedule for schedule in options[0].payment_schedules if schedule.payment_type == "middle_payment"]
+        self.assertEqual(len(middle_schedules), 10)
+        self.assertEqual(middle_schedules[0].label, "중도금 1차")
+        self.assertEqual(middle_schedules[-1].label, "중도금 10차")
+        self.assertEqual(middle_schedules[-1].due_date.isoformat(), "2027-10-01")
+        self.assertEqual(options[0].payment_schedules[-1].payment_type, "final_payment")
+        self.assertEqual(options[0].loan_amount, 0)
+
+    def test_rules_extractor_reads_residual_public_sale_installment_table(self):
+        pages = [
+            PdfPageText(
+                page_no=4,
+                text=(
+                    "공급금액 및 대금납부조건 주택가격 계약금 잔금\n"
+                    "[table 2]\n"
+                    "주택형 타입 층별 주택가격 발코니확장비 계약시 계약일로부터 6개월 이내 입주잔금납부일로부터 5년 후 일시납\n"
+                    "무상지원 계약금 입주잔금 융자금 (주택도시기금) 할부금 최대 선납할인금\n"
+                    "055.9300A 55A 55AH 1층 257,040 6,321 10,000 115,180 55,000 76,860 19,215\n"
+                    "2층 259,770 6,321 10,000 116,440 55,000 78,330 19,582"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertGreaterEqual(len(options), 2)
+        first = options[0]
+        self.assertEqual(first.unit_type, "55A")
+        self.assertEqual(first.floor_group, "1층")
+        self.assertEqual(first.base_price, 257040000)
+        self.assertEqual(first.balcony_extension_price, 6321000)
+        self.assertEqual(first.loan_amount, 55000000)
+        self.assertEqual(
+            [(schedule.label, schedule.payment_type, schedule.amount) for schedule in first.payment_schedules],
+            [
+                ("계약금", "down_payment", 10000000),
+                ("입주잔금", "final_payment", 115180000),
+                ("할부금", "installment_payment", 76860000),
+            ],
+        )
+
+    def test_rules_extractor_reads_general_public_sale_multi_middle_table(self):
+        pages = [
+            PdfPageText(
+                page_no=5,
+                text=(
+                    "공급금액 및 공급유형별 납부일정 계약금 중도금 잔금 분양가격\n"
+                    "[table 3]\n"
+                    "주택형 (주택타입) 층별 세대수 공급금액 계약금(10%) 중도금(60%) 잔금(30%)\n"
+                    "계약시 1차(10%) 2차(10%) 3차(10%) 4차(10%) 5차(10%) 6차(10%) 입주 시 주택도시기금\n"
+                    "’26.12.21. ’27.04.20. ’27.08.20. ’28.01.20. ’28.06.20. ’28.11.20.\n"
+                    "059.9500A 59A 1층 9 463,450,000 46,345,000 46,345,000 46,345,000 46,345,000 46,345,000 46,345,000 46,345,000 84,035,000 55,000,000"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual(len(options), 1)
+        option = options[0]
+        self.assertEqual(option.unit_type, "59A")
+        self.assertEqual(option.base_price, 463450000)
+        self.assertEqual(option.loan_amount, 55000000)
+        middle_schedules = [schedule for schedule in option.payment_schedules if schedule.payment_type == "middle_payment"]
+        self.assertEqual(len(middle_schedules), 6)
+        self.assertEqual(middle_schedules[0].due_date.isoformat(), "2026-12-21")
+        self.assertEqual(middle_schedules[-1].label, "중도금 6차")
+        self.assertEqual(option.payment_schedules[-1].amount, 84035000)
+
     def test_reanalysis_preserves_previous_result_when_pdf_is_unavailable(self):
         first_result = analyze_notice_with_mock_data(self.notice)
         first_option_ids = [option.id for option in first_result["unit_options"]]
