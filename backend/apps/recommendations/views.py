@@ -1,22 +1,24 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from apps.fixture_store import current_notices
 from apps.policies.services.matcher import match_policies
 from apps.profiles.services import profile_from_request
 from apps.products.services.matcher import match_products
-from apps.recommendations.services.ranking import ranked_recommendations
+from apps.recommendations.services.ranking import recommendation_candidate_notices, ranked_recommendations
+
+
+RECOMMENDATION_LIMIT = 6
 
 
 @api_view(["GET"])
 def dashboard(request):
     profile = profile_from_request(request)
-    recommendations = ranked_recommendations(profile, limit=3)
+    recommendations = ranked_recommendations(profile, limit=RECOMMENDATION_LIMIT)
     return Response(
         {
             "profile": profile,
             "top_recommendations": recommendations,
-            "notice_count": len(current_notices()),
+            "notice_count": len(recommendation_candidate_notices(profile)),
             "message": "소유형 공공분양 공고를 기준으로 추천과 자금 로드맵을 계산합니다.",
         }
     )
@@ -25,7 +27,7 @@ def dashboard(request):
 @api_view(["GET"])
 def housing_recommendations(request):
     profile = profile_from_request(request)
-    return Response(ranked_recommendations(profile, limit=3))
+    return Response(ranked_recommendations(profile, limit=RECOMMENDATION_LIMIT))
 
 
 @api_view(["GET"])

@@ -75,6 +75,181 @@ class RecommendationServiceTests(TestCase):
         self.assertNotIn(996, current_ids)
         self.assertNotIn(996, recommendation_ids)
 
+    def test_recommendations_keep_only_latest_correction_notice(self):
+        deadline = date.today() + timedelta(days=30)
+        common_fields = {
+            "provider": "LH",
+            "region": "경기 남부",
+            "district": "남양주왕숙2 A03",
+            "supply_type": "공공분양",
+            "housing_type": "59.0000A",
+            "area": "59.72",
+            "price": 526340000,
+            "contract_rate": 0.1,
+            "application_deadline": deadline,
+            "winner_date": deadline + timedelta(days=14),
+            "contract_date": deadline + timedelta(days=30),
+            "move_in": "2028-01",
+            "competition": "686호",
+            "source_url": "https://apply.lh.or.kr",
+            "tags": ["LH", "공공분양"],
+            "required_documents": [],
+            "cautions": [],
+            "ownership_type": "public_sale",
+            "is_service_target": True,
+        }
+        HousingNotice.objects.create(
+            id=991,
+            source_id="0000061082",
+            title="남양주왕숙2 A-3BL 공공분양주택 입주자모집공고",
+            source_meta={"pan_id": "0000061082"},
+            **common_fields,
+        )
+        HousingNotice.objects.create(
+            id=992,
+            source_id="0000061086",
+            title="[정정공고]남양주왕숙2 A-3BL 공공분양주택 입주자모집공고",
+            source_meta={"pan_id": "0000061086"},
+            **common_fields,
+        )
+        HousingNotice.objects.create(
+            id=993,
+            source_id="0000061089",
+            title="[정정공고][정정공고]남양주왕숙2 A-3BL 공공분양주택 입주자모집공고",
+            source_meta={"pan_id": "0000061089"},
+            **common_fields,
+        )
+
+        profile = {**default_profile(), "preferred_regions": []}
+        recommendation_ids = [item["notice_id"] for item in ranked_recommendations(profile, limit=20)]
+
+        self.assertIn(993, recommendation_ids)
+        self.assertNotIn(991, recommendation_ids)
+        self.assertNotIn(992, recommendation_ids)
+
+    def test_recommendations_collapse_same_notice_with_trailing_qualifier(self):
+        deadline = date.today() + timedelta(days=30)
+        common_fields = {
+            "provider": "LH",
+            "region": "경기 남부",
+            "district": "경기도",
+            "supply_type": "공공분양",
+            "housing_type": "매입임대",
+            "area": "공식 공고 확인",
+            "price": 0,
+            "contract_rate": 0.1,
+            "application_deadline": deadline,
+            "winner_date": deadline + timedelta(days=14),
+            "contract_date": deadline + timedelta(days=30),
+            "move_in": "공식 공고 확인",
+            "competition": "LH 공고",
+            "source_url": "https://apply.lh.or.kr",
+            "tags": ["LH", "공공분양"],
+            "required_documents": [],
+            "cautions": [],
+            "ownership_type": "public_sale",
+            "is_service_target": True,
+        }
+        HousingNotice.objects.create(
+            id=987,
+            source_id="2015122300019987",
+            title="[경기북부] 26년 1차 김포시 분양전환형 든든전세주택 입주자 모집공고",
+            source_meta={"pan_id": "2015122300019987"},
+            **common_fields,
+        )
+        HousingNotice.objects.create(
+            id=902,
+            source_id="2015122300019902",
+            title="[경기북부] 26년 1차 김포시 분양전환형 든든전세주택 입주자 모집공고(기존임차인)",
+            source_meta={"pan_id": "2015122300019902"},
+            **common_fields,
+        )
+
+        profile = {**default_profile(), "preferred_regions": []}
+        recommendation_ids = [item["notice_id"] for item in ranked_recommendations(profile, limit=20)]
+
+        self.assertIn(987, recommendation_ids)
+        self.assertNotIn(902, recommendation_ids)
+
+    def test_recommendations_filter_out_unselected_regions(self):
+        deadline = date.today() + timedelta(days=30)
+        common_fields = {
+            "provider": "LH",
+            "supply_type": "공공분양",
+            "housing_type": "분양주택",
+            "area": "59.00",
+            "price": 300000000,
+            "contract_rate": 0.1,
+            "application_deadline": deadline,
+            "winner_date": deadline + timedelta(days=14),
+            "contract_date": deadline + timedelta(days=30),
+            "move_in": "2028-01",
+            "competition": "100호",
+            "source_url": "https://apply.lh.or.kr",
+            "tags": ["LH", "공공분양"],
+            "required_documents": [],
+            "cautions": [],
+            "ownership_type": "public_sale",
+            "is_service_target": True,
+        }
+        HousingNotice.objects.create(
+            id=981,
+            source_id="SEOUL-REGION",
+            title="서울 테스트 공공분양주택 입주자모집공고",
+            region="서울",
+            district="서울 테스트 단지",
+            **common_fields,
+        )
+        HousingNotice.objects.create(
+            id=982,
+            source_id="CHUNGBUK-REGION",
+            title="충북 테스트 공공분양주택 입주자모집공고",
+            region="충청북도",
+            district="충북 테스트 단지",
+            **common_fields,
+        )
+        profile = {**default_profile(), "preferred_regions": ["서울", "경기 남부"]}
+
+        recommendation_ids = [item["notice_id"] for item in ranked_recommendations(profile, limit=20)]
+
+        self.assertIn(981, recommendation_ids)
+        self.assertNotIn(982, recommendation_ids)
+
+    def test_gyeonggi_subregion_filter_uses_title_when_lh_region_is_broad(self):
+        deadline = date.today() + timedelta(days=30)
+        HousingNotice.objects.create(
+            id=983,
+            source_id="GG-NORTH",
+            title="[경기북부] 김포시 공공분양주택 입주자 모집공고",
+            provider="LH",
+            region="경기 남부",
+            district="경기도",
+            supply_type="공공분양",
+            housing_type="분양주택",
+            area="59.00",
+            price=300000000,
+            contract_rate=0.1,
+            application_deadline=deadline,
+            winner_date=deadline + timedelta(days=14),
+            contract_date=deadline + timedelta(days=30),
+            move_in="2028-01",
+            competition="100호",
+            source_url="https://apply.lh.or.kr",
+            tags=["LH", "공공분양"],
+            required_documents=[],
+            cautions=[],
+            ownership_type="public_sale",
+            is_service_target=True,
+        )
+        south_profile = {**default_profile(), "preferred_regions": ["경기 남부"]}
+        north_profile = {**default_profile(), "preferred_regions": ["경기 북부"]}
+
+        south_ids = [item["notice_id"] for item in ranked_recommendations(south_profile, limit=20)]
+        north_ids = [item["notice_id"] for item in ranked_recommendations(north_profile, limit=20)]
+
+        self.assertNotIn(983, south_ids)
+        self.assertIn(983, north_ids)
+
     def test_product_and_policy_matchers_change_by_profile(self):
         representative = default_profile()
         incheon_profile = {

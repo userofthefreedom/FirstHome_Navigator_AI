@@ -80,38 +80,6 @@ onMounted(async () => {
           </RouterLink>
         </nav>
 
-        <div class="border-t border-white/10 p-4">
-          <div class="rounded-lg border border-white/10 bg-white/[0.06] p-3">
-            <p class="text-xs font-medium text-slate-400">현재 프로필</p>
-            <div class="mt-3 flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <p class="truncate font-semibold text-white">{{ displayName }}</p>
-                <p class="truncate text-xs text-slate-400">{{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}</p>
-              </div>
-              <span class="shrink-0 rounded-md bg-emerald-400/15 px-2 py-1 text-xs font-semibold text-emerald-300">
-                {{ formatMoney(profileStore.profile.asset) }}
-              </span>
-            </div>
-
-            <button
-              v-if="authStore.user.is_authenticated"
-              type="button"
-              class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/10 text-sm font-bold text-white transition hover:bg-white/15"
-              @click="handleLogout"
-            >
-              <LogOut class="h-4 w-4" />
-              로그아웃
-            </button>
-            <RouterLink
-              v-else
-              to="/auth"
-              class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-500 text-sm font-bold text-white transition hover:bg-blue-400"
-            >
-              <UserRound class="h-4 w-4" />
-              로그인
-            </RouterLink>
-          </div>
-        </div>
       </div>
     </aside>
 
@@ -125,7 +93,7 @@ onMounted(async () => {
             <span class="font-semibold">FirstHome</span>
           </RouterLink>
 
-          <div class="relative ml-auto hidden w-full max-w-lg md:block lg:ml-0">
+          <div class="relative ml-auto hidden min-w-0 flex-1 md:block lg:ml-0">
             <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
@@ -140,24 +108,32 @@ onMounted(async () => {
               <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />
             </button>
 
-            <div class="hidden items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:flex">
-              <div class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-900 text-xs font-semibold text-white">
-                AI
+            <div class="hidden min-w-0 max-w-[300px] items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:flex">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-900 text-white">
+                <UserRound class="h-4 w-4" />
               </div>
-              <div>
-                <p class="text-sm font-semibold">{{ displayName }}</p>
-                <p class="text-xs text-slate-500">{{ profileStatus }}</p>
+              <div class="min-w-0">
+                <div class="flex min-w-0 items-center gap-2">
+                  <p class="truncate text-sm font-semibold">{{ displayName }}</p>
+                  <span class="shrink-0 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                    {{ formatMoney(profileStore.profile.asset) }}
+                  </span>
+                </div>
+                <p class="truncate text-xs text-slate-500">
+                  {{ profileStatus }} · {{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}
+                </p>
               </div>
             </div>
 
             <button
               v-if="authStore.user.is_authenticated"
               type="button"
-              class="hidden h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-slate-600 shadow-sm transition hover:bg-slate-50 sm:inline-flex"
+              class="hidden h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 sm:inline-flex"
               title="로그아웃"
               @click="handleLogout"
             >
               <LogOut class="h-4 w-4" />
+              로그아웃
             </button>
             <RouterLink
               v-else

@@ -75,7 +75,7 @@ onMounted(loadRecommendations);
     <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p class="text-sm font-semibold text-blue-700">주택형 옵션 추천</p>
-        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">검토할 후보 TOP 3</h1>
+        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">검토할 후보 TOP 6</h1>
         <p class="mt-2 text-sm text-slate-500">소유형 공공분양만 대상으로 자격, 자금, 지역, 일정을 합산하고 공고 안의 주택형 옵션 맞춤도를 함께 봅니다.</p>
       </div>
       <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button">

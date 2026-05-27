@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { BadgeCheck, Banknote, Home, MapPinned, Save, UserRound } from 'lucide-vue-next';
+import { BadgeCheck, Banknote, ChevronDown, Home, MapPinned, Save, UserRound } from 'lucide-vue-next';
 import { emptyProfile, useProfileStore } from '../stores/profileStore';
 import { formatMoney } from '../utils/format';
 const router = useRouter();
@@ -9,6 +9,7 @@ const profileStore = useProfileStore();
 const saved = ref(false);
 const saving = ref(false);
 const saveError = ref('');
+const showExtraRegions = ref(false);
 const form = reactive({
     ...emptyProfile,
     ...profileStore.profile,
@@ -21,7 +22,8 @@ const specialConditionOptions = [
     { label: '청년', value: 'youth' },
     { label: '신혼부부', value: 'newlywed' },
 ];
-const regionOptions = ['서울', '경기 남부', '경기 북부', '인천', '부산'];
+const primaryRegionOptions = ['서울', '경기 남부', '경기 북부', '인천'];
+const extraRegionOptions = ['부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
 const supplyTypeOptions = ['공공분양', '뉴홈', '신혼희망타운', '민간참여형 공공분양'];
 const moneyFields = [
     { key: 'annual_income', label: '연소득' },
@@ -224,7 +226,28 @@ watch(() => profileStore.profile, (profile) => applyProfile(profile), { deep: tr
         <p class="text-sm font-medium text-slate-700">희망 지역</p>
         <div class="mt-3 flex flex-wrap gap-2">
           <button
-            v-for="region in regionOptions"
+            v-for="region in primaryRegionOptions"
+            :key="region"
+            type="button"
+            class="rounded-lg px-4 py-2 text-sm font-bold transition"
+            :class="form.preferred_regions.includes(region) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+            @click="toggleArrayValue(form.preferred_regions, region)"
+          >
+            {{ region }}
+          </button>
+        </div>
+        <button
+          type="button"
+          class="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          :aria-expanded="showExtraRegions"
+          @click="showExtraRegions = !showExtraRegions"
+        >
+          기타 지역
+          <ChevronDown class="h-4 w-4 transition" :class="showExtraRegions ? 'rotate-180' : ''" />
+        </button>
+        <div v-if="showExtraRegions" class="mt-3 flex flex-wrap gap-2">
+          <button
+            v-for="region in extraRegionOptions"
             :key="region"
             type="button"
             class="rounded-lg px-4 py-2 text-sm font-bold transition"

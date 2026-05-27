@@ -34,7 +34,7 @@ def fetch_finlife_payload(
     *,
     top_fin_grp_no: str = "020000",
     page_no: int = 1,
-    timeout: int = 10,
+    timeout: int = 30,
 ) -> dict[str, Any]:
     endpoint, _category = PRODUCT_ENDPOINTS[kind]
     response = requests.get(
@@ -55,7 +55,7 @@ def fetch_all_finlife_products(
     *,
     kinds: list[str],
     top_fin_grp_no: str = "020000",
-    timeout: int = 10,
+    timeout: int = 30,
 ) -> list[FinlifeProduct]:
     products: list[FinlifeProduct] = []
     for kind in kinds:
