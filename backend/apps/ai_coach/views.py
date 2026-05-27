@@ -1,9 +1,8 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.ai_coach.services.prompt_templates import coach_chat, coach_summary
 from apps.profiles.services import profile_from_request
-from apps.services import coach_summary
-from apps.ai_coach.services.prompt_templates import coach_chat
 
 
 @api_view(["POST"])

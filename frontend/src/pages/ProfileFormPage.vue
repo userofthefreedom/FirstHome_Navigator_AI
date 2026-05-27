@@ -1,101 +1,88 @@
-<script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { BadgeCheck, Banknote, Home, MapPinned, Save, UserRound } from 'lucide-vue-next'
-import { emptyProfile, useProfileStore } from '../stores/profileStore'
-import type { Profile } from '../types/firsthome'
-import { formatMoney } from '../utils/format'
-
-const router = useRouter()
-const profileStore = useProfileStore()
-const saved = ref(false)
-const saving = ref(false)
-const saveError = ref('')
-
-const form = reactive<Profile>({
-  ...emptyProfile,
-  ...profileStore.profile,
-  special_conditions: [...profileStore.profile.special_conditions],
-  preferred_regions: [...profileStore.profile.preferred_regions],
-  preferred_supply_types: [...profileStore.profile.preferred_supply_types],
-})
-
+<script setup>
+import { onMounted, reactive, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { BadgeCheck, Banknote, Home, MapPinned, Save, UserRound } from 'lucide-vue-next';
+import { emptyProfile, useProfileStore } from '../stores/profileStore';
+import { formatMoney } from '../utils/format';
+const router = useRouter();
+const profileStore = useProfileStore();
+const saved = ref(false);
+const saving = ref(false);
+const saveError = ref('');
+const form = reactive({
+    ...emptyProfile,
+    ...profileStore.profile,
+    special_conditions: [...profileStore.profile.special_conditions],
+    preferred_regions: [...profileStore.profile.preferred_regions],
+    preferred_supply_types: [...profileStore.profile.preferred_supply_types],
+});
 const specialConditionOptions = [
-  { label: '생애최초', value: 'first_home' },
-  { label: '청년', value: 'youth' },
-  { label: '신혼부부', value: 'newlywed' },
-]
-const regionOptions = ['서울', '경기 남부', '경기 북부', '인천', '부산']
-const supplyTypeOptions = ['공공분양', '뉴홈', '신혼희망타운', '민간참여형 공공분양']
+    { label: '생애최초', value: 'first_home' },
+    { label: '청년', value: 'youth' },
+    { label: '신혼부부', value: 'newlywed' },
+];
+const regionOptions = ['서울', '경기 남부', '경기 북부', '인천', '부산'];
+const supplyTypeOptions = ['공공분양', '뉴홈', '신혼희망타운', '민간참여형 공공분양'];
 const moneyFields = [
-  { key: 'annual_income', label: '연소득' },
-  { key: 'asset', label: '보유 현금' },
-  { key: 'debt', label: '부채' },
-  { key: 'monthly_saving', label: '월 저축 가능액' },
-  { key: 'desired_price_min', label: '희망 분양가 최소' },
-  { key: 'desired_price_max', label: '희망 분양가 최대' },
-  { key: 'max_down_payment', label: '최대 계약금 준비액' },
-  { key: 'monthly_payment_capacity', label: '월 납부 감당액' },
-] as const
-type MoneyFieldKey = (typeof moneyFields)[number]['key']
-
-function applyProfile(profile: Profile) {
-  Object.assign(form, {
-    ...profile,
-    special_conditions: [...profile.special_conditions],
-    preferred_regions: [...profile.preferred_regions],
-    preferred_supply_types: [...profile.preferred_supply_types],
-  })
+    { key: 'annual_income', label: '연소득' },
+    { key: 'asset', label: '보유 현금' },
+    { key: 'debt', label: '부채' },
+    { key: 'monthly_saving', label: '월 저축 가능액' },
+    { key: 'desired_price_min', label: '희망 분양가 최소' },
+    { key: 'desired_price_max', label: '희망 분양가 최대' },
+    { key: 'max_down_payment', label: '최대 계약금 준비액' },
+    { key: 'monthly_payment_capacity', label: '월 납부 감당액' },
+];
+function applyProfile(profile) {
+    Object.assign(form, {
+        ...profile,
+        special_conditions: [...profile.special_conditions],
+        preferred_regions: [...profile.preferred_regions],
+        preferred_supply_types: [...profile.preferred_supply_types],
+    });
 }
-
-function toggleArrayValue(target: string[], value: string) {
-  const index = target.indexOf(value)
-  if (index >= 0) target.splice(index, 1)
-  else target.push(value)
+function toggleArrayValue(target, value) {
+    const index = target.indexOf(value);
+    if (index >= 0)
+        target.splice(index, 1);
+    else
+        target.push(value);
 }
-
-function formatNumberInput(value: number) {
-  return Number(value || 0).toLocaleString('ko-KR')
+function formatNumberInput(value) {
+    return Number(value || 0).toLocaleString('ko-KR');
 }
-
-function updateMoneyField(key: MoneyFieldKey, event: Event) {
-  const input = event.target as HTMLInputElement
-  const numericText = input.value.replace(/[^\d]/g, '')
-  form[key] = numericText ? Number(numericText) : 0
-  input.value = formatNumberInput(form[key])
+function updateMoneyField(key, event) {
+    const input = event.target;
+    const numericText = input.value.replace(/[^\d]/g, '');
+    form[key] = numericText ? Number(numericText) : 0;
+    input.value = formatNumberInput(form[key]);
 }
-
-function normalizeMoneyField(key: MoneyFieldKey, event: Event) {
-  const input = event.target as HTMLInputElement
-  input.value = formatNumberInput(form[key])
+function normalizeMoneyField(key, event) {
+    const input = event.target;
+    input.value = formatNumberInput(form[key]);
 }
-
 async function handleSubmit() {
-  saving.value = true
-  saveError.value = ''
-  try {
-    await profileStore.saveProfile({ ...form })
-    saved.value = true
-    setTimeout(() => router.push('/recommendations'), 350)
-  } catch {
-    saveError.value = '백엔드 프로필 저장 API에 연결하지 못했습니다.'
-  } finally {
-    saving.value = false
-  }
+    saving.value = true;
+    saveError.value = '';
+    try {
+        await profileStore.saveProfile({ ...form });
+        saved.value = true;
+        setTimeout(() => router.push('/recommendations'), 350);
+    }
+    catch {
+        saveError.value = '백엔드 프로필 저장 API에 연결하지 못했습니다.';
+    }
+    finally {
+        saving.value = false;
+    }
 }
-
 onMounted(async () => {
-  if (!profileStore.loaded) {
-    await profileStore.hydrateProfile()
-  }
-  applyProfile(profileStore.profile)
-})
-
-watch(
-  () => profileStore.profile,
-  (profile) => applyProfile(profile),
-  { deep: true },
-)
+    if (!profileStore.loaded) {
+        await profileStore.hydrateProfile();
+    }
+    applyProfile(profileStore.profile);
+});
+watch(() => profileStore.profile, (profile) => applyProfile(profile), { deep: true });
 </script>
 
 <template>

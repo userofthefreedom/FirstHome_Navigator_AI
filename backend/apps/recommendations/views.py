@@ -1,8 +1,11 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.fixture_store import current_notices
+from apps.policies.services.matcher import match_policies
 from apps.profiles.services import profile_from_request
-from apps.services import funding_plan, match_policies, match_products, notices, ranked_recommendations
+from apps.products.services.matcher import match_products
+from apps.recommendations.services.ranking import ranked_recommendations
 
 
 @api_view(["GET"])
@@ -13,7 +16,7 @@ def dashboard(request):
         {
             "profile": profile,
             "top_recommendations": recommendations,
-            "notice_count": len(notices()),
+            "notice_count": len(current_notices()),
             "message": "소유형 공공분양 공고를 기준으로 추천과 자금 로드맵을 계산합니다.",
         }
     )
@@ -23,20 +26,6 @@ def dashboard(request):
 def housing_recommendations(request):
     profile = profile_from_request(request)
     return Response(ranked_recommendations(profile, limit=3))
-
-
-@api_view(["GET"])
-def funding_recommendation(request, notice_id):
-    profile = profile_from_request(request)
-    option_id = request.query_params.get("option_id")
-    try:
-        parsed_option_id = int(option_id) if option_id else None
-    except ValueError:
-        return Response({"detail": "option_id must be an integer"}, status=400)
-    plan = funding_plan(notice_id, profile, option_id=parsed_option_id)
-    if plan is None:
-        return Response({"detail": "notice not found"}, status=404)
-    return Response(plan)
 
 
 @api_view(["GET"])

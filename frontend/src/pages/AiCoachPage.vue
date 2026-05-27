@@ -1,81 +1,82 @@
-<script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { Bookmark, Bot, CheckCircle2, ClipboardCheck, ExternalLink, ShieldAlert, WalletCards } from 'lucide-vue-next'
-import { addFavorite, fetchCoachSummary, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, removeFavorite } from '../api/firsthome'
-import type { CoachSummary, Favorite, FundingPlan, Notice } from '../types/firsthome'
-import { formatMoney } from '../utils/format'
-import { useProfileStore } from '../stores/profileStore'
-
-const route = useRoute()
-const profileStore = useProfileStore()
-const noticeId = computed(() => Number(route.params.noticeId ?? 0))
-const selectedNotice = ref<Notice | null>(null)
-const fundingPlan = ref<FundingPlan | null>(null)
-const aiCoach = ref<CoachSummary | null>(null)
-const favorites = ref<Favorite[]>([])
-const loading = ref(true)
-const savingFavorite = ref(false)
-const error = ref('')
-
-const noticeFavorite = computed<Favorite | null>(() => {
-  if (!selectedNotice.value) return null
-  return { favorite_type: 'notice', object_id: selectedNotice.value.id }
-})
+<script setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { Bookmark, Bot, CheckCircle2, ClipboardCheck, ExternalLink, ShieldAlert, WalletCards } from 'lucide-vue-next';
+import { addFavorite, fetchCoachSummary, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, removeFavorite } from '../api/firsthome';
+import { formatMoney } from '../utils/format';
+import { useProfileStore } from '../stores/profileStore';
+const route = useRoute();
+const profileStore = useProfileStore();
+const noticeId = computed(() => Number(route.params.noticeId ?? 0));
+const selectedNotice = ref(null);
+const fundingPlan = ref(null);
+const aiCoach = ref(null);
+const favorites = ref([]);
+const loading = ref(true);
+const savingFavorite = ref(false);
+const error = ref('');
+const noticeFavorite = computed(() => {
+    if (!selectedNotice.value)
+        return null;
+    return { favorite_type: 'notice', object_id: selectedNotice.value.id };
+});
 const isFavorite = computed(() => {
-  if (!noticeFavorite.value) return false
-  return favorites.value.some((favorite) => favorite.favorite_type === 'notice' && favorite.object_id === noticeFavorite.value?.object_id)
-})
-
+    if (!noticeFavorite.value)
+        return false;
+    return favorites.value.some((favorite) => favorite.favorite_type === 'notice' && favorite.object_id === noticeFavorite.value?.object_id);
+});
 async function resolveNoticeId() {
-  if (noticeId.value) return noticeId.value
-  const recommendations = await fetchHousingRecommendations()
-  return recommendations[0]?.notice_id ?? 101
+    if (noticeId.value)
+        return noticeId.value;
+    const recommendations = await fetchHousingRecommendations();
+    return recommendations[0]?.notice_id ?? 101;
 }
-
 async function loadCoach() {
-  loading.value = true
-  error.value = ''
-  try {
-    const targetNoticeId = await resolveNoticeId()
-    if (!profileStore.loaded) {
-      await profileStore.hydrateProfile()
+    loading.value = true;
+    error.value = '';
+    try {
+        const targetNoticeId = await resolveNoticeId();
+        if (!profileStore.loaded) {
+            await profileStore.hydrateProfile();
+        }
+        const [noticeResponse, fundingResponse, coachResponse, favoriteResponse] = await Promise.all([
+            fetchNotice(targetNoticeId),
+            fetchFundingPlan(targetNoticeId),
+            fetchCoachSummary(targetNoticeId, profileStore.profile),
+            fetchFavorites(),
+        ]);
+        selectedNotice.value = noticeResponse;
+        fundingPlan.value = fundingResponse;
+        aiCoach.value = coachResponse;
+        favorites.value = favoriteResponse;
     }
-    const [noticeResponse, fundingResponse, coachResponse, favoriteResponse] = await Promise.all([
-      fetchNotice(targetNoticeId),
-      fetchFundingPlan(targetNoticeId),
-      fetchCoachSummary(targetNoticeId, profileStore.profile),
-      fetchFavorites(),
-    ])
-    selectedNotice.value = noticeResponse
-    fundingPlan.value = fundingResponse
-    aiCoach.value = coachResponse
-    favorites.value = favoriteResponse
-  } catch {
-    error.value = '백엔드 AI 코치 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
-  } finally {
-    loading.value = false
-  }
+    catch {
+        error.value = '백엔드 AI 코치 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.';
+    }
+    finally {
+        loading.value = false;
+    }
 }
-
 async function toggleFavorite() {
-  if (!noticeFavorite.value) return
-  savingFavorite.value = true
-  try {
-    if (isFavorite.value) {
-      await removeFavorite(noticeFavorite.value)
-      favorites.value = favorites.value.filter((favorite) => favorite.favorite_type !== 'notice' || favorite.object_id !== noticeFavorite.value?.object_id)
-    } else {
-      const saved = await addFavorite(noticeFavorite.value)
-      favorites.value = [...favorites.value, saved]
+    if (!noticeFavorite.value)
+        return;
+    savingFavorite.value = true;
+    try {
+        if (isFavorite.value) {
+            await removeFavorite(noticeFavorite.value);
+            favorites.value = favorites.value.filter((favorite) => favorite.favorite_type !== 'notice' || favorite.object_id !== noticeFavorite.value?.object_id);
+        }
+        else {
+            const saved = await addFavorite(noticeFavorite.value);
+            favorites.value = [...favorites.value, saved];
+        }
     }
-  } finally {
-    savingFavorite.value = false
-  }
+    finally {
+        savingFavorite.value = false;
+    }
 }
-
-watch(noticeId, loadCoach)
-onMounted(loadCoach)
+watch(noticeId, loadCoach);
+onMounted(loadCoach);
 </script>
 
 <template>

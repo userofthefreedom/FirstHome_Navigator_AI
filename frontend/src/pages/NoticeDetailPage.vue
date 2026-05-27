@@ -1,182 +1,198 @@
-<script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { ArrowLeft, Bookmark, Bot, CalendarDays, CheckCircle2, ExternalLink, FileCheck2, FileText, ShieldAlert, WalletCards } from 'lucide-vue-next'
-import { addFavorite, analyzeNoticeDocument, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeDocumentStatus, fetchNoticeEligibilityChecklists, fetchNoticeUnitOptions, removeFavorite } from '../api/firsthome'
-import type { Favorite, FundingPlan, HousingRecommendation, HousingUnitOption, Notice, NoticeDocumentStatus, NoticeEligibilityChecklist } from '../types/firsthome'
-import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus'
-import { formatMoney } from '../utils/format'
-
-const route = useRoute()
-const noticeId = computed(() => Number(route.params.noticeId ?? 0))
-const selectedNotice = ref<Notice | null>(null)
-const recommendation = ref<HousingRecommendation | null>(null)
-const fundingPlan = ref<FundingPlan | null>(null)
-const documentStatus = ref<NoticeDocumentStatus | null>(null)
-const unitOptions = ref<HousingUnitOption[]>([])
-const eligibilityChecklists = ref<NoticeEligibilityChecklist[]>([])
-const favorites = ref<Favorite[]>([])
-const loading = ref(true)
-const savingFavorite = ref(false)
-const analyzing = ref(false)
-const error = ref('')
-
-function priceLabel(price: number) {
-  return price > 0 ? formatMoney(price) : '공식 확인 필요'
+<script setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { ArrowLeft, Bookmark, Bot, CalendarDays, CheckCircle2, ExternalLink, FileCheck2, FileText, ShieldAlert, WalletCards } from 'lucide-vue-next';
+import { addFavorite, analyzeNoticeDocument, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeDocumentStatus, fetchNoticeEligibilityChecklists, fetchNoticeUnitOptions, removeFavorite } from '../api/firsthome';
+import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
+import { formatMoney } from '../utils/format';
+const route = useRoute();
+const noticeId = computed(() => Number(route.params.noticeId ?? 0));
+const selectedNotice = ref(null);
+const recommendation = ref(null);
+const fundingPlan = ref(null);
+const documentStatus = ref(null);
+const unitOptions = ref([]);
+const eligibilityChecklists = ref([]);
+const favorites = ref([]);
+const loading = ref(true);
+const savingFavorite = ref(false);
+const analyzing = ref(false);
+const error = ref('');
+const analysisError = ref('');
+function priceLabel(price) {
+    return price > 0 ? formatMoney(price) : '공식 확인 필요';
 }
-
-function extractionLabel(schemaVersion?: string, source?: string) {
-  if (!schemaVersion) return '분석 전'
-  if (schemaVersion === 'llm-v1' || source === 'llm' || source === 'llm_cache') return 'LLM structured output'
-  if (schemaVersion === 'rules-v1') return '규칙 기반 PDF 추출'
-  if (schemaVersion === 'mock-v1') return 'mock fallback'
-  return schemaVersion
+function scoreLabel(item) {
+    if (!item)
+        return '';
+    return `${item.total_score}/${item.score_max ?? 100}점`;
 }
-
-const noticeFavorite = computed<Favorite | null>(() => {
-  if (!selectedNotice.value) return null
-  return { favorite_type: 'notice', object_id: selectedNotice.value.id }
-})
+function extractionLabel(schemaVersion, source) {
+    if (!schemaVersion)
+        return '분석 전';
+    if (schemaVersion === 'llm-v1' || source === 'llm' || source === 'llm_cache')
+        return 'LLM structured output';
+    if (schemaVersion === 'rules-v1')
+        return '규칙 기반 PDF 추출';
+    if (schemaVersion === 'mock-v1')
+        return 'mock fallback';
+    return schemaVersion;
+}
+const noticeFavorite = computed(() => {
+    if (!selectedNotice.value)
+        return null;
+    return { favorite_type: 'notice', object_id: selectedNotice.value.id };
+});
 const isFavorite = computed(() => {
-  if (!noticeFavorite.value) return false
-  return favorites.value.some((favorite) => favorite.favorite_type === 'notice' && favorite.object_id === noticeFavorite.value?.object_id)
-})
+    if (!noticeFavorite.value)
+        return false;
+    return favorites.value.some((favorite) => favorite.favorite_type === 'notice' && favorite.object_id === noticeFavorite.value?.object_id);
+});
 const currentAnalysisSummary = computed(() => {
-  return analysisSummary(documentStatus.value?.analysis_summary ?? selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status)
-})
-const extractionEvidence = computed(() => documentStatus.value?.latest_extraction?.evidence ?? [])
-type OfficialChecklistItem = {
-  key: string
-  category: string
-  title: string
-  condition_text: string
-  evidence_text: string
-  confidence: number
-  isExtracted: boolean
-}
-
-const officialChecklist = computed<OfficialChecklistItem[]>(() => {
-  if (eligibilityChecklists.value.length) {
-    return eligibilityChecklists.value.map((item) => ({
-      key: `checklist-${item.id}`,
-      category: item.category,
-      title: item.title,
-      condition_text: item.condition_text,
-      evidence_text: item.evidence_text,
-      confidence: item.confidence,
-      isExtracted: true,
-    }))
-  }
-  if (!selectedNotice.value) return []
-  return [
-    {
-      key: 'fallback-supply',
-      category: 'notice',
-      title: '공급유형 자격 확인',
-      condition_text: `${selectedNotice.value.supply_type} 세부 자격과 우선공급 기준을 공식 공고문에서 확인합니다.`,
-      evidence_text: '공고 기본 정보 기반 임시 체크리스트입니다. 공고문 분석 후 공식 근거 문장으로 대체됩니다.',
-      confidence: 0,
-      isExtracted: false,
-    },
-    {
-      key: 'fallback-income',
-      category: 'notice',
-      title: '소득·자산·서류 확인',
-      condition_text: `${selectedNotice.value.required_documents.slice(0, 2).join(', ')} 발급 가능 여부와 소득·자산 기준을 확인합니다.`,
-      evidence_text: '공고 기본 정보 기반 임시 체크리스트입니다.',
-      confidence: 0,
-      isExtracted: false,
-    },
-    {
-      key: 'fallback-schedule',
-      category: 'notice',
-      title: '접수·계약 일정 확인',
-      condition_text: `${selectedNotice.value.application_deadline} 접수 마감과 ${selectedNotice.value.contract_date} 계약 일정을 확인합니다.`,
-      evidence_text: '공고 목록의 대표 일정 기반입니다. 실제 납부 일정은 공식 공고문을 우선합니다.',
-      confidence: 0,
-      isExtracted: false,
-    },
-  ]
-})
-
+    return analysisSummary(documentStatus.value?.analysis_summary ?? selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status);
+});
+const extractionEvidence = computed(() => documentStatus.value?.latest_extraction?.evidence ?? []);
+const summaryPrice = computed(() => {
+    const planPrice = Number(fundingPlan.value?.price || 0);
+    const noticePrice = Number(selectedNotice.value?.price || 0);
+    return planPrice > 0 ? planPrice : noticePrice;
+});
+const officialChecklist = computed(() => {
+    if (eligibilityChecklists.value.length) {
+        return eligibilityChecklists.value.map((item) => ({
+            key: `checklist-${item.id}`,
+            category: item.category,
+            title: item.title,
+            condition_text: item.condition_text,
+            evidence_text: item.evidence_text,
+            confidence: item.confidence,
+            isExtracted: true,
+        }));
+    }
+    if (!selectedNotice.value)
+        return [];
+    return [
+        {
+            key: 'fallback-supply',
+            category: 'notice',
+            title: '공급유형 자격 확인',
+            condition_text: `${selectedNotice.value.supply_type} 세부 자격과 우선공급 기준을 공식 공고문에서 확인합니다.`,
+            evidence_text: '공고 기본 정보 기반 임시 체크리스트입니다. 공고문 분석 후 공식 근거 문장으로 대체됩니다.',
+            confidence: 0,
+            isExtracted: false,
+        },
+        {
+            key: 'fallback-income',
+            category: 'notice',
+            title: '소득·자산·서류 확인',
+            condition_text: `${selectedNotice.value.required_documents.slice(0, 2).join(', ')} 발급 가능 여부와 소득·자산 기준을 확인합니다.`,
+            evidence_text: '공고 기본 정보 기반 임시 체크리스트입니다.',
+            confidence: 0,
+            isExtracted: false,
+        },
+        {
+            key: 'fallback-schedule',
+            category: 'notice',
+            title: '접수·계약 일정 확인',
+            condition_text: `${selectedNotice.value.application_deadline} 접수 마감과 ${selectedNotice.value.contract_date} 계약 일정을 확인합니다.`,
+            evidence_text: '공고 목록의 대표 일정 기반입니다. 실제 납부 일정은 공식 공고문을 우선합니다.',
+            confidence: 0,
+            isExtracted: false,
+        },
+    ];
+});
 async function resolveNoticeId() {
-  if (noticeId.value) return noticeId.value
-  const recommendations = await fetchHousingRecommendations()
-  return recommendations[0]?.notice_id ?? 101
+    if (noticeId.value)
+        return noticeId.value;
+    const recommendations = await fetchHousingRecommendations();
+    return recommendations[0]?.notice_id ?? 101;
 }
-
 async function loadDetail() {
-  loading.value = true
-  error.value = ''
-  try {
-    const targetNoticeId = await resolveNoticeId()
-    const [noticeResponse, fundingResponse, favoriteResponse, recommendations] = await Promise.all([
-      fetchNotice(targetNoticeId),
-      fetchFundingPlan(targetNoticeId),
-      fetchFavorites(),
-      fetchHousingRecommendations(),
-    ])
-    selectedNotice.value = noticeResponse
-    fundingPlan.value = fundingResponse
-    favorites.value = favoriteResponse
-    recommendation.value = recommendations.find((item) => item.notice_id === targetNoticeId) ?? null
-    await loadDocumentAnalysis(targetNoticeId)
-  } catch {
-    error.value = '공고 상세 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
-  } finally {
-    loading.value = false
-  }
+    loading.value = true;
+    error.value = '';
+    analysisError.value = '';
+    try {
+        const targetNoticeId = await resolveNoticeId();
+        const [noticeResponse, favoriteResponse, recommendations] = await Promise.all([
+            fetchNotice(targetNoticeId),
+            fetchFavorites(),
+            fetchHousingRecommendations(),
+        ]);
+        selectedNotice.value = noticeResponse;
+        favorites.value = favoriteResponse;
+        recommendation.value = recommendations.find((item) => item.notice_id === targetNoticeId) ?? null;
+        await loadDocumentAnalysis(targetNoticeId);
+        await refreshFundingPlan(targetNoticeId);
+    }
+    catch {
+        error.value = '공고 상세 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.';
+    }
+    finally {
+        loading.value = false;
+    }
 }
-
-async function loadDocumentAnalysis(targetNoticeId: number) {
-  const [statusResponse, optionResponse, checklistResponse] = await Promise.all([
-    fetchNoticeDocumentStatus(targetNoticeId).catch(() => null),
-    fetchNoticeUnitOptions(targetNoticeId).catch(() => []),
-    fetchNoticeEligibilityChecklists(targetNoticeId).catch(() => []),
-  ])
-  documentStatus.value = statusResponse
-  unitOptions.value = optionResponse
-  eligibilityChecklists.value = checklistResponse
+async function loadDocumentAnalysis(targetNoticeId) {
+    const [statusResponse, optionResponse, checklistResponse] = await Promise.all([
+        fetchNoticeDocumentStatus(targetNoticeId).catch(() => null),
+        fetchNoticeUnitOptions(targetNoticeId).catch(() => []),
+        fetchNoticeEligibilityChecklists(targetNoticeId).catch(() => []),
+    ]);
+    documentStatus.value = statusResponse;
+    unitOptions.value = optionResponse;
+    eligibilityChecklists.value = checklistResponse;
 }
-
+async function refreshFundingPlan(targetNoticeId) {
+    const optionId = unitOptions.value[0]?.id ?? null;
+    try {
+        fundingPlan.value = await fetchFundingPlan(targetNoticeId, optionId);
+    }
+    catch {
+        fundingPlan.value = await fetchFundingPlan(targetNoticeId);
+    }
+}
 async function handleAnalyzeNotice() {
-  if (!selectedNotice.value) return
-  analyzing.value = true
-  error.value = ''
-  try {
-    const response = await analyzeNoticeDocument(selectedNotice.value.id)
-    selectedNotice.value = {
-      ...selectedNotice.value,
-      official_document_status: response.official_document_status,
-      unit_option_count: response.unit_options.length,
+    if (!selectedNotice.value)
+        return;
+    analyzing.value = true;
+    analysisError.value = '';
+    try {
+        const response = await analyzeNoticeDocument(selectedNotice.value.id);
+        selectedNotice.value = {
+            ...selectedNotice.value,
+            official_document_status: response.official_document_status,
+            unit_option_count: response.unit_options.length,
+        };
+        unitOptions.value = response.unit_options;
+        await loadDocumentAnalysis(selectedNotice.value.id);
+        await refreshFundingPlan(selectedNotice.value.id);
     }
-    unitOptions.value = response.unit_options
-    await loadDocumentAnalysis(selectedNotice.value.id)
-  } catch {
-    error.value = '공고문 mock 분석을 실행하지 못했습니다.'
-  } finally {
-    analyzing.value = false
-  }
+    catch {
+        analysisError.value = '공고문 분석을 실행하지 못했습니다. 기존 상세 정보는 유지되며, 잠시 후 다시 시도해 주세요.';
+    }
+    finally {
+        analyzing.value = false;
+    }
 }
-
 async function toggleFavorite() {
-  if (!noticeFavorite.value) return
-  savingFavorite.value = true
-  try {
-    if (isFavorite.value) {
-      await removeFavorite(noticeFavorite.value)
-      favorites.value = favorites.value.filter((favorite) => favorite.favorite_type !== 'notice' || favorite.object_id !== noticeFavorite.value?.object_id)
-    } else {
-      const saved = await addFavorite(noticeFavorite.value)
-      favorites.value = [...favorites.value, saved]
+    if (!noticeFavorite.value)
+        return;
+    savingFavorite.value = true;
+    try {
+        if (isFavorite.value) {
+            await removeFavorite(noticeFavorite.value);
+            favorites.value = favorites.value.filter((favorite) => favorite.favorite_type !== 'notice' || favorite.object_id !== noticeFavorite.value?.object_id);
+        }
+        else {
+            const saved = await addFavorite(noticeFavorite.value);
+            favorites.value = [...favorites.value, saved];
+        }
     }
-  } finally {
-    savingFavorite.value = false
-  }
+    finally {
+        savingFavorite.value = false;
+    }
 }
-
-watch(noticeId, loadDetail)
-onMounted(loadDetail)
+watch(noticeId, loadDetail);
+onMounted(loadDetail);
 </script>
 
 <template>
@@ -190,6 +206,10 @@ onMounted(loadDetail)
     </section>
 
     <template v-else-if="selectedNotice && fundingPlan">
+      <section v-if="analysisError" class="rounded-lg border border-amber-100 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+        {{ analysisError }}
+      </section>
+
       <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -206,7 +226,7 @@ onMounted(loadDetail)
                 {{ currentAnalysisSummary.label }}
               </span>
               <span v-if="!selectedNotice.is_price_confirmed" class="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">금액 확인 필요</span>
-              <span v-if="recommendation" class="rounded-md bg-slate-950 px-2.5 py-1 text-xs font-bold text-white">{{ recommendation.total_score }}점</span>
+              <span v-if="recommendation" class="rounded-md bg-slate-950 px-2.5 py-1 text-xs font-bold text-white">{{ scoreLabel(recommendation) }}</span>
             </div>
             <h1 class="mt-3 text-2xl font-bold text-slate-950 sm:text-3xl">{{ selectedNotice.title }}</h1>
             <p class="mt-2 text-sm text-slate-500">{{ selectedNotice.provider }} · {{ selectedNotice.district }} · {{ selectedNotice.area }}</p>
@@ -221,7 +241,7 @@ onMounted(loadDetail)
               <Bookmark class="h-4 w-4" :class="isFavorite ? 'fill-blue-600 text-blue-600' : ''" />
               {{ isFavorite ? '공고 저장됨' : '공고 저장' }}
             </button>
-            <RouterLink :to="`/funding/${selectedNotice.id}`" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
+            <RouterLink :to="{ path: `/funding/${selectedNotice.id}`, query: fundingPlan.option_id ? { option_id: fundingPlan.option_id } : {} }" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
               <WalletCards class="h-4 w-4" />
               옵션 자금 보기
             </RouterLink>
@@ -242,7 +262,7 @@ onMounted(loadDetail)
       <section class="grid gap-3 md:grid-cols-4">
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-sm text-slate-500">예상 분양가</p>
-          <p class="mt-2 text-2xl font-bold text-slate-950">{{ priceLabel(selectedNotice.price) }}</p>
+          <p class="mt-2 text-2xl font-bold text-slate-950">{{ priceLabel(summaryPrice) }}</p>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-sm text-slate-500">계약금</p>

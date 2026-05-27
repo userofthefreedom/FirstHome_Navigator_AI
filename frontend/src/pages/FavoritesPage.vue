@@ -1,117 +1,110 @@
-<script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { Bookmark, ExternalLink, Trash2, WalletCards } from 'lucide-vue-next'
-import { fetchFavorites, removeFavorite } from '../api/firsthome'
-import type { Favorite } from '../types/firsthome'
-import { formatMoney } from '../utils/format'
-
-const favorites = ref<Favorite[]>([])
-const loading = ref(true)
-const error = ref('')
-const removingKey = ref('')
-
-const noticeFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'notice'))
-const optionFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'option'))
-const productFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'product'))
-const policyFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'policy'))
+<script setup>
+import { computed, onMounted, ref } from 'vue';
+import { Bookmark, ExternalLink, Trash2, WalletCards } from 'lucide-vue-next';
+import { fetchFavorites, removeFavorite } from '../api/firsthome';
+import { formatMoney } from '../utils/format';
+const favorites = ref([]);
+const loading = ref(true);
+const error = ref('');
+const removingKey = ref('');
+const noticeFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'notice'));
+const optionFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'option'));
+const productFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'product'));
+const policyFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'policy'));
 const savedOptionRows = computed(() => {
-  return optionFavorites.value
-    .map((favorite) => ({
-      favorite,
-      name: itemName(favorite),
-      noticeId: Number(favorite.item?.notice_id ?? 0),
-      unitType: String(favorite.item?.unit_type ?? ''),
-      floorGroup: String(favorite.item?.floor_group ?? '전체'),
-      area: Number(favorite.item?.exclusive_area_m2 ?? 0),
-      price: Number(favorite.item?.base_price ?? 0),
-      downPayment: downPayment(favorite),
-      middlePayment: paymentAmount(favorite, 'middle_payment'),
-      finalPayment: paymentAmount(favorite, 'final_payment'),
-      confidence: Number(favorite.item?.confidence ?? 0),
+    return optionFavorites.value
+        .map((favorite) => ({
+        favorite,
+        name: itemName(favorite),
+        noticeId: Number(favorite.item?.notice_id ?? 0),
+        unitType: String(favorite.item?.unit_type ?? ''),
+        floorGroup: String(favorite.item?.floor_group ?? '전체'),
+        area: Number(favorite.item?.exclusive_area_m2 ?? 0),
+        price: Number(favorite.item?.base_price ?? 0),
+        downPayment: downPayment(favorite),
+        middlePayment: paymentAmount(favorite, 'middle_payment'),
+        finalPayment: paymentAmount(favorite, 'final_payment'),
+        confidence: Number(favorite.item?.confidence ?? 0),
     }))
-    .sort((a, b) => a.downPayment - b.downPayment || a.price - b.price)
-})
-
-function favoriteKey(favorite: Favorite) {
-  return `${favorite.favorite_type}-${favorite.object_id}`
+        .sort((a, b) => a.downPayment - b.downPayment || a.price - b.price);
+});
+function favoriteKey(favorite) {
+    return `${favorite.favorite_type}-${favorite.object_id}`;
 }
-
-function typeLabel(type: Favorite['favorite_type']) {
-  if (type === 'notice') return '공고'
-  if (type === 'option') return '주택형'
-  if (type === 'product') return '상품'
-  return '정책'
+function typeLabel(type) {
+    if (type === 'notice')
+        return '공고';
+    if (type === 'option')
+        return '주택형';
+    if (type === 'product')
+        return '상품';
+    return '정책';
 }
-
-function itemName(favorite: Favorite) {
-  return String(favorite.item?.title ?? favorite.item?.name ?? '저장 항목')
+function itemName(favorite) {
+    return String(favorite.item?.title ?? favorite.item?.name ?? '저장 항목');
 }
-
-function itemMeta(favorite: Favorite) {
-  if (favorite.favorite_type === 'notice') {
-    return `${favorite.item?.provider ?? ''} · ${favorite.item?.region ?? ''} · ${favorite.item?.supply_type ?? ''}`
-  }
-  if (favorite.favorite_type === 'option') {
-    return `${favorite.item?.unit_type ?? ''} · ${favorite.item?.floor_group ?? '전체'} · ${favorite.item?.exclusive_area_m2 ?? ''}㎡`
-  }
-  if (favorite.favorite_type === 'product') {
-    return `${favorite.item?.provider ?? ''} · ${favorite.item?.category ?? ''} · ${favorite.item?.rate ?? ''}`
-  }
-  return `${favorite.item?.provider ?? ''} · ${favorite.item?.policy_category ?? favorite.item?.target ?? ''}`
+function itemMeta(favorite) {
+    if (favorite.favorite_type === 'notice') {
+        return `${favorite.item?.provider ?? ''} · ${favorite.item?.region ?? ''} · ${favorite.item?.supply_type ?? ''}`;
+    }
+    if (favorite.favorite_type === 'option') {
+        return `${favorite.item?.unit_type ?? ''} · ${favorite.item?.floor_group ?? '전체'} · ${favorite.item?.exclusive_area_m2 ?? ''}㎡`;
+    }
+    if (favorite.favorite_type === 'product') {
+        return `${favorite.item?.provider ?? ''} · ${favorite.item?.category ?? ''} · ${favorite.item?.rate ?? ''}`;
+    }
+    return `${favorite.item?.provider ?? ''} · ${favorite.item?.policy_category ?? favorite.item?.target ?? ''}`;
 }
-
-function itemDescription(favorite: Favorite) {
-  if (favorite.favorite_type === 'notice') {
-    return `예상 분양가 ${formatMoney(Number(favorite.item?.price ?? 0))}, 접수 마감 ${favorite.item?.application_deadline ?? '확인 필요'}`
-  }
-  if (favorite.favorite_type === 'option') {
-    return `분양가 ${formatMoney(Number(favorite.item?.base_price ?? 0))}, 계약금 ${formatMoney(downPayment(favorite))}`
-  }
-  if (favorite.favorite_type === 'product') {
-    return String(favorite.item?.reasons?.[0] ?? favorite.item?.period ?? '저축 목표와 월 납입 여력을 기준으로 저장한 상품입니다.')
-  }
-  return String(favorite.item?.benefit ?? favorite.item?.reasons?.[0] ?? '나이, 소득, 지역 조건을 기준으로 저장한 정책입니다.')
+function itemDescription(favorite) {
+    if (favorite.favorite_type === 'notice') {
+        return `예상 분양가 ${formatMoney(Number(favorite.item?.price ?? 0))}, 접수 마감 ${favorite.item?.application_deadline ?? '확인 필요'}`;
+    }
+    if (favorite.favorite_type === 'option') {
+        return `분양가 ${formatMoney(Number(favorite.item?.base_price ?? 0))}, 계약금 ${formatMoney(downPayment(favorite))}`;
+    }
+    if (favorite.favorite_type === 'product') {
+        return String(favorite.item?.reasons?.[0] ?? favorite.item?.period ?? '저축 목표와 월 납입 여력을 기준으로 저장한 상품입니다.');
+    }
+    return String(favorite.item?.benefit ?? favorite.item?.reasons?.[0] ?? '나이, 소득, 지역 조건을 기준으로 저장한 정책입니다.');
 }
-
-function downPayment(favorite: Favorite) {
-  return paymentAmount(favorite, 'down_payment')
+function downPayment(favorite) {
+    return paymentAmount(favorite, 'down_payment');
 }
-
-function paymentAmount(favorite: Favorite, paymentType: string) {
-  const schedules = favorite.item?.payment_schedules ?? []
-  if (!Array.isArray(schedules)) return 0
-  return schedules
-    .filter((item) => item.payment_type === paymentType)
-    .reduce((total, item) => total + Number(item.amount ?? 0), 0)
+function paymentAmount(favorite, paymentType) {
+    const schedules = favorite.item?.payment_schedules ?? [];
+    if (!Array.isArray(schedules))
+        return 0;
+    return schedules
+        .filter((item) => item.payment_type === paymentType)
+        .reduce((total, item) => total + Number(item.amount ?? 0), 0);
 }
-
-function sourceUrl(favorite: Favorite) {
-  return String(favorite.item?.source_url ?? '')
+function sourceUrl(favorite) {
+    return String(favorite.item?.source_url ?? '');
 }
-
 async function loadFavorites() {
-  loading.value = true
-  error.value = ''
-  try {
-    favorites.value = await fetchFavorites()
-  } catch {
-    error.value = '관심 목록 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
-  } finally {
-    loading.value = false
-  }
+    loading.value = true;
+    error.value = '';
+    try {
+        favorites.value = await fetchFavorites();
+    }
+    catch {
+        error.value = '관심 목록 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.';
+    }
+    finally {
+        loading.value = false;
+    }
 }
-
-async function handleRemove(favorite: Favorite) {
-  removingKey.value = favoriteKey(favorite)
-  try {
-    await removeFavorite({ favorite_type: favorite.favorite_type, object_id: favorite.object_id })
-    favorites.value = favorites.value.filter((item) => favoriteKey(item) !== favoriteKey(favorite))
-  } finally {
-    removingKey.value = ''
-  }
+async function handleRemove(favorite) {
+    removingKey.value = favoriteKey(favorite);
+    try {
+        await removeFavorite({ favorite_type: favorite.favorite_type, object_id: favorite.object_id });
+        favorites.value = favorites.value.filter((item) => favoriteKey(item) !== favoriteKey(favorite));
+    }
+    finally {
+        removingKey.value = '';
+    }
 }
-
-onMounted(loadFavorites)
+onMounted(loadFavorites);
 </script>
 
 <template>

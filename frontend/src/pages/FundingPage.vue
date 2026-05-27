@@ -1,187 +1,192 @@
-<script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { Bookmark, CalendarDays, Calculator, ExternalLink, Landmark, PiggyBank, ShieldAlert, WalletCards } from 'lucide-vue-next'
-import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeUnitOptions, fetchPolicies, fetchProducts, removeFavorite } from '../api/firsthome'
-import type { Favorite, FinancialProduct, FundingPlan, HousingUnitOption, Notice, Policy } from '../types/firsthome'
-import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus'
-import { formatMoney } from '../utils/format'
-
-type OptionComparison = {
-  option: HousingUnitOption
-  plan?: FundingPlan
-}
-
-const route = useRoute()
-const noticeId = computed(() => Number(route.params.noticeId ?? 0))
-const selectedOptionId = computed(() => Number(route.query.option_id ?? 0) || null)
-const selectedNotice = ref<Notice | null>(null)
-const fundingPlan = ref<FundingPlan | null>(null)
-const unitOptions = ref<HousingUnitOption[]>([])
-const optionFundingPlans = ref<Record<number, FundingPlan>>({})
-const financialProducts = ref<FinancialProduct[]>([])
-const policies = ref<Policy[]>([])
-const favorites = ref<Favorite[]>([])
-const loading = ref(true)
-const savingFavoriteKey = ref('')
-const error = ref('')
-
+<script setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { Bookmark, CalendarDays, Calculator, ExternalLink, Landmark, PiggyBank, ShieldAlert, WalletCards } from 'lucide-vue-next';
+import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeUnitOptions, fetchPolicies, fetchProducts, removeFavorite } from '../api/firsthome';
+import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
+import { formatMoney } from '../utils/format';
+const route = useRoute();
+const noticeId = computed(() => Number(route.params.noticeId ?? 0));
+const selectedOptionId = computed(() => Number(route.query.option_id ?? 0) || null);
+const selectedNotice = ref(null);
+const fundingPlan = ref(null);
+const unitOptions = ref([]);
+const optionFundingPlans = ref({});
+const financialProducts = ref([]);
+const policies = ref([]);
+const favorites = ref([]);
+const loading = ref(true);
+const savingFavoriteKey = ref('');
+const error = ref('');
 const readinessRate = computed(() => {
-  if (!fundingPlan.value?.down_payment) return 0
-  return Math.round((fundingPlan.value.available_cash / fundingPlan.value.down_payment) * 100)
-})
-const readinessWidth = computed(() => `${Math.min(readinessRate.value, 100)}%`)
-const optionComparisons = computed<OptionComparison[]>(() => unitOptions.value.map((option) => ({ option, plan: optionFundingPlans.value[option.id] })))
+    if (!fundingPlan.value?.down_payment)
+        return 0;
+    return Math.round((fundingPlan.value.available_cash / fundingPlan.value.down_payment) * 100);
+});
+const readinessWidth = computed(() => `${Math.min(readinessRate.value, 100)}%`);
+const optionComparisons = computed(() => unitOptions.value.map((option) => ({ option, plan: optionFundingPlans.value[option.id] })));
 const selectedOption = computed(() => {
-  if (!fundingPlan.value?.option_id) return null
-  return unitOptions.value.find((option) => option.id === fundingPlan.value?.option_id) ?? null
-})
-const currentAnalysisSummary = computed(() => analysisSummary(selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status))
-const middleSchedules = computed(() => fundingPlan.value?.timeline.filter((item) => item.payment_type === 'middle_payment') ?? [])
-const totalMiddlePayment = computed(() => middleSchedules.value.reduce((total, item) => total + Number(item.amount || 0), 0))
-const installmentSchedules = computed(() => fundingPlan.value?.timeline.filter((item) => item.payment_type === 'installment_payment') ?? [])
-const totalInstallmentPayment = computed(() => installmentSchedules.value.reduce((total, item) => total + Number(item.amount || 0), 0))
-
-function priceLabel(price: number) {
-  return price > 0 ? formatMoney(price) : '공식 확인 필요'
+    if (!fundingPlan.value?.option_id)
+        return null;
+    return unitOptions.value.find((option) => option.id === fundingPlan.value?.option_id) ?? null;
+});
+const currentAnalysisSummary = computed(() => analysisSummary(selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status));
+const middleSchedules = computed(() => fundingPlan.value?.timeline.filter((item) => item.payment_type === 'middle_payment') ?? []);
+const totalMiddlePayment = computed(() => middleSchedules.value.reduce((total, item) => total + Number(item.amount || 0), 0));
+const installmentSchedules = computed(() => fundingPlan.value?.timeline.filter((item) => item.payment_type === 'installment_payment') ?? []);
+const totalInstallmentPayment = computed(() => installmentSchedules.value.reduce((total, item) => total + Number(item.amount || 0), 0));
+function priceLabel(price) {
+    return price > 0 ? formatMoney(price) : '공식 확인 필요';
 }
-
-function favoriteKey(favoriteType: Favorite['favorite_type'], objectId: number) {
-  return `${favoriteType}-${objectId}`
+function favoriteKey(favoriteType, objectId) {
+    return `${favoriteType}-${objectId}`;
 }
-
-function isFavorite(favoriteType: Favorite['favorite_type'], objectId: number) {
-  return favorites.value.some((favorite) => favorite.favorite_type === favoriteType && favorite.object_id === objectId)
+function isFavorite(favoriteType, objectId) {
+    return favorites.value.some((favorite) => favorite.favorite_type === favoriteType && favorite.object_id === objectId);
 }
-
-async function toggleFavorite(favoriteType: Favorite['favorite_type'], objectId: number) {
-  const favorite = { favorite_type: favoriteType, object_id: objectId }
-  savingFavoriteKey.value = favoriteKey(favoriteType, objectId)
-  try {
-    if (isFavorite(favoriteType, objectId)) {
-      await removeFavorite(favorite)
-      favorites.value = favorites.value.filter((item) => item.favorite_type !== favoriteType || item.object_id !== objectId)
-    } else {
-      const saved = await addFavorite(favorite)
-      favorites.value = [...favorites.value, saved]
+async function toggleFavorite(favoriteType, objectId) {
+    const favorite = { favorite_type: favoriteType, object_id: objectId };
+    savingFavoriteKey.value = favoriteKey(favoriteType, objectId);
+    try {
+        if (isFavorite(favoriteType, objectId)) {
+            await removeFavorite(favorite);
+            favorites.value = favorites.value.filter((item) => item.favorite_type !== favoriteType || item.object_id !== objectId);
+        }
+        else {
+            const saved = await addFavorite(favorite);
+            favorites.value = [...favorites.value, saved];
+        }
     }
-  } finally {
-    savingFavoriteKey.value = ''
-  }
+    finally {
+        savingFavoriteKey.value = '';
+    }
 }
-
 async function resolveNoticeId() {
-  if (noticeId.value) return noticeId.value
-  const recommendations = await fetchHousingRecommendations()
-  return recommendations[0]?.notice_id ?? 101
+    if (noticeId.value)
+        return noticeId.value;
+    const recommendations = await fetchHousingRecommendations();
+    return recommendations[0]?.notice_id ?? 101;
 }
-
-async function loadOptionFundingPlans(targetNoticeId: number, options: HousingUnitOption[], currentPlan: FundingPlan) {
-  if (options.length === 0) {
-    optionFundingPlans.value = {}
-    return
-  }
-
-  const entries = await Promise.all(
-    options.map(async (option) => {
-      if (currentPlan.option_id === option.id) return [option.id, currentPlan] as const
-      try {
-        const plan = await fetchFundingPlan(targetNoticeId, option.id)
-        return [option.id, plan] as const
-      } catch {
-        return [option.id, undefined] as const
-      }
-    }),
-  )
-  optionFundingPlans.value = Object.fromEntries(entries.filter((entry): entry is readonly [number, FundingPlan] => Boolean(entry[1])))
+async function loadOptionFundingPlans(targetNoticeId, options, currentPlan) {
+    if (options.length === 0) {
+        optionFundingPlans.value = {};
+        return;
+    }
+    const entries = await Promise.all(options.map(async (option) => {
+        if (currentPlan.option_id === option.id)
+            return [option.id, currentPlan];
+        try {
+            const plan = await fetchFundingPlan(targetNoticeId, option.id);
+            return [option.id, plan];
+        }
+        catch {
+            return [option.id, undefined];
+        }
+    }));
+    optionFundingPlans.value = Object.fromEntries(entries.filter((entry) => Boolean(entry[1])));
 }
-
 async function loadFunding() {
-  loading.value = true
-  error.value = ''
-  try {
-    const targetNoticeId = await resolveNoticeId()
-    const [noticeResponse, fundingResponse, unitOptionResponse, productsResponse, policiesResponse, favoriteResponse] = await Promise.all([
-      fetchNotice(targetNoticeId),
-      fetchFundingPlan(targetNoticeId, selectedOptionId.value),
-      fetchNoticeUnitOptions(targetNoticeId).catch(() => []),
-      fetchProducts(),
-      fetchPolicies(),
-      fetchFavorites(),
-    ])
-    selectedNotice.value = noticeResponse
-    fundingPlan.value = fundingResponse
-    unitOptions.value = unitOptionResponse
-    financialProducts.value = productsResponse
-    policies.value = policiesResponse
-    favorites.value = favoriteResponse
-    await loadOptionFundingPlans(targetNoticeId, unitOptionResponse, fundingResponse)
-  } catch {
-    error.value = '자금 로드맵 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
-  } finally {
-    loading.value = false
-  }
+    loading.value = true;
+    error.value = '';
+    try {
+        const targetNoticeId = await resolveNoticeId();
+        const [noticeResponse, fundingResponse, unitOptionResponse, productsResponse, policiesResponse, favoriteResponse] = await Promise.all([
+            fetchNotice(targetNoticeId),
+            fetchFundingPlan(targetNoticeId, selectedOptionId.value),
+            fetchNoticeUnitOptions(targetNoticeId).catch(() => []),
+            fetchProducts(),
+            fetchPolicies(),
+            fetchFavorites(),
+        ]);
+        selectedNotice.value = noticeResponse;
+        fundingPlan.value = fundingResponse;
+        unitOptions.value = unitOptionResponse;
+        financialProducts.value = productsResponse;
+        policies.value = policiesResponse;
+        favorites.value = favoriteResponse;
+        await loadOptionFundingPlans(targetNoticeId, unitOptionResponse, fundingResponse);
+    }
+    catch {
+        error.value = '자금 로드맵 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.';
+    }
+    finally {
+        loading.value = false;
+    }
 }
-
-function readinessForPlan(plan?: FundingPlan) {
-  if (!plan?.down_payment) return 0
-  return Math.round((plan.available_cash / plan.down_payment) * 100)
+function readinessForPlan(plan) {
+    if (!plan?.down_payment)
+        return 0;
+    return Math.round((plan.available_cash / plan.down_payment) * 100);
 }
-
-function comparisonStatus(plan?: FundingPlan) {
-  if (!plan) return '계산 대기'
-  if (plan.shortfall <= 0) return '계약금 준비 완료'
-  if (plan.monthly_target <= 0) return '추가 목표 없음'
-  return `월 ${formatMoney(plan.monthly_target)} 목표`
+function comparisonStatus(plan) {
+    if (!plan)
+        return '계산 대기';
+    if (plan.shortfall <= 0)
+        return '계약금 준비 완료';
+    if (plan.monthly_target <= 0)
+        return '추가 목표 없음';
+    return `월 ${formatMoney(plan.monthly_target)} 목표`;
 }
-
-function comparisonStatusClass(plan?: FundingPlan) {
-  if (!plan) return 'bg-slate-100 text-slate-500'
-  if (plan.shortfall <= 0) return 'bg-emerald-50 text-emerald-700'
-  return 'bg-blue-50 text-blue-700'
+function comparisonStatusClass(plan) {
+    if (!plan)
+        return 'bg-slate-100 text-slate-500';
+    if (plan.shortfall <= 0)
+        return 'bg-emerald-50 text-emerald-700';
+    return 'bg-blue-50 text-blue-700';
 }
-
-function middleScheduleRows(plan?: FundingPlan) {
-  return plan?.timeline.filter((item) => item.payment_type === 'middle_payment') ?? []
+function middleScheduleRows(plan) {
+    return plan?.timeline.filter((item) => item.payment_type === 'middle_payment') ?? [];
 }
-
-function middlePaymentSummary(plan?: FundingPlan) {
-  const rows = middleScheduleRows(plan)
-  if (!plan) return '-'
-  if (rows.length === 0) return '없음'
-  const total = rows.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-  return `${rows.length}회 · ${formatMoney(total)}`
+function middlePaymentSummary(plan) {
+    const rows = middleScheduleRows(plan);
+    if (!plan)
+        return '-';
+    if (rows.length === 0)
+        return '없음';
+    const total = rows.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    return `${rows.length}회 · ${formatMoney(total)}`;
 }
-
 function selectedOptionLabel() {
-  if (!selectedOption.value) return ''
-  return `${selectedOption.value.unit_type} · ${selectedOption.value.floor_group || '전체'}`
+    if (!selectedOption.value)
+        return '';
+    return `${selectedOption.value.unit_type} · ${selectedOption.value.floor_group || '전체'}`;
 }
-
-function paymentTypeLabel(type?: string) {
-  if (type === 'down_payment') return '계약금'
-  if (type === 'middle_payment') return '중도금'
-  if (type === 'final_payment') return '잔금'
-  if (type === 'installment_payment') return '할부금'
-  if (type === 'move_in_balance') return '입주잔금'
-  if (type === 'loan') return '융자금'
-  if (type === 'application') return '접수'
-  if (type === 'winner') return '발표'
-  return '일정'
+function paymentTypeLabel(type) {
+    if (type === 'down_payment')
+        return '계약금';
+    if (type === 'middle_payment')
+        return '중도금';
+    if (type === 'final_payment')
+        return '잔금';
+    if (type === 'installment_payment')
+        return '할부금';
+    if (type === 'move_in_balance')
+        return '입주잔금';
+    if (type === 'loan')
+        return '융자금';
+    if (type === 'application')
+        return '접수';
+    if (type === 'winner')
+        return '발표';
+    return '일정';
 }
-
-function paymentTypeClass(type?: string) {
-  if (type === 'down_payment') return 'bg-blue-50 text-blue-700'
-  if (type === 'middle_payment') return 'bg-violet-50 text-violet-700'
-  if (type === 'final_payment') return 'bg-amber-50 text-amber-700'
-  if (type === 'installment_payment') return 'bg-emerald-50 text-emerald-700'
-  if (type === 'move_in_balance') return 'bg-cyan-50 text-cyan-700'
-  if (type === 'loan') return 'bg-slate-200 text-slate-700'
-  return 'bg-slate-100 text-slate-600'
+function paymentTypeClass(type) {
+    if (type === 'down_payment')
+        return 'bg-blue-50 text-blue-700';
+    if (type === 'middle_payment')
+        return 'bg-violet-50 text-violet-700';
+    if (type === 'final_payment')
+        return 'bg-amber-50 text-amber-700';
+    if (type === 'installment_payment')
+        return 'bg-emerald-50 text-emerald-700';
+    if (type === 'move_in_balance')
+        return 'bg-cyan-50 text-cyan-700';
+    if (type === 'loan')
+        return 'bg-slate-200 text-slate-700';
+    return 'bg-slate-100 text-slate-600';
 }
-
-watch([noticeId, selectedOptionId], loadFunding)
-onMounted(loadFunding)
+watch([noticeId, selectedOptionId], loadFunding);
+onMounted(loadFunding);
 </script>
 
 <template>

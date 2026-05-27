@@ -1,56 +1,55 @@
-<script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { LogIn, LogOut, UserPlus } from 'lucide-vue-next'
-import { useAuthStore } from '../stores/authStore'
-import { useProfileStore } from '../stores/profileStore'
-
-const router = useRouter()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
-const mode = ref<'login' | 'register'>('login')
-const loading = ref(false)
-const error = ref('')
-
+<script setup>
+import { reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { LogIn, LogOut, UserPlus } from 'lucide-vue-next';
+import { useAuthStore } from '../stores/authStore';
+import { useProfileStore } from '../stores/profileStore';
+const router = useRouter();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
+const mode = ref('login');
+const loading = ref(false);
+const error = ref('');
 const form = reactive({
-  username: '',
-  email: '',
-  password: '',
-})
-
+    username: '',
+    email: '',
+    password: '',
+});
 async function submit() {
-  loading.value = true
-  error.value = ''
-  try {
-    const session =
-      mode.value === 'login'
-        ? await authStore.login({ username: form.username, password: form.password })
-        : await authStore.register({ username: form.username, email: form.email, password: form.password })
-    if (session.profile) {
-      profileStore.setLocalProfile(session.profile)
-      profileStore.loaded = true
-    } else {
-      profileStore.loaded = false
-      await profileStore.hydrateProfile()
+    loading.value = true;
+    error.value = '';
+    try {
+        const session = mode.value === 'login'
+            ? await authStore.login({ username: form.username, password: form.password })
+            : await authStore.register({ username: form.username, email: form.email, password: form.password });
+        if (session.profile) {
+            profileStore.setLocalProfile(session.profile);
+            profileStore.loaded = true;
+        }
+        else {
+            profileStore.loaded = false;
+            await profileStore.hydrateProfile();
+        }
+        await router.push('/profile');
     }
-    await router.push('/profile')
-  } catch (exc: any) {
-    error.value = exc?.response?.data?.detail ?? '계정 처리 중 오류가 발생했습니다.'
-  } finally {
-    loading.value = false
-  }
+    catch (exc) {
+        error.value = exc?.response?.data?.detail ?? '계정 처리 중 오류가 발생했습니다.';
+    }
+    finally {
+        loading.value = false;
+    }
 }
-
 async function logout() {
-  loading.value = true
-  try {
-    await authStore.logout()
-    profileStore.loaded = false
-    await profileStore.hydrateProfile()
-    await router.push('/')
-  } finally {
-    loading.value = false
-  }
+    loading.value = true;
+    try {
+        await authStore.logout();
+        profileStore.loaded = false;
+        await profileStore.hydrateProfile();
+        await router.push('/');
+    }
+    finally {
+        loading.value = false;
+    }
 }
 </script>
 

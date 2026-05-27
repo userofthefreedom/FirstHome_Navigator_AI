@@ -1,116 +1,102 @@
-<script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { Loader2, MessageCircle, Send, Sparkles, X } from 'lucide-vue-next'
-import { askCoachChat, fetchDashboard } from '../api/firsthome'
-import { useProfileStore } from '../stores/profileStore'
-
-type ChatMessage = {
-  role: 'assistant' | 'user'
-  content: string
-  actions?: string[]
-  source?: string
-  contextRefs?: Array<Record<string, any>>
-}
-
-const route = useRoute()
-const profileStore = useProfileStore()
-const isOpen = ref(false)
-const pending = ref(false)
-const draft = ref('')
-const activeNoticeId = ref<number | null>(null)
-const messages = ref<ChatMessage[]>([
-  {
-    role: 'assistant',
-    content: '선택한 공고와 주택형 옵션을 기준으로 계약금 부족액, 납부 일정, 공식 확인 포인트를 정리해드릴게요.',
-  },
-])
-
+<script setup>
+import { computed, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { Loader2, MessageCircle, Send, Sparkles, X } from 'lucide-vue-next';
+import { askCoachChat, fetchDashboard } from '../api/firsthome';
+import { useProfileStore } from '../stores/profileStore';
+const route = useRoute();
+const profileStore = useProfileStore();
+const isOpen = ref(false);
+const pending = ref(false);
+const draft = ref('');
+const activeNoticeId = ref(null);
+const messages = ref([
+    {
+        role: 'assistant',
+        content: '선택한 공고와 주택형 옵션을 기준으로 계약금 부족액, 납부 일정, 공식 확인 포인트를 정리해드릴게요.',
+    },
+]);
 const quickPrompts = [
-  '이 옵션에서 내가 가장 먼저 확인할 조건은?',
-  '선택한 옵션의 계약금 부담은 어느 정도야?',
-  '59A와 74A 중 지금 자금으로 더 현실적인 옵션은?',
-  '공식 공고문에서 확인해야 할 근거는 어디야?',
-  '이번 주에 해야 할 일을 3개로 정리해줘.',
-]
-
-const canSend = computed(() => draft.value.trim().length > 0 && !pending.value)
-
+    '이 옵션에서 내가 가장 먼저 확인할 조건은?',
+    '선택한 옵션의 계약금 부담은 어느 정도야?',
+    '59A와 74A 중 지금 자금으로 더 현실적인 옵션은?',
+    '공식 공고문에서 확인해야 할 근거는 어디야?',
+    '이번 주에 해야 할 일을 3개로 정리해줘.',
+];
+const canSend = computed(() => draft.value.trim().length > 0 && !pending.value);
 function routeNoticeId() {
-  const raw = route.params.noticeId
-  const value = Array.isArray(raw) ? raw[0] : raw
-  const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    const raw = route.params.noticeId;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
-
 function routeOptionId() {
-  const raw = route.query.option_id
-  const value = Array.isArray(raw) ? raw[0] : raw
-  const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    const raw = route.query.option_id;
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
-
 async function resolveNoticeId() {
-  const fromRoute = routeNoticeId()
-  if (fromRoute) {
-    activeNoticeId.value = fromRoute
-    return fromRoute
-  }
-  if (activeNoticeId.value) return activeNoticeId.value
-  const dashboard = await fetchDashboard()
-  activeNoticeId.value = dashboard.top_recommendations[0]?.notice_id ?? 101
-  return activeNoticeId.value
-}
-
-async function sendMessage(nextMessage = draft.value) {
-  const content = nextMessage.trim()
-  if (!content || pending.value) return
-
-  messages.value.push({ role: 'user', content })
-  draft.value = ''
-  pending.value = true
-
-  try {
-    if (!profileStore.loaded) {
-      await profileStore.hydrateProfile()
+    const fromRoute = routeNoticeId();
+    if (fromRoute) {
+        activeNoticeId.value = fromRoute;
+        return fromRoute;
     }
-    const noticeId = await resolveNoticeId()
-    const response = await askCoachChat(noticeId, content, profileStore.profile, routeOptionId())
-    messages.value.push({
-      role: 'assistant',
-      content: response.reply,
-      actions: response.suggested_actions,
-      source: response.source,
-      contextRefs: response.context_refs,
-    })
-  } catch {
-    messages.value.push({
-      role: 'assistant',
-      content: '잠시 연결이 불안정합니다. 백엔드 서버 상태를 확인한 뒤 다시 시도해주세요.',
-    })
-  } finally {
-    pending.value = false
-  }
+    if (activeNoticeId.value)
+        return activeNoticeId.value;
+    const dashboard = await fetchDashboard();
+    activeNoticeId.value = dashboard.top_recommendations[0]?.notice_id ?? 101;
+    return activeNoticeId.value;
 }
-
-function handleEnter(event: KeyboardEvent) {
-  if (event.shiftKey) return
-  event.preventDefault()
-  void sendMessage()
+async function sendMessage(nextMessage = draft.value) {
+    const content = nextMessage.trim();
+    if (!content || pending.value)
+        return;
+    messages.value.push({ role: 'user', content });
+    draft.value = '';
+    pending.value = true;
+    try {
+        if (!profileStore.loaded) {
+            await profileStore.hydrateProfile();
+        }
+        const noticeId = await resolveNoticeId();
+        const response = await askCoachChat(noticeId, content, profileStore.profile, routeOptionId());
+        messages.value.push({
+            role: 'assistant',
+            content: response.reply,
+            actions: response.suggested_actions,
+            source: response.source,
+            contextRefs: response.context_refs,
+        });
+    }
+    catch {
+        messages.value.push({
+            role: 'assistant',
+            content: '잠시 연결이 불안정합니다. 백엔드 서버 상태를 확인한 뒤 다시 시도해주세요.',
+        });
+    }
+    finally {
+        pending.value = false;
+    }
 }
-
-function contextLabel(ref: Record<string, any>) {
-  const labels: Record<string, string> = {
-    notice: '공고',
-    funding_plan: '자금계산',
-    unit_option: '주택형',
-    payment_schedule: '납부일정',
-    checklist: '체크리스트',
-    evidence: '근거문장',
-  }
-  const type = String(ref.type ?? '')
-  const label = String(ref.label ?? ref.id ?? '')
-  return `${(labels[type] ?? type) || '근거'}: ${label}`
+function handleEnter(event) {
+    if (event.shiftKey)
+        return;
+    event.preventDefault();
+    void sendMessage();
+}
+function contextLabel(ref) {
+    const labels = {
+        notice: '공고',
+        funding_plan: '자금계산',
+        unit_option: '주택형',
+        payment_schedule: '납부일정',
+        checklist: '체크리스트',
+        evidence: '근거문장',
+    };
+    const type = String(ref.type ?? '');
+    const label = String(ref.label ?? ref.id ?? '');
+    return `${(labels[type] ?? type) || '근거'}: ${label}`;
 }
 </script>
 

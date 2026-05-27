@@ -1,58 +1,54 @@
-<script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { Bell, Bookmark, Bot, Building2, Home, LogOut, MapPinned, Search, UserRound, WalletCards } from 'lucide-vue-next'
-import FloatingCoachChat from '../components/FloatingCoachChat.vue'
-import { useAuthStore } from '../stores/authStore'
-import { useProfileStore } from '../stores/profileStore'
-import { formatMoney } from '../utils/format'
-
-const route = useRoute()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
-
+<script setup>
+import { computed, onMounted } from 'vue';
+import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { Bell, Bookmark, Bot, Building2, Home, LogOut, MapPinned, Search, UserRound, WalletCards } from 'lucide-vue-next';
+import FloatingCoachChat from '../components/FloatingCoachChat.vue';
+import { useAuthStore } from '../stores/authStore';
+import { useProfileStore } from '../stores/profileStore';
+import { formatMoney } from '../utils/format';
+const route = useRoute();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
 const displayName = computed(() => {
-  if (profileStore.profile.name) return profileStore.profile.name
-  if (authStore.user.is_authenticated && authStore.user.username) return authStore.user.username
-  return '게스트'
-})
-
-const profileStatus = computed(() => (authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중'))
-
+    if (profileStore.profile.name)
+        return profileStore.profile.name;
+    if (authStore.user.is_authenticated && authStore.user.username)
+        return authStore.user.username;
+    return '게스트';
+});
+const profileStatus = computed(() => (authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중'));
 const menus = [
-  { label: '대시보드', shortLabel: '홈', path: '/', icon: Home },
-  { label: '조건 입력', shortLabel: '조건', path: '/profile', icon: UserRound },
-  { label: '추천 청약', shortLabel: '추천', path: '/recommendations', icon: Building2 },
-  { label: '청약 지도', shortLabel: '지도', path: '/map', icon: MapPinned },
-  { label: '자금 로드맵', shortLabel: '자금', path: '/funding', icon: WalletCards },
-  { label: 'AI 코치', shortLabel: '코치', path: '/ai-coach', icon: Bot },
-  { label: '관심목록', shortLabel: '관심', path: '/favorites', icon: Bookmark },
-]
-
-function isActive(path: string) {
-  if (path === '/') return route.path === '/'
-  return route.path.startsWith(path)
+    { label: '대시보드', shortLabel: '홈', path: '/', icon: Home },
+    { label: '조건 입력', shortLabel: '조건', path: '/profile', icon: UserRound },
+    { label: '추천 청약', shortLabel: '추천', path: '/recommendations', icon: Building2 },
+    { label: '청약 지도', shortLabel: '지도', path: '/map', icon: MapPinned },
+    { label: '자금 로드맵', shortLabel: '자금', path: '/funding', icon: WalletCards },
+    { label: 'AI 코치', shortLabel: '코치', path: '/ai-coach', icon: Bot },
+    { label: '관심목록', shortLabel: '관심', path: '/favorites', icon: Bookmark },
+];
+function isActive(path) {
+    if (path === '/')
+        return route.path === '/';
+    return route.path.startsWith(path);
 }
-
 async function handleLogout() {
-  await authStore.logout()
-  profileStore.loaded = false
-  await profileStore.hydrateProfile()
+    await authStore.logout();
+    profileStore.loaded = false;
+    await profileStore.hydrateProfile();
 }
-
 onMounted(async () => {
-  if (!authStore.loaded) {
-    const session = await authStore.hydrateAuth()
-    if (session?.profile) {
-      profileStore.setLocalProfile(session.profile)
-      profileStore.loaded = true
-      return
+    if (!authStore.loaded) {
+        const session = await authStore.hydrateAuth();
+        if (session?.profile) {
+            profileStore.setLocalProfile(session.profile);
+            profileStore.loaded = true;
+            return;
+        }
     }
-  }
-  if (!profileStore.loaded) {
-    await profileStore.hydrateProfile()
-  }
-})
+    if (!profileStore.loaded) {
+        await profileStore.hydrateProfile();
+    }
+});
 </script>
 
 <template>

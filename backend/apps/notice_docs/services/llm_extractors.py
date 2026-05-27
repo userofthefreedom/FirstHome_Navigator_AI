@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import date
 from typing import Any
 
@@ -41,7 +42,7 @@ def extract_notice_document_with_llm(
     )
     if not created and log.status == "succeeded":
         raw_json = log.extracted_data or {}
-        options = [_option_from_payload(item) for item in raw_json.get("unit_options", []) if isinstance(item, dict)]
+        options = [_option_from_payload(item, notice=notice) for item in raw_json.get("unit_options", []) if isinstance(item, dict)]
         checklists = _checklists_from_payload(raw_json)
         return options, checklists, {"source": "llm_cache", "input_hash": input_hash, "log_id": log.id}
     if not created:
@@ -67,10 +68,18 @@ def extract_notice_document_with_llm(
         )
     except AiClientError as exc:
         log.mark_failed(str(exc))
+        stale_options, stale_checklists = _latest_successful_cached_result(document_id, exclude_input_hash=input_hash, notice=notice)
+        if stale_options:
+            return stale_options, stale_checklists, {
+                "source": "llm_stale_cache",
+                "input_hash": input_hash,
+                "log_id": log.id,
+                "fallback_reason": str(exc),
+            }
         return [], [], {"source": "llm_failed", "error": str(exc)}
 
     raw_json = response.parsed_json or {}
-    options = [_option_from_payload(item) for item in raw_json.get("unit_options", []) if isinstance(item, dict)]
+    options = [_option_from_payload(item, notice=notice) for item in raw_json.get("unit_options", []) if isinstance(item, dict)]
     checklists = _checklists_from_payload(raw_json)
     log.model_name = response.model
     log.mark_succeeded(
@@ -96,6 +105,32 @@ def _checklists_from_payload(raw_json: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _latest_successful_cached_result(
+    document_id: int,
+    *,
+    exclude_input_hash: str,
+    notice: HousingNotice,
+) -> tuple[list[ExtractedUnitOption], list[dict[str, Any]]]:
+    cached_log = (
+        AiExtractionResult.objects.filter(
+            source_type="document",
+            source_id=document_id,
+            extraction_type="housing_notice",
+            status="succeeded",
+        )
+        .exclude(input_hash=exclude_input_hash)
+        .order_by("-updated_at", "-id")
+        .first()
+    )
+    if cached_log is None:
+        return [], []
+
+    raw_json = cached_log.extracted_data or {}
+    options = [_option_from_payload(item, notice=notice) for item in raw_json.get("unit_options", []) if isinstance(item, dict)]
+    checklists = _checklists_from_payload(raw_json)
+    return options, checklists
+
+
 def _prompt_input(notice: HousingNotice, pages: list[PdfPageText]) -> str:
     chunks = _candidate_chunks(pages)
     return (
@@ -111,7 +146,7 @@ def _candidate_chunks(pages: list[PdfPageText], *, limit: int = 8, max_chars: in
     return candidate_chunks_for_notice_document(pages, limit_per_purpose=max(1, limit // 3), max_chars=max_chars)[:limit]
 
 
-def _option_from_payload(item: dict[str, Any]) -> ExtractedUnitOption:
+def _option_from_payload(item: dict[str, Any], *, notice: HousingNotice | None = None) -> ExtractedUnitOption:
     schedules = [
         ExtractedSchedule(
             label=str(schedule.get("label", "")),
@@ -134,9 +169,11 @@ def _option_from_payload(item: dict[str, Any]) -> ExtractedUnitOption:
         for row in item.get("evidence", [])
         if isinstance(row, dict)
     ]
+    unit_type = str(item.get("unit_type", "")).strip()
+    exclusive_area_m2 = _exclusive_area_from_payload(item, unit_type, notice)
     return ExtractedUnitOption(
-        unit_type=str(item.get("unit_type", "")),
-        exclusive_area_m2=float(item.get("exclusive_area_m2") or 0),
+        unit_type=unit_type,
+        exclusive_area_m2=exclusive_area_m2,
         floor_group=str(item.get("floor_group", "")),
         option_type=str(item.get("option_type") or "basic"),
         base_price=max(0, int(item.get("base_price") or 0)),
@@ -148,6 +185,56 @@ def _option_from_payload(item: dict[str, Any]) -> ExtractedUnitOption:
         payment_schedules=schedules,
         evidence=evidence,
     )
+
+
+def _exclusive_area_from_payload(item: dict[str, Any], unit_type: str, notice: HousingNotice | None) -> float:
+    explicit_area = _safe_float(item.get("exclusive_area_m2"))
+    if explicit_area > 0:
+        return explicit_area
+
+    supply_area = _exclusive_area_from_supply_summary(unit_type, notice)
+    if supply_area > 0:
+        return supply_area
+
+    match = re.search(r"(\d{2,3})(?:\.(\d{1,4}))?", unit_type)
+    if not match:
+        return 0
+    integer_part = match.group(1).lstrip("0") or "0"
+    decimal_part = (match.group(2) or "").rstrip("0")
+    number_text = integer_part if not decimal_part else f"{integer_part}.{decimal_part}"
+    return round(_safe_float(number_text), 2)
+
+
+def _exclusive_area_from_supply_summary(unit_type: str, notice: HousingNotice | None) -> float:
+    if notice is None:
+        return 0
+    supply_summary = (notice.source_meta or {}).get("supply_summary") or {}
+    unit_options = supply_summary.get("unit_options") or []
+    normalized_target = _normalize_unit_key(unit_type)
+    for option in unit_options:
+        if not isinstance(option, dict):
+            continue
+        candidates = [option.get("raw_unit_type"), option.get("unit_type")]
+        if any(_normalize_unit_key(candidate) == normalized_target for candidate in candidates):
+            area = _safe_float(option.get("exclusive_area_m2"))
+            if area > 0:
+                return area
+    return 0
+
+
+def _normalize_unit_key(value: Any) -> str:
+    text = str(value or "").upper().strip()
+    match = re.match(r"0*(\d{2,3})(?:\.\d+)?\s*([A-Z]?)", text)
+    if not match:
+        return re.sub(r"\s+", "", text)
+    return f"{int(match.group(1))}{match.group(2)}"
+
+
+def _safe_float(value: Any) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _parse_date(value: Any) -> date | None:

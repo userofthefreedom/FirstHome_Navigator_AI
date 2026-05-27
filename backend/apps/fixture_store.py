@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date, datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -39,6 +40,27 @@ def notices(
     fixture_notices = [_fixture_notice(notice) for notice in load_fixture()["notices"]]
     items = _notices_with_fixture_supplement(db_notices, fixture_notices)
     return _filter_notices(items, include_excluded=include_excluded, region=region, ownership_type=ownership_type)
+
+
+def current_notices(
+    *,
+    include_excluded: bool = False,
+    region: str | None = None,
+    ownership_type: str | None = None,
+    today: date | None = None,
+) -> list[dict[str, Any]]:
+    return [
+        notice
+        for notice in notices(include_excluded=include_excluded, region=region, ownership_type=ownership_type)
+        if is_current_notice(notice, today=today)
+    ]
+
+
+def is_current_notice(notice: dict[str, Any], *, today: date | None = None) -> bool:
+    deadline = _notice_deadline_date(notice)
+    if deadline is None:
+        return False
+    return deadline >= (today or date.today())
 
 
 def products() -> list[dict[str, Any]]:
@@ -101,7 +123,11 @@ def _notices_with_fixture_supplement(
     if min_service_notices <= 0:
         return db_notices
 
-    db_service_count = sum(1 for notice in db_notices if notice.get("is_service_target"))
+    db_service_count = sum(
+        1
+        for notice in db_notices
+        if notice.get("is_service_target") and is_current_notice(notice)
+    )
     if db_service_count >= min_service_notices:
         return db_notices
 
@@ -111,6 +137,8 @@ def _notices_with_fixture_supplement(
     supplements: list[dict[str, Any]] = []
     for notice in fixture_notices:
         if not notice.get("is_service_target"):
+            continue
+        if not is_current_notice(notice):
             continue
         if str(notice.get("id")) in existing_ids or str(notice.get("source_id")) in existing_source_ids:
             continue
@@ -148,6 +176,21 @@ def _db_policies() -> list[dict[str, Any]]:
 
 def _date_value(value: Any) -> str:
     return value.isoformat() if value else ""
+
+
+def _notice_deadline_date(notice: dict[str, Any]) -> date | None:
+    value = notice.get("application_deadline")
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return date.fromisoformat(text[:10])
+    except ValueError:
+        return None
 
 
 def _money_limit(value: int) -> str:

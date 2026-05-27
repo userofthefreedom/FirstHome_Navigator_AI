@@ -1,73 +1,73 @@
-<script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { ArrowUpDown, Bookmark, CalendarDays, CheckCircle2, ChevronRight, Clock3, ExternalLink, MapPin, Sparkles } from 'lucide-vue-next'
-import { addFavorite, fetchFavorites, fetchHousingRecommendations, removeFavorite } from '../api/firsthome'
-import type { BestUnitOption, Favorite, HousingRecommendation } from '../types/firsthome'
-import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus'
-import { formatMoney } from '../utils/format'
-import { useProfileStore } from '../stores/profileStore'
-
-const profileStore = useProfileStore()
-const recommendations = ref<HousingRecommendation[]>([])
-const favorites = ref<Favorite[]>([])
-const loading = ref(true)
-const savingFavoriteKey = ref('')
-const error = ref('')
-
-function priceLabel(price: number) {
-  return price > 0 ? formatMoney(price) : '공식 확인 필요'
+<script setup>
+import { onMounted, ref } from 'vue';
+import { ArrowUpDown, Bookmark, CalendarDays, CheckCircle2, ChevronRight, Clock3, ExternalLink, MapPin, Sparkles } from 'lucide-vue-next';
+import { addFavorite, fetchFavorites, fetchHousingRecommendations, removeFavorite } from '../api/firsthome';
+import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
+import { formatMoney } from '../utils/format';
+import { useProfileStore } from '../stores/profileStore';
+const profileStore = useProfileStore();
+const recommendations = ref([]);
+const favorites = ref([]);
+const loading = ref(true);
+const savingFavoriteKey = ref('');
+const error = ref('');
+function priceLabel(price) {
+    return price > 0 ? formatMoney(price) : '공식 확인 필요';
 }
-
-function favoriteKey(noticeId: number) {
-  return `notice-${noticeId}`
+function favoriteKey(noticeId) {
+    return `notice-${noticeId}`;
 }
-
-function isFavorite(noticeId: number) {
-  return favorites.value.some((favorite) => favorite.favorite_type === 'notice' && favorite.object_id === noticeId)
+function isFavorite(noticeId) {
+    return favorites.value.some((favorite) => favorite.favorite_type === 'notice' && favorite.object_id === noticeId);
 }
-
-function recommendationOptions(item: HousingRecommendation): BestUnitOption[] {
-  if (item.top_options?.length) return item.top_options
-  return item.best_option ? [item.best_option] : []
+function recommendationOptions(item) {
+    if (item.top_options?.length)
+        return item.top_options;
+    return item.best_option ? [item.best_option] : [];
 }
-
-async function toggleFavorite(noticeId: number) {
-  const favorite = { favorite_type: 'notice', object_id: noticeId } satisfies Favorite
-  savingFavoriteKey.value = favoriteKey(noticeId)
-  try {
-    if (isFavorite(noticeId)) {
-      await removeFavorite(favorite)
-      favorites.value = favorites.value.filter((item) => item.favorite_type !== 'notice' || item.object_id !== noticeId)
-    } else {
-      const saved = await addFavorite(favorite)
-      favorites.value = [...favorites.value, saved]
+function scorePercent(item) {
+    const max = item.score_max || 100;
+    return Math.min(100, Math.round(((item.total_score || 0) / max) * 100));
+}
+async function toggleFavorite(noticeId) {
+    const favorite = { favorite_type: 'notice', object_id: noticeId };
+    savingFavoriteKey.value = favoriteKey(noticeId);
+    try {
+        if (isFavorite(noticeId)) {
+            await removeFavorite(favorite);
+            favorites.value = favorites.value.filter((item) => item.favorite_type !== 'notice' || item.object_id !== noticeId);
+        }
+        else {
+            const saved = await addFavorite(favorite);
+            favorites.value = [...favorites.value, saved];
+        }
     }
-  } finally {
-    savingFavoriteKey.value = ''
-  }
+    finally {
+        savingFavoriteKey.value = '';
+    }
 }
-
 async function loadRecommendations() {
-  loading.value = true
-  error.value = ''
-  try {
-    const [recommendationResponse, favoriteResponse] = await Promise.all([
-      fetchHousingRecommendations(),
-      fetchFavorites(),
-    ])
-    recommendations.value = recommendationResponse
-    favorites.value = favoriteResponse
-    if (!profileStore.loaded) {
-      await profileStore.hydrateProfile()
+    loading.value = true;
+    error.value = '';
+    try {
+        const [recommendationResponse, favoriteResponse] = await Promise.all([
+            fetchHousingRecommendations(),
+            fetchFavorites(),
+        ]);
+        recommendations.value = recommendationResponse;
+        favorites.value = favoriteResponse;
+        if (!profileStore.loaded) {
+            await profileStore.hydrateProfile();
+        }
     }
-  } catch {
-    error.value = '백엔드 추천 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
-  } finally {
-    loading.value = false
-  }
+    catch {
+        error.value = '백엔드 추천 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.';
+    }
+    finally {
+        loading.value = false;
+    }
 }
-
-onMounted(loadRecommendations)
+onMounted(loadRecommendations);
 </script>
 
 <template>
@@ -76,7 +76,7 @@ onMounted(loadRecommendations)
       <div>
         <p class="text-sm font-semibold text-blue-700">주택형 옵션 추천</p>
         <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">검토할 후보 TOP 3</h1>
-        <p class="mt-2 text-sm text-slate-500">소유형 공공분양만 대상으로 자격, 자금, 지역, 일정, 정책 연계를 합산하고 공고 안의 주택형 옵션 맞춤도를 함께 봅니다.</p>
+        <p class="mt-2 text-sm text-slate-500">소유형 공공분양만 대상으로 자격, 자금, 지역, 일정을 합산하고 공고 안의 주택형 옵션 맞춤도를 함께 봅니다.</p>
       </div>
       <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button">
         <ArrowUpDown class="h-4 w-4" />
@@ -131,7 +131,7 @@ onMounted(loadRecommendations)
               {{ item.provider }} · {{ item.region }} · {{ item.district }}
             </p>
 
-            <div class="mt-5 grid gap-3 sm:grid-cols-5">
+            <div class="mt-5 grid gap-3 sm:grid-cols-4">
               <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <p class="text-xs text-slate-500">자격</p>
                 <p class="mt-1 font-bold">{{ item.score_detail.eligibility }}/35</p>
@@ -142,15 +142,11 @@ onMounted(loadRecommendations)
               </div>
               <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <p class="text-xs text-slate-500">지역</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.location }}/15</p>
+                <p class="mt-1 font-bold">{{ item.score_detail.location }}/30</p>
               </div>
               <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
                 <p class="text-xs text-slate-500">일정</p>
                 <p class="mt-1 font-bold">{{ item.score_detail.schedule }}/10</p>
-              </div>
-              <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p class="text-xs text-slate-500">정책</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.policy_link }}/15</p>
               </div>
             </div>
 
@@ -197,10 +193,10 @@ onMounted(loadRecommendations)
           <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
             <div class="flex items-center justify-between">
               <p class="text-sm font-semibold text-slate-500">총점</p>
-              <p class="text-2xl font-bold text-slate-950">{{ item.total_score }}점</p>
+              <p class="text-2xl font-bold text-slate-950">{{ item.total_score }}/{{ item.score_max ?? 100 }}점</p>
             </div>
             <div class="mt-3 h-3 overflow-hidden rounded-full bg-white">
-              <div class="h-full rounded-full bg-blue-600" :style="{ width: `${item.total_score}%` }" />
+              <div class="h-full rounded-full bg-blue-600" :style="{ width: `${scorePercent(item)}%` }" />
             </div>
             <div class="mt-5 space-y-3 text-sm">
               <div class="flex items-center justify-between gap-3">

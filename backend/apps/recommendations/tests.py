@@ -1,6 +1,8 @@
+from datetime import date, timedelta
+
 from django.test import TestCase, override_settings
 
-from apps.fixture_store import default_profile, find_notice, notices
+from apps.fixture_store import current_notices, default_profile, find_notice, notices
 from apps.funding.services.calculator import funding_plan
 from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
 from apps.notices.models import HousingNotice
@@ -34,10 +36,44 @@ class RecommendationServiceTests(TestCase):
 
         self.assertEqual(top["notice_id"], 101)
         self.assertEqual(top["notice_id"], find_notice(top["notice_id"])["id"])
-        self.assertEqual(set(top["score_detail"]), {"eligibility", "funding", "location", "schedule", "policy_link"})
+        self.assertEqual(set(top["score_detail"]), {"eligibility", "funding", "location", "schedule"})
         self.assertEqual(top["total_score"], sum(top["score_detail"].values()))
+        self.assertEqual(top["score_max"], 100)
         self.assertIn("analysis_summary", top)
         self.assertGreaterEqual(len(top["reasons"]), 3)
+
+    def test_expired_notices_are_excluded_from_current_candidates(self):
+        yesterday = date.today() - timedelta(days=1)
+        HousingNotice.objects.create(
+            id=996,
+            source_id="LH-EXPIRED",
+            title="마감 지난 고득점 공고",
+            provider="LH",
+            region="인천",
+            district="인천 테스트구",
+            supply_type="공공분양",
+            housing_type="분양주택",
+            area="84m2",
+            price=330000000,
+            contract_rate=0.1,
+            application_deadline=yesterday,
+            winner_date=date.today() + timedelta(days=7),
+            contract_date=date.today() + timedelta(days=30),
+            move_in="2028-01",
+            competition="100호",
+            source_url="https://example.com",
+            tags=["LH", "공공분양"],
+            required_documents=["주민등록등본"],
+            cautions=["공식 확인 필요"],
+            ownership_type="public_sale",
+            is_service_target=True,
+        )
+
+        current_ids = [notice["id"] for notice in current_notices(include_excluded=True)]
+        recommendation_ids = [item["notice_id"] for item in ranked_recommendations(default_profile(), limit=20)]
+
+        self.assertNotIn(996, current_ids)
+        self.assertNotIn(996, recommendation_ids)
 
     def test_product_and_policy_matchers_change_by_profile(self):
         representative = default_profile()
@@ -128,7 +164,11 @@ class RecommendationServiceTests(TestCase):
             sequence=1,
         )
 
-        recommendation = ranked_recommendations(default_profile(), limit=1)[0]
+        recommendation = next(
+            item
+            for item in ranked_recommendations(default_profile(), limit=20)
+            if item["notice_id"] == 999
+        )
         self.assertEqual(recommendation["best_option"]["option_id"], option.id)
         self.assertEqual(recommendation["top_options"][0]["option_id"], option.id)
         self.assertGreater(recommendation["best_option"]["option_fit_score"], 0)

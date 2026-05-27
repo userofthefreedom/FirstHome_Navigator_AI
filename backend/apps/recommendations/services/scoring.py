@@ -4,9 +4,15 @@ from datetime import date, datetime
 from typing import Any
 
 from apps.funding.services.calculator import calculate_funding_plan, funding_score
-from apps.policies.services.matcher import match_policies
-from apps.products.services.matcher import match_products
 from apps.recommendations.services.eligibility import eligibility_score
+
+
+SCORE_WEIGHTS = {
+    "eligibility": 35,
+    "funding": 25,
+    "location": 30,
+    "schedule": 10,
+}
 
 
 def location_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
@@ -14,10 +20,10 @@ def location_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
     preferred_supply_types = set(profile.get("preferred_supply_types", []))
 
     score = 0
-    score += 9 if notice.get("region") in preferred_regions else 0
-    score += 3 if any(region and region in notice.get("district", "") for region in preferred_regions) else 0
-    score += 3 if notice.get("supply_type") in preferred_supply_types or notice.get("housing_type") in preferred_supply_types else 0
-    return min(score, 15)
+    score += 18 if notice.get("region") in preferred_regions else 0
+    score += 6 if any(region and region in notice.get("district", "") for region in preferred_regions) else 0
+    score += 6 if notice.get("supply_type") in preferred_supply_types or notice.get("housing_type") in preferred_supply_types else 0
+    return min(score, SCORE_WEIGHTS["location"])
 
 
 def schedule_score(notice: dict[str, Any]) -> int:
@@ -32,25 +38,17 @@ def schedule_score(notice: dict[str, Any]) -> int:
     return min(score, 10)
 
 
-def policy_link_score(profile: dict[str, Any]) -> int:
-    matched_products = match_products(profile, limit=10)
-    matched_policies = match_policies(profile, limit=10)
-
-    score = 0
-    score += min(len(matched_products), 3) * 2
-    score += min(len(matched_policies), 3) * 2
-    score += 3 if any(product.get("protection_status") for product in matched_products) else 1
-    return min(score, 15)
-
-
 def score_detail(notice: dict[str, Any], profile: dict[str, Any]) -> dict[str, int]:
     return {
         "eligibility": eligibility_score(notice, profile),
         "funding": funding_score(notice, profile),
         "location": location_score(notice, profile),
         "schedule": schedule_score(notice),
-        "policy_link": policy_link_score(profile),
     }
+
+
+def score_max() -> int:
+    return sum(SCORE_WEIGHTS.values())
 
 
 def score_reasons(notice: dict[str, Any], profile: dict[str, Any]) -> list[str]:

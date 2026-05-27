@@ -10,6 +10,7 @@ from django.test import TestCase, override_settings
 from apps.notice_docs.models import HousingUnitOption, NoticeDocument, PaymentSchedule
 from apps.notice_docs.services import analyze_notice_document, analyze_notice_with_mock_data, parse_lh_document_candidates
 from apps.notice_docs.services.extractors import extract_unit_options_from_pages
+from apps.notice_docs.services.llm_extractors import _option_from_payload
 from apps.notice_docs.services.pdf_parser import PdfPageText, download_remote_pdf, extract_pdf_table_text
 from apps.notice_docs.services.retrieval import (
     build_document_chunks,
@@ -201,6 +202,39 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertIn("59A", ranked[0].chunk.text)
         self.assertTrue(any("matched" in chunk and "주택가격" in chunk for chunk in prompt_chunks))
         self.assertTrue(any("무주택" in chunk for chunk in prompt_chunks))
+
+    def test_llm_option_backfills_area_from_lh_supply_summary(self):
+        self.notice.source_meta = {
+            "supply_summary": {
+                "unit_options": [
+                    {
+                        "unit_type": "74A",
+                        "raw_unit_type": "74.9500A",
+                        "exclusive_area_m2": 74.95,
+                    }
+                ]
+            }
+        }
+
+        option = _option_from_payload(
+            {
+                "unit_type": "74.9500A",
+                "exclusive_area_m2": 0,
+                "floor_group": "1층",
+                "option_type": "basic",
+                "base_price": 518230000,
+                "loan_amount": 0,
+                "balcony_extension_price": 0,
+                "confidence": 0.7,
+                "source_page": 5,
+                "source_text": "74.9500A 1층 기본형 518,230",
+                "payment_schedules": [],
+                "evidence": [],
+            },
+            notice=self.notice,
+        )
+
+        self.assertEqual(option.exclusive_area_m2, 74.95)
 
     def test_rules_extractor_normalizes_unit_type_and_skips_invalid_area(self):
         pages = [

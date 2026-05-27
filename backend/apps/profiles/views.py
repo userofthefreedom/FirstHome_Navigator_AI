@@ -4,6 +4,9 @@ from django.db import IntegrityError
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.fixture_store import default_profile, find_notice, policies, products
+from apps.notice_docs.models import HousingUnitOption
+from apps.notice_docs.serializers import serialize_unit_option
 from apps.profiles.models import Favorite, UserProfile
 from apps.profiles.serializers import UserProfileSerializer
 from apps.profiles.services import (
@@ -13,9 +16,6 @@ from apps.profiles.services import (
     profile_payload as _profile_payload,
     user_profile as _profile_for_user,
 )
-from apps.services import default_profile, find_notice, policies, products
-from apps.notice_docs.models import HousingUnitOption
-from apps.notice_docs.serializers import serialize_unit_option
 
 
 def _client_id(request) -> str:

@@ -1,60 +1,54 @@
-<script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { ChevronRight, FileSearch, ListChecks, MapPin } from 'lucide-vue-next'
-import { fetchNotices } from '../api/firsthome'
-import type { Notice } from '../types/firsthome'
-import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus'
-import { formatMoney } from '../utils/format'
-
-const notices = ref<Notice[]>([])
-const selectedRegion = ref('서울')
-const loading = ref(true)
-const error = ref('')
-
+<script setup>
+import { computed, onMounted, ref } from 'vue';
+import { ChevronRight, FileSearch, ListChecks, MapPin } from 'lucide-vue-next';
+import { fetchNotices } from '../api/firsthome';
+import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
+import { formatMoney } from '../utils/format';
+const notices = ref([]);
+const selectedRegion = ref('서울');
+const loading = ref(true);
+const error = ref('');
 const regionCounts = computed(() => {
-  return notices.value.reduce<Record<string, number>>((acc, notice) => {
-    const region = notice.region || '전국'
-    acc[region] = (acc[region] ?? 0) + 1
-    return acc
-  }, {})
-})
-
+    return notices.value.reduce((acc, notice) => {
+        const region = notice.region || '전국';
+        acc[region] = (acc[region] ?? 0) + 1;
+        return acc;
+    }, {});
+});
 const markers = computed(() => [
-  { region: '서울', x: 49, y: 37, count: regionCounts.value['서울'] ?? 0 },
-  { region: '인천', x: 39, y: 39, count: regionCounts.value['인천'] ?? 0 },
-  { region: '경기 남부', x: 53, y: 48, count: regionCounts.value['경기 남부'] ?? regionCounts.value['경기'] ?? 0 },
-  { region: '경기 북부', x: 51, y: 28, count: regionCounts.value['경기 북부'] ?? 0 },
-  { region: '부산', x: 76, y: 76, count: regionCounts.value['부산'] ?? 0 },
-])
-
+    { region: '서울', x: 49, y: 37, count: regionCounts.value['서울'] ?? 0 },
+    { region: '인천', x: 39, y: 39, count: regionCounts.value['인천'] ?? 0 },
+    { region: '경기 남부', x: 53, y: 48, count: regionCounts.value['경기 남부'] ?? regionCounts.value['경기'] ?? 0 },
+    { region: '경기 북부', x: 51, y: 28, count: regionCounts.value['경기 북부'] ?? 0 },
+    { region: '부산', x: 76, y: 76, count: regionCounts.value['부산'] ?? 0 },
+]);
 const selectedNotices = computed(() => {
-  return notices.value.filter((notice) => notice.region === selectedRegion.value)
-})
-
+    return notices.value.filter((notice) => notice.region === selectedRegion.value);
+});
 const analyzedCount = computed(() => {
-  return selectedNotices.value.filter((notice) => ['verified', 'needs_review'].includes(analysisSummary(notice.analysis_summary, notice.official_document_status).stage)).length
-})
-
-function priceLabel(price: number) {
-  return price > 0 ? formatMoney(price) : '공고문 확인 필요'
+    return selectedNotices.value.filter((notice) => ['verified', 'needs_review'].includes(analysisSummary(notice.analysis_summary, notice.official_document_status).stage)).length;
+});
+function priceLabel(price) {
+    return price > 0 ? formatMoney(price) : '공고문 확인 필요';
 }
-
 async function loadNotices() {
-  loading.value = true
-  error.value = ''
-  try {
-    notices.value = await fetchNotices({ ownership_type: 'public_sale' })
-    const firstRegion = markers.value.find((marker) => marker.count > 0)?.region
-    if (firstRegion) selectedRegion.value = firstRegion
-  } catch {
-    notices.value = []
-    error.value = '공고 목록을 불러오지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
-  } finally {
-    loading.value = false
-  }
+    loading.value = true;
+    error.value = '';
+    try {
+        notices.value = await fetchNotices({ ownership_type: 'public_sale' });
+        const firstRegion = markers.value.find((marker) => marker.count > 0)?.region;
+        if (firstRegion)
+            selectedRegion.value = firstRegion;
+    }
+    catch {
+        notices.value = [];
+        error.value = '공고 목록을 불러오지 못했습니다. Django 서버가 실행 중인지 확인하세요.';
+    }
+    finally {
+        loading.value = false;
+    }
 }
-
-onMounted(loadNotices)
+onMounted(loadNotices);
 </script>
 
 <template>

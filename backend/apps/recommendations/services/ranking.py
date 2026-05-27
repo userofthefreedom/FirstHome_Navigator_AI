@@ -4,8 +4,8 @@ from typing import Any
 
 from django.db import OperationalError, ProgrammingError
 
-from apps.fixture_store import default_profile, notices
-from apps.recommendations.services.scoring import score_detail, score_reasons
+from apps.fixture_store import current_notices, default_profile
+from apps.recommendations.services.scoring import score_detail, score_max, score_reasons
 
 
 def _area_m2(value: str) -> float:
@@ -205,6 +205,7 @@ def calculate_score(notice: dict[str, Any], profile: dict[str, Any] | None = Non
     top_options = _ranked_unit_options(int(notice["id"]), profile, limit=3)
     best_option = top_options[0] if top_options else None
     option_fit_score = best_option["option_fit_score"] if best_option else _option_fit_score(notice, profile)
+    total_score = sum(detail.values())
     return {
         "notice_id": notice["id"],
         "source_id": notice.get("source_id", ""),
@@ -232,7 +233,8 @@ def calculate_score(notice: dict[str, Any], profile: dict[str, Any] | None = Non
         "move_in": notice["move_in"],
         "competition": notice["competition"],
         "source_url": notice.get("source_url", ""),
-        "total_score": sum(detail.values()),
+        "total_score": total_score,
+        "score_max": score_max(),
         "option_fit_score": option_fit_score,
         "best_option": best_option,
         "top_options": top_options,
@@ -244,8 +246,8 @@ def calculate_score(notice: dict[str, Any], profile: dict[str, Any] | None = Non
 def ranked_recommendations(profile: dict[str, Any] | None = None, limit: int = 3) -> list[dict[str, Any]]:
     profile = profile or default_profile()
     recommendations = sorted(
-        [calculate_score(notice, profile) for notice in notices()],
-        key=lambda item: (item["option_fit_score"], item["total_score"]),
+        [calculate_score(notice, profile) for notice in current_notices()],
+        key=lambda item: (item["total_score"], item["option_fit_score"]),
         reverse=True,
     )
     return recommendations[:limit]

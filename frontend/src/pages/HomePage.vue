@@ -1,262 +1,265 @@
-<script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
-import { CalendarDays, ClipboardList, FileCheck2, MapPin, ShieldAlert, Sparkles, Trophy } from 'lucide-vue-next'
-import { fetchDashboard, fetchFundingPlan, fetchNotices } from '../api/firsthome'
-import type { Dashboard, FundingPlan, HousingRecommendation, Notice } from '../types/firsthome'
-import { formatMoney } from '../utils/format'
-import { useProfileStore } from '../stores/profileStore'
-
-type CalendarEvent = {
-  id: number
-  label: string
-  region: string
-  supplyType: string
-  deadline: string
-  type: 'deadline' | 'selected'
+<script setup>
+import { computed, onMounted, ref, watch } from 'vue';
+import { RouterLink } from 'vue-router';
+import { CalendarDays, ClipboardList, FileCheck2, MapPin, ShieldAlert, Sparkles, Trophy } from 'lucide-vue-next';
+import { fetchDashboard, fetchFundingPlan, fetchNotices } from '../api/firsthome';
+import { formatMoney } from '../utils/format';
+import { useProfileStore } from '../stores/profileStore';
+const profileStore = useProfileStore();
+const loading = ref(true);
+const error = ref('');
+const dashboard = ref(null);
+const notices = ref([]);
+const selectedId = ref(null);
+const selectedPlan = ref(null);
+const selectedCalendarDay = ref(null);
+const selectedMonthKey = ref('');
+const recommendations = computed(() => dashboard.value?.top_recommendations ?? []);
+const activeNoticeCount = computed(() => dashboard.value?.notice_count ?? sortedNotices.value.length);
+const selectedRecommendation = computed(() => recommendations.value.find((item) => item.notice_id === selectedId.value) ?? recommendations.value[0]);
+const selected = computed(() => notices.value.find((notice) => notice.id === selectedId.value) ?? notices.value[0]);
+const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+function scoreLabel(item) {
+    if (!item)
+        return '0점';
+    return `${item.total_score}/${item.score_max ?? 100}점`;
 }
-
-type CalendarSlot = {
-  key: string
-  day: number | null
+function scorePercent(item) {
+    if (!item)
+        return 0;
+    const max = item.score_max || 100;
+    return Math.min(100, Math.round(((item.total_score || 0) / max) * 100));
 }
-
-const profileStore = useProfileStore()
-const loading = ref(true)
-const error = ref('')
-const dashboard = ref<Dashboard | null>(null)
-const notices = ref<Notice[]>([])
-const selectedId = ref<number | null>(null)
-const selectedPlan = ref<FundingPlan | null>(null)
-const selectedCalendarDay = ref<number | null>(null)
-const selectedMonthKey = ref('')
-
-const recommendations = computed<HousingRecommendation[]>(() => dashboard.value?.top_recommendations ?? [])
-const selectedRecommendation = computed(() => recommendations.value.find((item) => item.notice_id === selectedId.value) ?? recommendations.value[0])
-const selected = computed(() => notices.value.find((notice) => notice.id === selectedId.value) ?? notices.value[0])
-const weekDays = ['일', '월', '화', '수', '목', '금', '토']
-
-function parseDeadline(value: string) {
-  const date = new Date(`${value}T00:00:00`)
-  return Number.isNaN(date.getTime()) ? null : date
+function parseDeadline(value) {
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
 }
-
-function monthKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+function todayStart() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
 }
-
-function monthLabel(key: string) {
-  const [year, month] = key.split('-')
-  return `${year}년 ${Number(month)}월`
+function isActiveNotice(notice) {
+    const deadline = parseDeadline(notice?.application_deadline);
+    return Boolean(deadline && deadline >= todayStart());
 }
-
+function monthKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+function monthLabel(key) {
+    const [year, month] = key.split('-');
+    return `${year}년 ${Number(month)}월`;
+}
 const sortedNotices = computed(() => {
-  return [...notices.value].sort((a, b) => a.application_deadline.localeCompare(b.application_deadline) || a.title.localeCompare(b.title))
-})
-
+    return [...notices.value]
+        .filter(isActiveNotice)
+        .sort((a, b) => a.application_deadline.localeCompare(b.application_deadline) || a.title.localeCompare(b.title));
+});
 const availableMonths = computed(() => {
-  const buckets = new Map<string, number>()
-  for (const notice of sortedNotices.value) {
-    const deadline = parseDeadline(notice.application_deadline)
-    if (!deadline) continue
-    const key = monthKey(deadline)
-    buckets.set(key, (buckets.get(key) ?? 0) + 1)
-  }
-  return [...buckets.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, count]) => ({ key, label: monthLabel(key), count }))
-})
-
-const activeMonthKey = computed(() => selectedMonthKey.value || availableMonths.value[0]?.key || '2026-06')
-
-const calendarMonth = computed(() => {
-  const [year, month] = activeMonthKey.value.split('-').map(Number)
-  return new Date(year, month - 1, 1)
-})
-
-const calendarTitle = computed(() => `${calendarMonth.value.getFullYear()}년 ${calendarMonth.value.getMonth() + 1}월 청약 캘린더`)
-
-const calendarSlots = computed<CalendarSlot[]>(() => {
-  const year = calendarMonth.value.getFullYear()
-  const month = calendarMonth.value.getMonth()
-  const firstWeekDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const slotCount = Math.ceil((firstWeekDay + daysInMonth) / 7) * 7
-
-  return Array.from({ length: slotCount }, (_, index) => {
-    const day = index - firstWeekDay + 1
-    return {
-      key: `${year}-${month}-${index}`,
-      day: day >= 1 && day <= daysInMonth ? day : null,
+    const buckets = new Map();
+    for (const notice of sortedNotices.value) {
+        const deadline = parseDeadline(notice.application_deadline);
+        if (!deadline)
+            continue;
+        const key = monthKey(deadline);
+        buckets.set(key, (buckets.get(key) ?? 0) + 1);
     }
-  })
-})
-
+    return [...buckets.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, count]) => ({ key, label: monthLabel(key), count }));
+});
+const activeMonthKey = computed(() => selectedMonthKey.value || availableMonths.value[0]?.key || '2026-06');
+const calendarMonth = computed(() => {
+    const [year, month] = activeMonthKey.value.split('-').map(Number);
+    return new Date(year, month - 1, 1);
+});
+const calendarTitle = computed(() => `${calendarMonth.value.getFullYear()}년 ${calendarMonth.value.getMonth() + 1}월 청약 캘린더`);
+const calendarSlots = computed(() => {
+    const year = calendarMonth.value.getFullYear();
+    const month = calendarMonth.value.getMonth();
+    const firstWeekDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const slotCount = Math.ceil((firstWeekDay + daysInMonth) / 7) * 7;
+    return Array.from({ length: slotCount }, (_, index) => {
+        const day = index - firstWeekDay + 1;
+        return {
+            key: `${year}-${month}-${index}`,
+            day: day >= 1 && day <= daysInMonth ? day : null,
+        };
+    });
+});
 const eventsByDay = computed(() => {
-  return sortedNotices.value.reduce<Record<number, CalendarEvent[]>>((acc, item) => {
-    const deadline = parseDeadline(item.application_deadline)
-    if (!deadline) return acc
-    if (deadline.getFullYear() !== calendarMonth.value.getFullYear() || deadline.getMonth() !== calendarMonth.value.getMonth()) return acc
-
-    const day = deadline.getDate()
-    acc[day] = [
-      ...(acc[day] ?? []),
-      {
+    return sortedNotices.value.reduce((acc, item) => {
+        const deadline = parseDeadline(item.application_deadline);
+        if (!deadline)
+            return acc;
+        if (deadline.getFullYear() !== calendarMonth.value.getFullYear() || deadline.getMonth() !== calendarMonth.value.getMonth())
+            return acc;
+        const day = deadline.getDate();
+        acc[day] = [
+            ...(acc[day] ?? []),
+            {
+                id: item.id,
+                label: item.title,
+                region: item.region,
+                supplyType: item.supply_type,
+                deadline: item.application_deadline,
+                type: item.id === selectedId.value ? 'selected' : 'deadline',
+            },
+        ];
+        return acc;
+    }, {});
+});
+const selectedDayEvents = computed(() => {
+    if (selectedCalendarDay.value)
+        return eventsByDay.value[selectedCalendarDay.value] ?? [];
+    return sortedNotices.value
+        .filter((item) => {
+        const deadline = parseDeadline(item.application_deadline);
+        return deadline && monthKey(deadline) === activeMonthKey.value;
+    })
+        .slice(0, 6)
+        .map((item) => ({
         id: item.id,
         label: item.title,
         region: item.region,
         supplyType: item.supply_type,
         deadline: item.application_deadline,
         type: item.id === selectedId.value ? 'selected' : 'deadline',
-      },
-    ]
-    return acc
-  }, {})
-})
-
-const selectedDayEvents = computed(() => {
-  if (selectedCalendarDay.value) return eventsByDay.value[selectedCalendarDay.value] ?? []
-  return sortedNotices.value
-    .filter((item) => {
-      const deadline = parseDeadline(item.application_deadline)
-      return deadline && monthKey(deadline) === activeMonthKey.value
-    })
-    .slice(0, 6)
-    .map((item) => ({
-      id: item.id,
-      label: item.title,
-      region: item.region,
-      supplyType: item.supply_type,
-      deadline: item.application_deadline,
-      type: item.id === selectedId.value ? 'selected' : 'deadline',
-    }))
-})
-
+    }));
+});
 const preApplyTasks = computed(() => {
-  if (!selected.value) return []
-  return [
-    {
-      title: '주택형 옵션의 공식 자격 확인',
-      date: '오늘',
-      status: '진행',
-      description: `${selected.value.supply_type} 조건, 무주택 기준, 청약통장 가입기간을 선택 후보의 공식 공고문 기준으로 다시 확인합니다.`,
-    },
-    {
-      title: '필수 서류 발급 가능 여부 확인',
-      date: 'D-7',
-      status: '준비',
-      description: `${selected.value.required_documents.slice(0, 3).join(', ')} 발급 시점과 유효 기간을 확인합니다.`,
-    },
-    {
-      title: '접수 전 공식 일정 고정',
-      date: selected.value.application_deadline,
-      status: '마감',
-      description: '접수 마감, 당첨자 발표, 계약일을 공식 공고문 기준으로 다시 확인하고 일정에 남깁니다.',
-    },
-    {
-      title: '계약금 부족액 준비',
-      date: selected.value.contract_date,
-      status: '예정',
-      description: `부족액 ${formatMoney(selectedPlan.value?.shortfall ?? 0)}을 기준으로 계약 전까지 필요한 월 저축 목표를 점검합니다.`,
-    },
-  ]
-})
-
-function rankClass(rank: number) {
-  if (rank === 1) return 'bg-blue-600 text-white'
-  if (rank === 2) return 'bg-emerald-500 text-white'
-  if (rank === 3) return 'bg-amber-500 text-white'
-  return 'bg-slate-200 text-slate-700'
+    if (!selected.value)
+        return [];
+    return [
+        {
+            title: '주택형 옵션의 공식 자격 확인',
+            date: '오늘',
+            status: '진행',
+            description: `${selected.value.supply_type} 조건, 무주택 기준, 청약통장 가입기간을 선택 후보의 공식 공고문 기준으로 다시 확인합니다.`,
+        },
+        {
+            title: '필수 서류 발급 가능 여부 확인',
+            date: 'D-7',
+            status: '준비',
+            description: `${selected.value.required_documents.slice(0, 3).join(', ')} 발급 시점과 유효 기간을 확인합니다.`,
+        },
+        {
+            title: '접수 전 공식 일정 고정',
+            date: selected.value.application_deadline,
+            status: '마감',
+            description: '접수 마감, 당첨자 발표, 계약일을 공식 공고문 기준으로 다시 확인하고 일정에 남깁니다.',
+        },
+        {
+            title: '계약금 부족액 준비',
+            date: selected.value.contract_date,
+            status: '예정',
+            description: `부족액 ${formatMoney(selectedPlan.value?.shortfall ?? 0)}을 기준으로 계약 전까지 필요한 월 저축 목표를 점검합니다.`,
+        },
+    ];
+});
+function rankClass(rank) {
+    if (rank === 1)
+        return 'bg-blue-600 text-white';
+    if (rank === 2)
+        return 'bg-emerald-500 text-white';
+    if (rank === 3)
+        return 'bg-amber-500 text-white';
+    return 'bg-slate-200 text-slate-700';
 }
-
-function statusClass(status: string) {
-  if (status === '진행') return 'bg-blue-50 text-blue-700'
-  if (status === '준비') return 'bg-slate-100 text-slate-600'
-  if (status === '마감') return 'bg-amber-50 text-amber-700'
-  return 'bg-emerald-50 text-emerald-700'
+function statusClass(status) {
+    if (status === '진행')
+        return 'bg-blue-50 text-blue-700';
+    if (status === '준비')
+        return 'bg-slate-100 text-slate-600';
+    if (status === '마감')
+        return 'bg-amber-50 text-amber-700';
+    return 'bg-emerald-50 text-emerald-700';
 }
-
-function eventCountClass(count: number) {
-  if (count >= 6) return 'bg-rose-500 text-white'
-  if (count >= 3) return 'bg-amber-500 text-white'
-  if (count >= 1) return 'bg-blue-600 text-white'
-  return 'bg-slate-200 text-slate-500'
+function eventCountClass(count) {
+    if (count >= 6)
+        return 'bg-rose-500 text-white';
+    if (count >= 3)
+        return 'bg-amber-500 text-white';
+    if (count >= 1)
+        return 'bg-blue-600 text-white';
+    return 'bg-slate-200 text-slate-500';
 }
-
-function dayEvents(day: number | null) {
-  if (!day) return []
-  return eventsByDay.value[day] ?? []
+function dayEvents(day) {
+    if (!day)
+        return [];
+    return eventsByDay.value[day] ?? [];
 }
-
-function selectCalendarDay(day: number | null) {
-  if (!day) return
-  selectedCalendarDay.value = day
-  const firstEvent = dayEvents(day)[0]
-  if (firstEvent) selectedId.value = firstEvent.id
+function selectCalendarDay(day) {
+    if (!day)
+        return;
+    selectedCalendarDay.value = day;
+    const firstEvent = dayEvents(day)[0];
+    if (firstEvent)
+        selectedId.value = firstEvent.id;
 }
-
-function selectNoticeFromCalendar(noticeId: number, day?: number) {
-  selectedId.value = noticeId
-  if (day) selectedCalendarDay.value = day
+function selectNoticeFromCalendar(noticeId, day) {
+    selectedId.value = noticeId;
+    if (day)
+        selectedCalendarDay.value = day;
 }
-
-function selectCalendarMonth(key: string) {
-  selectedMonthKey.value = key
-  selectedCalendarDay.value = null
+function selectCalendarMonth(key) {
+    selectedMonthKey.value = key;
+    selectedCalendarDay.value = null;
 }
-
-function syncCalendarToDeadline(value: string) {
-  const deadline = parseDeadline(value)
-  if (!deadline) return
-  selectedMonthKey.value = monthKey(deadline)
-  selectedCalendarDay.value = deadline.getDate()
+function syncCalendarToDeadline(value) {
+    const deadline = parseDeadline(value);
+    if (!deadline)
+        return;
+    selectedMonthKey.value = monthKey(deadline);
+    selectedCalendarDay.value = deadline.getDate();
 }
-
-function deadlineDay(value: string) {
-  const deadline = parseDeadline(value)
-  if (!deadline) return undefined
-  return deadline.getFullYear() === calendarMonth.value.getFullYear() && deadline.getMonth() === calendarMonth.value.getMonth()
-    ? deadline.getDate()
-    : undefined
+function deadlineDay(value) {
+    const deadline = parseDeadline(value);
+    if (!deadline)
+        return undefined;
+    return deadline.getFullYear() === calendarMonth.value.getFullYear() && deadline.getMonth() === calendarMonth.value.getMonth()
+        ? deadline.getDate()
+        : undefined;
 }
-
 async function loadSelectedPlan() {
-  if (!selectedId.value) return
-  selectedPlan.value = await fetchFundingPlan(selectedId.value)
+    if (!selectedId.value)
+        return;
+    const optionId = selectedRecommendation.value?.best_option?.option_id ?? null;
+    selectedPlan.value = await fetchFundingPlan(selectedId.value, optionId);
 }
-
 async function loadDashboard() {
-  loading.value = true
-  error.value = ''
-  try {
-    const [dashboardResponse, noticeResponse] = await Promise.all([fetchDashboard(), fetchNotices()])
-    dashboard.value = dashboardResponse
-    notices.value = noticeResponse
-    selectedId.value = dashboardResponse.top_recommendations[0]?.notice_id ?? noticeResponse[0]?.id ?? null
-    syncCalendarToDeadline(noticeResponse.find((notice) => notice.id === selectedId.value)?.application_deadline ?? '')
-    await profileStore.hydrateProfile()
-    await loadSelectedPlan()
-  } catch {
-    error.value = '백엔드 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.'
-  } finally {
-    loading.value = false
-  }
+    loading.value = true;
+    error.value = '';
+    try {
+        const [dashboardResponse, noticeResponse] = await Promise.all([fetchDashboard(), fetchNotices({ active: '1' })]);
+        dashboard.value = dashboardResponse;
+        notices.value = noticeResponse.filter(isActiveNotice);
+        selectedId.value = dashboardResponse.top_recommendations[0]?.notice_id ?? notices.value[0]?.id ?? null;
+        syncCalendarToDeadline(notices.value.find((notice) => notice.id === selectedId.value)?.application_deadline ?? '');
+        await profileStore.hydrateProfile();
+        await loadSelectedPlan();
+    }
+    catch {
+        error.value = '백엔드 API에 연결하지 못했습니다. Django 서버가 실행 중인지 확인하세요.';
+    }
+    finally {
+        loading.value = false;
+    }
 }
-
 watch(selectedId, (nextId) => {
-  const nextNotice = notices.value.find((notice) => notice.id === nextId)
-  syncCalendarToDeadline(nextNotice?.application_deadline ?? '')
-  void loadSelectedPlan()
-})
-
+    const nextNotice = notices.value.find((notice) => notice.id === nextId);
+    syncCalendarToDeadline(nextNotice?.application_deadline ?? '');
+    void loadSelectedPlan();
+});
 watch(availableMonths, (months) => {
-  if (months.length === 0) return
-  if (!months.some((month) => month.key === selectedMonthKey.value)) {
-    selectedMonthKey.value = months[0].key
-  }
-})
-
-onMounted(loadDashboard)
+    if (months.length === 0)
+        return;
+    if (!months.some((month) => month.key === selectedMonthKey.value)) {
+        selectedMonthKey.value = months[0].key;
+    }
+});
+onMounted(loadDashboard);
 </script>
 
 <template>
@@ -293,11 +296,11 @@ onMounted(loadDashboard)
           <div class="mt-7 grid gap-3 md:grid-cols-4">
             <div class="rounded-lg bg-slate-50 p-4">
               <p class="text-xs font-bold text-slate-500">검토 후보</p>
-              <p class="mt-2 text-2xl font-bold text-slate-950">{{ recommendations.length }}</p>
+              <p class="mt-2 text-2xl font-bold text-slate-950">{{ activeNoticeCount }}</p>
             </div>
             <div class="rounded-lg bg-slate-50 p-4">
               <p class="text-xs font-bold text-slate-500">최고 점수</p>
-              <p class="mt-2 text-2xl font-bold text-slate-950">{{ recommendations[0]?.total_score ?? 0 }}점</p>
+              <p class="mt-2 text-2xl font-bold text-slate-950">{{ scoreLabel(recommendations[0]) }}</p>
             </div>
             <div class="rounded-lg bg-slate-50 p-4">
               <p class="text-xs font-bold text-slate-500">빠른 마감</p>
@@ -318,11 +321,11 @@ onMounted(loadDashboard)
               <p class="mt-2 text-sm text-slate-300">{{ selected.district }}</p>
             </div>
             <span class="rounded-md bg-blue-500 px-2.5 py-1 text-sm font-bold text-white">
-              {{ selectedRecommendation.total_score }}점
+              {{ scoreLabel(selectedRecommendation) }}
             </span>
           </div>
           <div class="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
-            <div class="h-full rounded-full bg-emerald-400" :style="{ width: `${selectedRecommendation.total_score}%` }" />
+            <div class="h-full rounded-full bg-emerald-400" :style="{ width: `${scorePercent(selectedRecommendation)}%` }" />
           </div>
           <div class="mt-6 grid grid-cols-2 gap-3 text-sm">
             <div class="rounded-lg bg-white/10 p-3">
@@ -346,7 +349,7 @@ onMounted(loadDashboard)
             <RouterLink :to="`/notices/${selected.id}`" class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-950">
               공고문 근거
             </RouterLink>
-            <RouterLink :to="`/funding/${selected.id}`" class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white">
+            <RouterLink :to="{ path: `/funding/${selected.id}`, query: selectedRecommendation.best_option?.option_id ? { option_id: selectedRecommendation.best_option.option_id } : {} }" class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white">
               옵션 자금
             </RouterLink>
           </div>
@@ -392,7 +395,7 @@ onMounted(loadDashboard)
               <div class="grid grid-cols-2 gap-2 text-sm sm:w-52">
                 <div class="rounded-lg bg-white p-3">
                   <p class="text-slate-500">점수</p>
-                  <p class="mt-1 font-bold text-blue-700">{{ item.total_score }}점</p>
+                  <p class="mt-1 font-bold text-blue-700">{{ scoreLabel(item) }}</p>
                 </div>
                 <div class="rounded-lg bg-white p-3">
                   <p class="text-slate-500">마감</p>
@@ -563,5 +566,9 @@ onMounted(loadDashboard)
         </div>
       </section>
     </template>
+
+    <section v-else class="rounded-lg border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-600 shadow-sm">
+      현재 접수 마감일이 남아 있는 검토 후보가 없습니다. 실제 공고를 다시 가져오거나 보조 fixture를 import한 뒤 확인하세요.
+    </section>
   </div>
 </template>
