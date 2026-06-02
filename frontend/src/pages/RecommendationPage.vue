@@ -14,6 +14,15 @@ const error = ref('');
 function priceLabel(price) {
     return price > 0 ? formatMoney(price) : '공식 확인 필요';
 }
+function ownershipTypeLabel(type) {
+    const labels = {
+        public_sale: '공공분양',
+        private_participation_public_sale: '민간참여 공공분양',
+        newlywed_public_sale: '신혼희망타운 공공분양',
+        unknown: '유형 확인 필요',
+    };
+    return labels[type] ?? type ?? '공공분양';
+}
 function favoriteKey(noticeId) {
     return `notice-${noticeId}`;
 }
@@ -24,6 +33,18 @@ function recommendationOptions(item) {
     if (item.top_options?.length)
         return item.top_options;
     return item.best_option ? [item.best_option] : [];
+}
+function defaultRecommendationOption(item) {
+    const options = recommendationOptions(item);
+    return options.find((option) => option.option_type === 'general_supply') ?? options.find((option) => option.option_type === 'basic') ?? item.best_option ?? options[0] ?? null;
+}
+function representativePrice(item) {
+    return Number(defaultRecommendationOption(item)?.base_price || item.price || 0);
+}
+function detailRoute(item) {
+    return {
+        path: `/notices/${item.notice_id}`,
+    };
 }
 function scorePercent(item) {
     const max = item.score_max || 100;
@@ -118,12 +139,7 @@ onMounted(loadRecommendations);
             <div class="flex flex-wrap items-center gap-2">
               <span class="rounded-md bg-slate-950 px-2 py-1 text-xs font-bold text-white">추천 {{ index + 1 }}</span>
               <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">{{ item.supply_type }}</span>
-              <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">{{ item.data_source ?? 'fixture' }}</span>
-              <span class="rounded-md bg-violet-50 px-2 py-1 text-xs font-semibold text-violet-700">옵션 맞춤 {{ item.option_fit_score ?? 0 }}점</span>
-              <span class="rounded-md px-2 py-1 text-xs font-semibold" :class="analysisBadgeClass(analysisSummary(item.analysis_summary, item.official_document_status))">
-                {{ analysisSummary(item.analysis_summary, item.official_document_status).label }}
-              </span>
-              <span v-if="!item.is_price_confirmed" class="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">금액 확인 필요</span>
+              <span class="rounded-md bg-violet-50 px-2 py-1 text-xs font-semibold text-violet-700">{{ ownershipTypeLabel(item.ownership_type) }}</span>
             </div>
             <h2 class="mt-3 text-xl font-bold text-slate-950">{{ item.title }}</h2>
             <p class="mt-2 flex items-center gap-1 text-sm text-slate-500">
@@ -220,9 +236,9 @@ onMounted(loadRecommendations);
               {{ analysisSummary(item.analysis_summary, item.official_document_status).next_action }}
             </p>
             <p class="mt-5 text-sm text-slate-500">예상 분양가</p>
-            <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(item.price) }}</p>
+            <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(representativePrice(item)) }}</p>
             <RouterLink
-              :to="`/notices/${item.notice_id}`"
+              :to="detailRoute(item)"
               class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
             >
               공식 근거 보기

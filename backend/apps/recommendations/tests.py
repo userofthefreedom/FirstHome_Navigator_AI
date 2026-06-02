@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from apps.fixture_store import current_notices, default_profile, find_notice, notices
 from apps.funding.services.calculator import funding_plan
@@ -11,6 +11,36 @@ from apps.policies.services.matcher import match_policies
 from apps.products.models import FinancialProduct
 from apps.products.services.matcher import match_products
 from apps.recommendations.services.ranking import ranked_recommendations
+from apps.rules.funding import ceil_divide, default_payment_amounts
+from apps.rules.scoring import option_fit_score, option_type_priority
+
+
+class SharedRuleTests(SimpleTestCase):
+    def test_funding_amount_rules_are_shared(self):
+        amounts = default_payment_amounts(500_000_000, contract_rate=0.1, middle_payment_rate=0.6)
+
+        self.assertEqual(amounts["down_payment"], 50_000_000)
+        self.assertEqual(amounts["middle_payment"], 300_000_000)
+        self.assertEqual(amounts["final_payment"], 150_000_000)
+        self.assertEqual(ceil_divide(42_634_000, 12), 3_552_834)
+
+    def test_option_scoring_rules_prefer_general_supply(self):
+        option = {
+            "exclusive_area_m2": 59,
+            "base_price": 526_340_000,
+            "down_payment": 52_634_000,
+            "middle_payment": 315_804_000,
+        }
+        profile = {
+            "desired_area_min_m2": 50,
+            "desired_area_max_m2": 60,
+            "desired_price_max": 600_000_000,
+            "max_down_payment": 60_000_000,
+            "monthly_payment_capacity": 20_000_000,
+        }
+
+        self.assertGreater(option_fit_score(option, profile), 80)
+        self.assertGreater(option_type_priority("general_supply"), option_type_priority("pre_subscription"))
 
 
 @override_settings(ROOT_URLCONF="config.urls")
@@ -153,14 +183,14 @@ class RecommendationServiceTests(TestCase):
         HousingNotice.objects.create(
             id=987,
             source_id="2015122300019987",
-            title="[경기북부] 26년 1차 김포시 분양전환형 든든전세주택 입주자 모집공고",
+            title="[경기북부] 남양주왕숙2 A-3BL 공공분양주택 입주자 모집공고",
             source_meta={"pan_id": "2015122300019987"},
             **common_fields,
         )
         HousingNotice.objects.create(
             id=902,
             source_id="2015122300019902",
-            title="[경기북부] 26년 1차 김포시 분양전환형 든든전세주택 입주자 모집공고(기존임차인)",
+            title="[경기북부] 남양주왕숙2 A-3BL 공공분양주택 입주자 모집공고(기존임차인)",
             source_meta={"pan_id": "2015122300019902"},
             **common_fields,
         )
@@ -269,6 +299,7 @@ class RecommendationServiceTests(TestCase):
         self.assertNotEqual(representative_product_ids, incheon_product_ids)
 
     def test_db_data_is_used_before_fixture_when_available(self):
+        deadline = date.today() + timedelta(days=30)
         notice = HousingNotice.objects.create(
             id=999,
             title="DB 우선 공고",
@@ -280,9 +311,9 @@ class RecommendationServiceTests(TestCase):
             area="59m2",
             price=320000000,
             contract_rate=0.1,
-            application_deadline="2026-06-01",
-            winner_date="2026-06-10",
-            contract_date="2026-07-01",
+            application_deadline=deadline,
+            winner_date=deadline + timedelta(days=10),
+            contract_date=deadline + timedelta(days=30),
             move_in="2028-01",
             competition="테스트",
             source_url="https://example.com",
@@ -348,6 +379,67 @@ class RecommendationServiceTests(TestCase):
         self.assertEqual(recommendation["top_options"][0]["option_id"], option.id)
         self.assertGreater(recommendation["best_option"]["option_fit_score"], 0)
         self.assertGreaterEqual(len(recommendation["best_option"]["fit_reasons"]), 1)
+
+    def test_recommendations_prefer_general_supply_option_as_default(self):
+        notice = HousingNotice.objects.create(
+            id=996,
+            source_id="LH-GENERAL-DEFAULT",
+            title="일반공급 기본 선택 공공분양",
+            provider="LH",
+            region="서울",
+            district="서울 테스트구",
+            supply_type="공공분양",
+            housing_type="분양주택",
+            area="59m2",
+            price=320000000,
+            contract_rate=0.1,
+            application_deadline="2026-07-01",
+            winner_date="2026-07-10",
+            contract_date="2026-08-01",
+            move_in="2028-01",
+            competition="100호",
+            source_url="https://apply.lh.or.kr",
+            tags=["LH", "공공분양"],
+            required_documents=[],
+            cautions=[],
+            ownership_type="public_sale",
+            is_service_target=True,
+        )
+        pre_option = HousingUnitOption.objects.create(
+            notice=notice,
+            unit_type="59A",
+            exclusive_area_m2=59,
+            floor_group="1층",
+            option_type="pre_subscription",
+            base_price=320000000,
+            confidence=0.9,
+        )
+        general_option = HousingUnitOption.objects.create(
+            notice=notice,
+            unit_type="59A",
+            exclusive_area_m2=59,
+            floor_group="1층",
+            option_type="general_supply",
+            base_price=320000000,
+            confidence=0.9,
+        )
+        for option in (pre_option, general_option):
+            PaymentSchedule.objects.create(
+                unit_option=option,
+                label="계약금",
+                amount=32000000,
+                payment_type="down_payment",
+                sequence=1,
+            )
+
+        recommendation = next(
+            item
+            for item in ranked_recommendations(default_profile(), limit=20)
+            if item["notice_id"] == 996
+        )
+
+        self.assertEqual(recommendation["best_option"]["option_id"], general_option.id)
+        self.assertEqual(recommendation["best_option"]["option_type"], "general_supply")
 
     @override_settings(FIRSTHOME_FIXTURE_FALLBACK={"ENABLE_SUPPLEMENT": True, "MIN_SERVICE_NOTICES": 3})
     def test_fixture_supplements_when_real_service_notices_are_too_few(self):

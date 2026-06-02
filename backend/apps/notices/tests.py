@@ -41,6 +41,29 @@ class LhNoticeNormalizerTests(SimpleTestCase):
         self.assertEqual(notices[0].source_meta["pan_id"], "LH-001")
         self.assertIn("공식 공고문", notices[0].cautions[0])
 
+    def test_rental_jeonse_notice_is_not_normalized_as_public_sale(self):
+        payload = [
+            {
+                "dsList": [
+                    {
+                        "PAN_ID": "JEONSE-001",
+                        "PAN_NM": "[서울지역본부] 26년 1차 비분양전환형 든든전세주택 입주자 모집공고",
+                        "AIS_TP_CD_NM": "매입임대",
+                        "UPP_AIS_TP_NM": "임대주택",
+                        "CNP_CD_NM": "서울특별시",
+                        "CLSG_DT": "2026.06.30",
+                    }
+                ]
+            }
+        ]
+
+        notices = normalize_lh_notices(payload)
+
+        self.assertEqual(len(notices), 1)
+        self.assertEqual(notices[0].supply_type, "공공임대")
+        self.assertNotIn("공공분양", notices[0].tags)
+        self.assertIn("공공임대", notices[0].tags)
+
     def test_land_and_commercial_notices_are_skipped(self):
         payload = [
             {
@@ -159,6 +182,20 @@ class LhNoticeNormalizerTests(SimpleTestCase):
         self.assertFalse(classification.is_service_target)
         self.assertEqual(classification.ownership_type, "excluded")
         self.assertIn("오피스텔", classification.exclude_reason)
+
+    def test_classifier_excludes_jeonse_even_when_supply_type_was_mislabeled_sale(self):
+        classification = classify_notice_payload(
+            {
+                "title": "[서울지역본부] 26년 1차 비분양전환형 든든전세주택 입주자 모집공고",
+                "supply_type": "공공분양",
+                "housing_type": "매입임대",
+                "tags": ["LH", "공공분양"],
+            }
+        )
+
+        self.assertFalse(classification.is_service_target)
+        self.assertEqual(classification.ownership_type, "excluded")
+        self.assertIn("서비스 범위 밖", classification.exclude_reason)
 
 
 class FirstHomeFixtureLoaderTests(TestCase):

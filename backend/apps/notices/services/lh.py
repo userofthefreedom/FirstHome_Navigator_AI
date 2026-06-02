@@ -7,11 +7,17 @@ from typing import Any
 
 import requests
 
+from apps.rules.notice_classification import (
+    is_lh_housing_notice_text,
+    is_rental_text,
+    lh_region_name,
+    lh_supply_type,
+    lh_tags,
+)
+
 
 LH_NOTICE_URL = "https://apis.data.go.kr/B552555/lhLeaseNoticeInfo1/lhLeaseNoticeInfo1"
 LH_SUPPLY_INFO_URL = "https://apis.data.go.kr/B552555/lhLeaseNoticeSplInfo1/getLeaseNoticeSplInfo1"
-EXCLUDE_KEYWORDS = ("토지", "상가", "주차장", "주유소", "산업시설", "근린생활")
-HOUSING_KEYWORDS = ("주택", "임대", "분양", "행복", "국민", "영구", "매입", "전세", "공공")
 
 
 @dataclass(frozen=True)
@@ -218,9 +224,7 @@ def _total_count(payload: list[dict[str, Any]]) -> int:
 
 def _is_housing_notice(row: dict[str, Any]) -> bool:
     text = " ".join(str(row.get(key) or "") for key in ["PAN_NM", "AIS_TP_CD_NM", "UPP_AIS_TP_NM"])
-    if any(keyword in text for keyword in EXCLUDE_KEYWORDS):
-        return False
-    return any(keyword in text for keyword in HOUSING_KEYWORDS)
+    return is_lh_housing_notice_text(text)
 
 
 def _unique_values(rows: list[dict[str, Any]], keys: tuple[str, ...]) -> list[str]:
@@ -315,6 +319,7 @@ def _parse_date(value: Any) -> date | None:
 
 
 def _region_name(value: str) -> str:
+    return lh_region_name(value)
     if value.startswith("서울"):
         return "서울"
     if value.startswith("경기"):
@@ -327,23 +332,30 @@ def _region_name(value: str) -> str:
 
 
 def _supply_type(raw_supply_type: str, title: str) -> str:
+    return lh_supply_type(raw_supply_type, title)
     text = f"{raw_supply_type} {title}"
     if "행복" in text or "청년" in text:
         return "청년 공공주택"
+    if _is_rental_text(text):
+        return "공공임대"
     if "분양" in text:
         return "공공분양"
-    if "임대" in text or "전세" in text or "매입" in text:
-        return "공공임대"
     return raw_supply_type[:40] or "LH 공고"
 
 
 def _tags(raw_supply_type: str, title: str, region: str) -> list[str]:
+    return lh_tags(raw_supply_type, title, region)
     text = f"{raw_supply_type} {title}"
     tags = ["LH", region]
     if "청년" in text or "행복" in text:
         tags.append("청년")
-    if "분양" in text:
+    if "분양" in text and not _is_rental_text(text):
         tags.append("공공분양")
-    if "임대" in text:
+    if _is_rental_text(text):
         tags.append("공공임대")
     return list(dict.fromkeys(tag for tag in tags if tag))
+
+
+def _is_rental_text(text: str) -> bool:
+    return is_rental_text(text)
+    return any(keyword in text for keyword in ("임대", "전세", "매입", "분양전환"))

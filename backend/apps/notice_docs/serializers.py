@@ -116,5 +116,6 @@ def serialize_checklist(item: EligibilityChecklist) -> dict:
         "title": item.title,
         "condition_text": item.condition_text,
         "evidence_text": item.evidence_text,
+        "page_no": item.page_no,
         "confidence": item.confidence,
     }

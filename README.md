@@ -2,18 +2,34 @@
 
 첫 주택 마련을 준비하는 사용자가 실제 LH 청약 공고와 공식 PDF 공고문을 바탕으로 추천 청약, 주택형 옵션, 분양가, 계약금/중도금/잔금 일정, 자금 부족분, 공식 근거, AI 코치 답변을 확인할 수 있는 서비스입니다.
 
+이 README는 `docs/FirstHome_Navigator_AI_Run_Guide_v7.0.pdf`의 실행 기준을 바탕으로 정리했습니다. 팀 터미널 기본값은 bash이므로 모든 명령은 bash 기준입니다.
+
 현재 프로젝트는 다음 방향으로 동작합니다.
 
 - 실제 LH 공고/API 데이터를 우선 사용합니다.
-- fixture는 실제 소유형 공고가 너무 적거나 시연 중 외부 API가 불안정할 때만 보조 데이터로 사용합니다.
+- fixture는 실제 소유형 공공분양 공고가 너무 적거나 시연 중 외부 API가 불안정할 때만 보조 데이터로 사용합니다.
 - AI는 기본값으로 외부 LLM을 호출하지 않는 `template` 모드입니다.
 - 공식 PDF 분석 결과가 있으면 주택형별 납부 일정이 우선 사용됩니다.
 - 중도금은 0회, 1회, 여러 회차, 10회 이상 모두 가능한 반복 일정으로 처리합니다.
-- 추천 점수는 정책을 제외하고 자격 35점, 자금 25점, 지역 30점, 일정 10점의 100점 만점으로 계산합니다.
+- 추천 점수는 정책/상품을 제외하고 자격 35점, 자금 25점, 지역 30점, 일정 10점의 100점 만점으로 계산합니다.
 
 ---
 
-## 1. 기술 스택
+## 1. 사전 준비
+
+| 항목 | 권장 버전 / 기준 |
+|---|---|
+| Python | 3.11 이상 |
+| Node.js | 20 이상 |
+| npm | 10 이상 |
+| 터미널 | bash 기준 |
+| Frontend | Vue 3 + JavaScript + Vite |
+
+아래 명령은 프로젝트 루트, 즉 `backend/`와 `frontend/` 폴더가 보이는 위치에서 시작한다고 가정합니다. 프로젝트를 다른 위치에 받은 경우 먼저 본인 환경의 프로젝트 루트로 이동한 뒤 실행합니다.
+
+---
+
+## 2. 기술 스택
 
 ### Backend
 
@@ -39,7 +55,7 @@
 
 ---
 
-## 2. 폴더 구조
+## 3. 폴더 구조
 
 ```text
 backend/
@@ -48,7 +64,7 @@ backend/
     notices/           공고 모델, LH 수집
     notice_docs/       공식 PDF 분석, 주택형 옵션, 납부 일정
     recommendations/   추천 점수와 추천 API
-    funding/           자금 계획 계산
+    funding/           option_id 기반 자금 계획 계산
     products/          금융상품
     policies/          청년정책
     ai_coach/          AI 코치
@@ -75,13 +91,13 @@ frontend/
 
 ---
 
-## 3. 환경 파일 준비
+## 4. 환경 파일 준비
 
 ### Backend
 
-```powershell
+```bash
 cd backend
-Copy-Item .env.example .env
+cp .env.example .env
 ```
 
 `backend/.env` 주요 값:
@@ -108,11 +124,13 @@ OPENAI_CHAT_PATH=/chat/completions
 LOCAL_LLM_ENDPOINT=
 ```
 
+API Key는 개인 정보이므로 Git, ZIP, 팀 채팅방, 문서에 공유하지 않습니다.
+
 ### Frontend
 
-```powershell
-cd ..\frontend
-Copy-Item .env.example .env
+```bash
+cd frontend
+cp .env.example .env
 ```
 
 `frontend/.env`:
@@ -125,26 +143,26 @@ Vite에서는 브라우저 코드에서 사용할 환경 변수 이름이 `VITE_
 
 ---
 
-## 4. Backend 실행
+## 5. Backend 설치와 실행
 
-프로젝트 루트에서 가상환경을 만듭니다.
+처음 한 번만 프로젝트 루트에서 가상환경과 패키지를 준비합니다.
 
-```powershell
+```bash
 python -m venv .venv
 source .venv/Scripts/activate
 python -m pip install --upgrade pip
 pip install -r backend/requirements.txt
 ```
 
-현재 기본 기능 실행에는 `backend/requirements.txt`만 필요합니다. 추후 임베딩/로컬 AI 실험용 패키지가 필요하면 별도로 설치합니다.
+현재 기본 기능 실행에는 `backend/requirements.txt`만 필요합니다. 임베딩/로컬 AI 실험용 패키지가 필요할 때만 별도로 설치합니다.
 
-```powershell
+```bash
 pip install -r backend/requirements-ai.txt
 ```
 
 DB를 준비하고 서버를 실행합니다.
 
-```powershell
+```bash
 cd backend
 python manage.py check
 python manage.py migrate
@@ -156,16 +174,33 @@ python manage.py runserver localhost:8000
 ```text
 http://localhost:8000/api/dashboard
 http://localhost:8000/api/notices
+http://localhost:8000/api/notices?active=1
 http://localhost:8000/api/recommendations/housing
 ```
 
+`/api/notices`는 전체 공고 목록이고, `/api/notices?active=1`은 접수 마감일이 오늘 이후인 현재 검토 가능 공고만 반환합니다. 대시보드와 추천 후보는 마감 지난 공고를 기본 후보에서 제외합니다.
+
+---
+
+## 6. Fixture와 실제 데이터 우선 운영
+
+이 프로젝트는 fixture만으로 고정 실행하는 구조가 아니라 실제 LH DB 데이터를 우선 사용합니다. fixture는 DB가 비었거나 실제 소유형 공고가 `FIRSTHOME_MIN_SERVICE_NOTICES`보다 적을 때 뒤에서 보충되는 안전망입니다.
+
+| 상황 | 동작 |
+|---|---|
+| DB가 비어 있음 | fixture 공고/상품/정책을 사용해 핵심 화면이 비지 않게 함 |
+| 실제 소유형 공고가 적음 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true`이면 fixture를 뒤에 보충 |
+| 실제 DB만 확인하고 싶음 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=false` 설정 후 Django 서버 재시작 |
+| 발표용 샘플 분석이 필요함 | `load_firsthome_fixture --with-demo-analysis`로 demo analysis 고정 로드 |
+
 시연용 고정 데이터를 DB에 직접 넣고 싶을 때만 사용합니다.
 
-```powershell
+```bash
+cd backend
 python manage.py load_firsthome_fixture --with-demo-analysis
 ```
 
-기본 설정에서는 DB에 실제 공고가 부족할 때 fixture가 보조로 붙습니다. 실제 DB 데이터만 확인하고 싶으면 `backend/.env`에서 아래처럼 바꾼 뒤 Django 서버를 재시작합니다.
+실제 DB 데이터만 확인하고 싶으면 `backend/.env`에서 아래처럼 바꾼 뒤 Django 서버를 재시작합니다.
 
 ```env
 FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=false
@@ -173,11 +208,11 @@ FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=false
 
 ---
 
-## 5. Frontend 실행
+## 7. Frontend 실행
 
 새 터미널에서 실행합니다.
 
-```powershell
+```bash
 cd frontend
 npm ci
 npm run dev
@@ -189,24 +224,44 @@ npm run dev
 http://localhost:5173/
 ```
 
-Windows PowerShell에서 `npm` 실행이 막히면 `npm.cmd`를 사용합니다.
+`127.0.0.1`로 접속하고 싶다면 host를 지정해 실행할 수 있습니다.
 
-```powershell
-npm.cmd ci
-npm.cmd run dev
+```bash
+npm run dev -- --host 127.0.0.1
 ```
 
 프론트엔드는 기본적으로 `http://localhost:8000/api`를 호출합니다. 주소를 바꾸려면 `frontend/.env`의 `VITE_API_BASE_URL`을 수정한 뒤 프론트 서버를 재시작합니다.
 
 ---
 
-## 6. 실제 데이터 수집
+## 8. 다음부터 다시 실행할 때
+
+가상환경, `node_modules`, DB가 이미 준비된 뒤에는 전체 설치 과정을 반복할 필요가 없습니다.
+
+백엔드:
+
+```bash
+source .venv/Scripts/activate
+cd backend
+python manage.py runserver localhost:8000
+```
+
+프론트엔드:
+
+```bash
+cd frontend
+npm run dev
+```
+
+---
+
+## 9. 실제 데이터 수집
 
 외부 API를 사용하려면 `backend/.env`에 API 키를 넣어야 합니다.
 
 ### LH 청약 공고 수집
 
-```powershell
+```bash
 cd backend
 
 # DB 변경 없이 수집 가능 여부 확인
@@ -219,34 +274,49 @@ python manage.py import_lh --service-target-only --page-size 100 --max-pages 5 -
 python manage.py import_lh --clear --service-target-only --page-size 100 --max-pages 5 --with-supply-info --supply-limit 30
 ```
 
+주요 옵션:
+
+| 옵션 | 설명 |
+|---|---|
+| `--service-target-only` | 공공분양/신혼희망타운/민간참여/잔여세대 공공분양 등 서비스 대상만 저장합니다. |
+| `--page-size` | 한 페이지에서 가져올 공고 수입니다. |
+| `--max-pages` | 가져올 최대 페이지 수입니다. |
+| `--with-supply-info` | LH 공급정보 상세 API까지 조회해 주택형, 면적, 일부 분양가를 보강합니다. |
+| `--supply-limit` | 공급정보 상세 조회 개수를 제한합니다. |
+| `--clear` | 기존 공고를 지우고 새로 저장합니다. 발표용 데이터가 필요하면 신중히 사용합니다. |
+
 ### 공식 PDF 분석
 
-```powershell
+```bash
 python manage.py analyze_notice_documents --provider=LH --limit 20 --report-json=reports/lh_actual_readiness.json --report-md=reports/lh_actual_readiness.md
 ```
 
+현재 PDF 파서는 pypdf와 pdfplumber를 사용하며, 표 기반 추출을 우선합니다. 중도금 0회/1회/다회차/10회 이상, `installment_payment`, `move_in_balance` 같은 납부 타입을 구분합니다.
+
 ### 금융상품 수집
 
-```powershell
+```bash
 python manage.py import_finlife --dry-run
 python manage.py import_finlife --clear
 ```
 
 ### 청년정책 수집
 
-```powershell
+```bash
 python manage.py import_youthcenter --dry-run --display 20
 python manage.py import_youthcenter --page 1 --display 50
 python manage.py import_youthcenter --page 2 --display 50
 ```
 
+청년정책 검색어 옵션은 API 응답 정책에 따라 기대처럼 필터링되지 않을 수 있습니다. 넓게 수집한 뒤 서비스 내부 matcher에서 나이, 지역, 소득, 무주택 여부, 정책 카테고리 기준으로 정렬하는 방식을 사용합니다.
+
 ---
 
-## 7. 테스트
+## 10. 테스트와 회귀 점검
 
 ### Backend
 
-```powershell
+```bash
 cd backend
 python manage.py check
 python manage.py makemigrations --check --dry-run
@@ -258,21 +328,57 @@ python manage.py check_ai_chat_smoke --report-json=reports/ai_chat_smoke_review.
 
 ### Frontend
 
-```powershell
+```bash
 cd frontend
 npm run build
 ```
 
 ---
 
-## 8. 주요 API
+## 11. 기본 화면 확인 흐름
+
+1. 홈 화면 접속
+2. 조건 입력 화면에서 대표 사용자 조건 확인 또는 일부 값 수정
+3. 조건 저장 후 추천 결과로 이동
+4. 추천 카드에서 총점 100점 기준 정렬과 Top-N 주택형 옵션 확인
+5. 공고 상세에서 공식 문서 분석 상태, 체크리스트, 근거 문장 확인
+6. 필요 시 공식 공고문 분석 실행
+7. 자금 로드맵에서 선택 `option_id` 기준 계약금, 중도금, 입주잔금, 할부금, 부족액 확인
+8. 관심 공고 또는 관심 주택형 옵션 저장
+9. AI 코치 추천 질문 버튼으로 공식 확인 포인트와 이번 주 할 일 확인
+10. 관심목록에서 공고/옵션/상품/정책 저장 항목 확인 및 삭제
+11. 새로고침 후 프로필과 관심목록 유지 확인
+
+대표 사용자 조건:
+
+| 항목 | 값 |
+|---|---|
+| 출생연도 | 1999년 |
+| 직업 상태 | 직장인 |
+| 연소득 | 36,000,000원 |
+| 보유 현금 | 8,000,000원 |
+| 부채 | 3,000,000원 |
+| 월 저축 가능액 | 800,000원 |
+| 무주택 여부 | 무주택 |
+| 청약통장 가입기간 | 24개월 |
+| 관심 특별조건 | 생애최초, 청년 |
+| 희망 지역 | 서울, 경기 남부 |
+| 희망 면적 | 전용 49~59㎡ 중심 |
+| 목표 준비기간 | 18개월 |
+
+---
+
+## 12. 주요 API
 
 | Method | Endpoint | 설명 |
 |---|---|---|
 | GET | `/api/dashboard` | 대시보드 |
 | GET/PUT | `/api/profile` | 사용자 조건 조회/저장 |
+| POST | `/api/auth/register` | 회원가입 및 세션 로그인 |
+| POST | `/api/auth/login` | 로그인 |
+| POST | `/api/auth/logout` | 로그아웃 |
 | GET/POST/DELETE | `/api/favorites` | 관심목록 |
-| GET | `/api/notices` | 공고 목록 |
+| GET | `/api/notices` | 전체 공고 목록 |
 | GET | `/api/notices?active=1` | 접수 마감일이 오늘 이후인 현재 검토 가능 공고 목록 |
 | GET | `/api/notices/{noticeId}` | 공고 상세 |
 | GET | `/api/notices/{noticeId}/documents/status` | 공식 문서 분석 상태 |
@@ -280,7 +386,7 @@ npm run build
 | GET | `/api/notices/{noticeId}/unit-options` | 주택형 옵션 |
 | GET | `/api/notices/{noticeId}/eligibility-checklists` | 자격 체크리스트 |
 | GET | `/api/recommendations/housing` | 추천 청약 |
-| GET | `/api/recommendations/funding/{noticeId}` | 자금 계획 |
+| GET | `/api/recommendations/funding/{noticeId}?option_id={optionId}` | 선택 주택형 옵션 기준 자금 계획 |
 | GET | `/api/recommendations/products` | 금융상품 추천 |
 | GET | `/api/recommendations/policies` | 정책 추천 |
 | POST | `/api/ai/coach-summary` | AI 코치 요약 |
@@ -288,23 +394,38 @@ npm run build
 
 ---
 
-## 9. 자주 나는 문제
+## 13. AI 설정
+
+기본값은 외부 LLM을 호출하지 않는 `template` 모드입니다. 발표/개발 안정성을 위해 기본 실행은 `template` 모드를 권장합니다.
+
+```env
+AI_PROVIDER=template
+AI_ENABLE_LLM_EXTRACTION=false
+AI_ENABLE_LLM_CHAT=false
+```
+
+OpenAI-compatible provider를 사용하려면 아래처럼 설정하고 Django 서버를 재시작합니다.
+
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=본인_API_KEY
+AI_ENABLE_LLM_CHAT=true
+AI_ENABLE_LLM_EXTRACTION=true
+```
+
+로컬 LLM 서버를 사용할 때는 `AI_PROVIDER=local`과 `LOCAL_LLM_ENDPOINT`를 사용합니다. AI 답변은 참고 정보이며 청약 당첨, 신청 가능 여부, 대출 승인, 정책 수급을 확정하지 않습니다.
+
+---
+
+## 14. 자주 나는 문제
 
 ### `ModuleNotFoundError: No module named 'django'`
 
 가상환경이 켜져 있지 않거나 패키지가 설치되지 않은 상태입니다.
 
-```powershell
-.\.venv\Scripts\Activate.ps1
+```bash
+source .venv/Scripts/activate
 pip install -r backend/requirements.txt
-```
-
-### PowerShell에서 npm이 막힘
-
-`npm.cmd`를 사용합니다.
-
-```powershell
-npm.cmd run dev
 ```
 
 ### 프론트 화면은 뜨지만 API가 실패함
@@ -313,7 +434,8 @@ npm.cmd run dev
 
 - Django 서버가 `localhost:8000`에서 실행 중인지
 - `frontend/.env`의 `VITE_API_BASE_URL`이 맞는지
-- 프론트 접속 주소가 `http://localhost:5173/`인지
+- 프론트 접속 주소가 `http://localhost:5173/` 또는 `http://127.0.0.1:5173/`인지
+- `backend/config/settings.py`의 `CORS_ALLOWED_ORIGINS`에 접속 주소가 포함되어 있는지
 - Django 서버를 CORS 설정 변경 후 재시작했는지
 
 ### 실제 LH 공고가 너무 적게 보임
@@ -325,3 +447,14 @@ npm.cmd run dev
 ### AI가 외부 모델을 호출하지 않음
 
 기본값은 `AI_PROVIDER=template`입니다. 외부 LLM을 쓰려면 `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `AI_ENABLE_LLM_CHAT=true` 또는 `AI_ENABLE_LLM_EXTRACTION=true`를 설정한 뒤 서버를 재시작합니다.
+
+---
+
+## 15. 운영/보안 주의사항
+
+- `.env`와 API Key는 Git, ZIP, 문서, 로그에 포함하지 않습니다.
+- `backend/reports/`는 로컬 산출물이므로 공유 여부를 팀 기준으로 정합니다.
+- AI prompt와 raw response에는 개인정보가 들어갈 수 있으므로 저장/마스킹 정책을 정해야 합니다.
+- 소득, 자산, 부채, 월 저축 가능액은 본인만 접근하도록 인증/세션 정책을 확인합니다.
+- 운영 배포 시 `DEBUG=false`, CORS, CSRF, 쿠키 `SameSite`/`Secure`, `ALLOWED_HOSTS`를 별도 점검합니다.
+- 추천 결과, 자금 로드맵, AI 답변은 참고 정보이며 실제 신청 전 공식 공고와 기관 기준을 확인해야 합니다.

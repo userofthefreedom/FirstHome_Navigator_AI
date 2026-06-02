@@ -1,28 +1,35 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 from typing import Any
 
 from apps.fixture_store import default_profile, find_notice
-
-
-def available_cash(profile: dict[str, Any]) -> int:
-    """현재 MVP에서는 보유 자산을 계약금 준비에 바로 쓸 수 있는 현금으로 본다."""
-    return max(0, int(profile.get("asset", 0)))
+from apps.rules.funding import (
+    DEFAULT_CONTRACT_RATE,
+    DEFAULT_MIDDLE_PAYMENT_RATE,
+    available_cash,
+    ceil_divide,
+    default_payment_amounts,
+    funding_score_from_plan,
+)
 
 
 def calculate_funding_plan(notice: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
     price = int(notice["price"])
     price_confirmed = price > 0
-    contract_rate = float(notice.get("contract_rate", 0.1))
-    down_payment = round(price * contract_rate)
+    contract_rate = float(notice.get("contract_rate", DEFAULT_CONTRACT_RATE))
+    payment_amounts = default_payment_amounts(
+        price,
+        contract_rate=contract_rate,
+        middle_payment_rate=float(notice.get("middle_payment_rate", DEFAULT_MIDDLE_PAYMENT_RATE)),
+    )
+    down_payment = payment_amounts["down_payment"]
     cash = available_cash(profile)
     shortfall = max(0, down_payment - cash)
     months = max(int(profile.get("target_months", 1)), 1)
-    monthly_target = -(-shortfall // months)
-
-    middle_payment = round(price * float(notice.get("middle_payment_rate", 0.6)))
-    final_payment = max(0, price - down_payment - middle_payment)
+    monthly_target = ceil_divide(shortfall, months)
+    middle_payment = payment_amounts["middle_payment"]
+    final_payment = payment_amounts["final_payment"]
 
     return {
         "notice_id": notice["id"],
@@ -59,7 +66,28 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
     cash = available_cash(profile)
     shortfall = max(0, down_payment - cash)
     months = _months_until_down_payment(schedules, profile)
-    monthly_target = -(-shortfall // months)
+    monthly_target = ceil_divide(shortfall, months)
+    loan_amount = int(getattr(option, "loan_amount", 0) or 0)
+    timeline = [
+        {
+            "label": schedule.label,
+            "date": schedule.due_date.isoformat() if schedule.due_date else "공식 확인 필요",
+            "amount": schedule.amount,
+            "payment_type": schedule.payment_type,
+            "evidence_text": schedule.evidence_text,
+        }
+        for schedule in schedules
+    ]
+    if loan_amount > 0:
+        timeline.append(
+            {
+                "label": "융자금",
+                "date": "잔금 이후 상환",
+                "amount": loan_amount,
+                "payment_type": "loan",
+                "evidence_text": "분양가에 포함된 융자금으로, 잔금 이후 기관 대출 조건에 따라 상환해야 합니다.",
+            }
+        )
 
     return {
         "notice_id": notice.id,
@@ -75,21 +103,12 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
         "middle_payment": middle_payment,
         "final_payment": final_payment,
         "installment_payment": installment_payment,
-        "loan_amount": int(getattr(option, "loan_amount", 0) or 0),
+        "loan_amount": loan_amount,
         "available_cash": cash,
         "shortfall": shortfall,
         "months_until_contract": months,
         "monthly_target": monthly_target,
-        "timeline": [
-            {
-                "label": schedule.label,
-                "date": schedule.due_date.isoformat() if schedule.due_date else "공식 확인 필요",
-                "amount": schedule.amount,
-                "payment_type": schedule.payment_type,
-                "evidence_text": schedule.evidence_text,
-            }
-            for schedule in schedules
-        ],
+        "timeline": timeline,
         "notice": (
             "공식 공고문에서 추출한 주택형별 납부 일정 기준의 참고 계산입니다. "
             "실제 계약과 납부 조건은 기관 안내와 공고문 원문을 확인해야 합니다."
@@ -119,20 +138,7 @@ def funding_plan(
 
 def funding_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
     plan = calculate_funding_plan(notice, profile)
-    down_payment = plan["down_payment"]
-    if down_payment <= 0:
-        return 10
-    readiness_ratio = min(plan["available_cash"] / down_payment if down_payment else 1, 1)
-    saving = int(profile.get("monthly_saving", 0))
-    target_months = max(int(profile.get("target_months", 1)), 1)
-    contract_days = (datetime.fromisoformat(notice["contract_date"]).date() - date.today()).days
-
-    score = 0
-    score += round(readiness_ratio * 10)
-    score += 5 if plan["shortfall"] <= 30000000 else 3 if plan["shortfall"] <= 50000000 else 1
-    score += 7 if plan["monthly_target"] <= saving else 4 if plan["monthly_target"] <= saving * 1.5 else 1
-    score += 3 if target_months >= 12 and contract_days >= 30 else 1
-    return min(score, 25)
+    return funding_score_from_plan(notice, profile, plan)
 
 
 def _option_funding_plan(option_id: int | None, notice_id: int, profile: dict[str, Any]) -> dict[str, Any] | None:

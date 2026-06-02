@@ -70,7 +70,11 @@ class OptionFundingPlanTests(TestCase):
         self.assertEqual(plan["price"], 526340000)
         self.assertEqual(plan["down_payment"], 52634000)
         self.assertEqual(plan["shortfall"], 42634000)
-        self.assertEqual(len(plan["timeline"]), 3)
+        self.assertEqual(len(plan["timeline"]), 4)
+        self.assertEqual(plan["timeline"][-1]["label"], "융자금")
+        self.assertEqual(plan["timeline"][-1]["payment_type"], "loan")
+        self.assertEqual(plan["timeline"][-1]["amount"], 55000000)
+        self.assertEqual(plan["timeline"][-1]["date"], "잔금 이후 상환")
 
     def test_funding_api_accepts_option_id_query_param(self):
         response = self.client.get(f"/api/recommendations/funding/{self.notice.id}?option_id={self.option.id}")

@@ -114,6 +114,7 @@ class EligibilityChecklist(models.Model):
     title = models.CharField(max_length=120)
     condition_text = models.TextField()
     evidence_text = models.TextField(blank=True)
+    page_no = models.PositiveSmallIntegerField(null=True, blank=True)
     confidence = models.FloatField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -9,7 +9,7 @@ from django.test import TestCase, override_settings
 
 from apps.notice_docs.models import HousingUnitOption, NoticeDocument, PaymentSchedule
 from apps.notice_docs.services import analyze_notice_document, analyze_notice_with_mock_data, parse_lh_document_candidates
-from apps.notice_docs.services.extractors import extract_unit_options_from_pages
+from apps.notice_docs.services.extractors import extract_checklist_items, extract_unit_options_from_pages
 from apps.notice_docs.services.llm_extractors import _option_from_payload
 from apps.notice_docs.services.pdf_parser import PdfPageText, download_remote_pdf, extract_pdf_table_text
 from apps.notice_docs.services.retrieval import (
@@ -202,6 +202,39 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertIn("59A", ranked[0].chunk.text)
         self.assertTrue(any("matched" in chunk and "주택가격" in chunk for chunk in prompt_chunks))
         self.assertTrue(any("무주택" in chunk for chunk in prompt_chunks))
+
+    def test_checklist_extractor_prefers_detail_pages_over_intro_notice(self):
+        pages = [
+            PdfPageText(
+                page_no=1,
+                text="신청자격 무주택 소득 자산 거주 입주자저축을 사전에 확인하시기 바랍니다.",
+            ),
+            PdfPageText(
+                page_no=11,
+                text=(
+                    "2. 무주택세대구성원 및 주택소유여부 판정 기준 "
+                    "무주택세대구성원 여부는 주택공급에 관한 규칙에 따라 판단합니다. "
+                    "지역우선공급 해당 주택건설지역 거주자 및 기타지역 거주자 기준을 적용합니다."
+                ),
+            ),
+            PdfPageText(
+                page_no=15,
+                text="소득기준 소득기준 소득기준 자산기준 총자산 기준을 확인합니다.",
+            ),
+            PdfPageText(
+                page_no=23,
+                text="입주자저축 청약통장 가입기간 및 납입인정 횟수를 확인합니다.",
+            ),
+        ]
+
+        by_title = {item["title"]: item for item in extract_checklist_items(pages)}
+
+        self.assertEqual(by_title["무주택 기준 확인"]["page_no"], 11)
+        self.assertEqual(by_title["지역 우선공급 확인"]["page_no"], 11)
+        self.assertEqual(by_title["소득·자산 기준 확인"]["page_no"], 15)
+        self.assertEqual(by_title["청약통장 요건 확인"]["page_no"], 23)
+        self.assertEqual(by_title["무주택 기준 확인"]["condition_text"], "")
+        self.assertGreater(by_title["무주택 기준 확인"]["confidence"], 0.5)
 
     def test_llm_option_backfills_area_from_lh_supply_summary(self):
         self.notice.source_meta = {
@@ -433,6 +466,57 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertEqual(middle_schedules[0].due_date.isoformat(), "2026-12-21")
         self.assertEqual(middle_schedules[-1].label, "중도금 6차")
         self.assertEqual(option.payment_schedules[-1].amount, 84035000)
+
+    def test_rules_extractor_keeps_final_payment_when_loan_header_has_blank_values(self):
+        pages = [
+            PdfPageText(
+                page_no=5,
+                text=(
+                    "공공분양주택의 분양가격, 발코니 확장비용, 추가선택품목 공급가격\n"
+                    "[table 2]\n"
+                    "주택형 타입 층별 주택가격 계약금 (5%) 중도금 (20%) 잔금 융자금 (주택도시기금)\n"
+                    "계약시 2028.02.14. 입주시\n"
+                    "51A 1층 555,310,000 27,765,500 111,062,000 361,482,500\n"
+                    "[table 3]\n"
+                    "주택형 타입 층별 주택가격 계약금 (10%) 중도금 잔금 융자금 (주택도시기금)\n"
+                    "1회차 (10%) 2회차 (10%)\n"
+                    "계약시 2027.04.12. 2028.02.14 입주시\n"
+                    "51A 1층 555,310,000 55,531,000 55,531,000 55,531,000 333,717,000"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual(len(options), 2)
+        by_type = {option.option_type: option for option in options}
+        self.assertEqual(
+            [schedule.payment_type for schedule in by_type["pre_subscription"].payment_schedules],
+            ["down_payment", "middle_payment", "final_payment"],
+        )
+        self.assertEqual(by_type["pre_subscription"].payment_schedules[-1].amount, 361482500)
+        self.assertEqual(
+            [schedule.payment_type for schedule in by_type["general_supply"].payment_schedules],
+            ["down_payment", "middle_payment", "middle_payment", "final_payment"],
+        )
+        self.assertEqual(by_type["general_supply"].payment_schedules[-1].amount, 333717000)
+        self.assertEqual(by_type["pre_subscription"].loan_amount, 55000000)
+        self.assertEqual(by_type["general_supply"].loan_amount, 55000000)
+
+    def test_rules_extractor_skips_additional_option_price_tables(self):
+        pages = [
+            PdfPageText(
+                page_no=8,
+                text=(
+                    "추가선택품목 공급가격\n"
+                    "천장형 시스템 에어컨 선택품목 계약금 중도금 잔금 공급가격\n"
+                    "51A 800,000,000 880,000,000 800,000,000 780,000,000\n"
+                    "63B 950,000,000 950,000,000 950,000,000 950,000,000"
+                ),
+            )
+        ]
+
+        self.assertEqual(extract_unit_options_from_pages(pages), [])
 
     def test_reanalysis_preserves_previous_result_when_pdf_is_unavailable(self):
         first_result = analyze_notice_with_mock_data(self.notice)

@@ -1,0 +1,809 @@
+FirstHome Navigator AI
+개발공유용 확장기획서 v7.0
+v6.6 제품 방향성 유지 · 프로젝트 구조 정리 · JavaScript/Vite 전환 · 마감 공고 제외 · 100점 추천 점수 체계 반영
+작성 기준: v6.6 기획서의 제품 정체성을 유지하고, v7.0의 실제 구현 상태와 팀 로컬 검증 기록을 반영한다.
+목차
+0. v7.0 작성 의도와 읽는 법
+1. Executive Summary: v7.0 기준 제품 정의
+2. v6.6 대비 v7.0 핵심 변화
+3. 제품 포지션과 핵심 메시지
+4. 대표 사용자와 핵심 Use Case
+5. 서비스 범위, 비범위, 우선순위
+6. 전체 사용자 여정과 화면/API 흐름
+7. 화면별 UX 설계 기준과 CTA
+8. 현재 프로젝트 구조와 코드 분석 요약
+9. 백엔드 앱별 책임과 구현 상태
+10. 프론트엔드 화면별 책임과 구현 상태
+11. 실제 LH 우선 수집과 Fixture fallback 전략
+12. 공식 공고문 PDF 분석/회귀 파이프라인
+13. 추천/자금 로드맵/관심 저장 구조
+14. AI 코치와 LLM/임베딩 전략
+15. 현재 개발 현황과 남은 리스크
+16. QA, 보안, 운영 기준
+17. P1/P2 개발 로드맵
+18. 발표/시연 스토리라인
+19. Definition of Done
+20. 부록: 주요 파일/명령/체크리스트
+0. v7.0 작성 의도와 읽는 법
+v7.0은 제품 방향을 새로 바꾸는 문서가 아니다. v6.6에서 확정한 “공식 공고문 기반 주택형 옵션/자금 준비 코치” 정체성을 유지하면서, 프로젝트 구조 정리, 백엔드 라우팅 분리, Vue + JavaScript + Vite 기준 프론트엔드 정리, 마감 공고 제외, 100점 추천 점수 체계, 상세/자금 화면 안정화 내용을 팀 공유 기준으로 재정리한 버전이다.
+1~5장은 제품 판단 영역이다. 팀이 무엇을 만들고 무엇을 만들지 않을지 맞춘다.
+6~14장은 구현 공유 영역이다. 화면, API, 데이터, LH 수집, PDF 분석, 추천/자금, AI 구조를 이해한다.
+15~17장은 실행 영역이다. 현재 완료 상태와 다음 스프린트 과제를 결정한다.
+18~20장은 발표, Definition of Done, 명령/파일 체크리스트다.
+v7.0의 한 문장
+FirstHome Navigator AI는 청약 신청을 대신하는 서비스가 아니라, 실제 LH 공고와 공식 공고문 PDF를 주택형 옵션·납부 일정·내 자금 부족액·다음 행동으로 번역해주는 첫 집 준비 코치다. v7.0에서는 코드 구조와 화면/API 흐름을 팀이 이해하기 쉬운 형태로 정리해, 기능 확장보다 유지보수성과 검증 가능성을 높였다.
+1. Executive Summary: v7.0 기준 제품 정의
+항목
+v7.0 정의
+서비스명
+FirstHome Navigator AI
+한 줄 정의
+사회초년생이 공식 공고문을 직접 해석하지 않아도, 소유형 공공분양 공고 안의 주택형 옵션·납부 일정·자격 확인 항목을 내 자금 상황과 연결해 이해하도록 돕는 첫 집 준비 웹서비스.
+핵심 고객
+공공분양을 처음 검토하는 사회초년생, 청년, 신혼 전 단계 사용자. 청약홈/LH 공고문을 읽어야 한다는 것은 알지만 주택형별 금액, 계약금, 중도금, 잔금, 할부금, 자격 조건을 한 번에 이해하기 어려운 사람.
+핵심 문제
+LH/API 목록은 공고 단위 정보와 일부 공급정보를 제공하지만, 실제 의사결정에 필요한 납부 구조는 PDF 표와 주석에 흩어져 있다. 또한 마감 지난 공고가 추천에 섞이면 사용자는 지금 검토 가능한 후보를 판단하기 어렵다.
+핵심 해결
+실제 LH 데이터를 우선 수집하고, 현재 검토 가능한 소유형 공공분양만 추천/대시보드/캘린더에 반영한다. 공식 PDF 분석과 공급정보 API를 통해 주택형 옵션과 납부 일정을 구조화하고, 사용자 자금 상황과 연결해 옵션별 자금 로드맵을 보여준다.
+AI의 역할
+AI는 확정 판정자가 아니라 공식 근거 기반 설명자다. 부족액, 납부 일정, 확인 항목, 이번 주 행동을 짧고 안전하게 설명하며, 추출 실패/애매한 공고에는 LLM 보조 분석을 적용할 수 있다.
+v7.0의 의미
+기능 추가보다 프로젝트 형식과 구조를 정리한 버전이다. 백엔드 라우팅은 app별 urls.py로 분리했고, 프론트엔드는 Vue + JavaScript + Vite 기준으로 정리했으며, 추천 점수는 정책 점수 없이 자격 35 + 자금 25 + 지역 30 + 일정 10 = 100점으로 재정의되었다.
+North Star
+대표 사용자가 3분 안에 현재 검토 가능한 주택형 옵션, 계약금 부족액, 중도금/할부금 부담, 공식 근거, 이번 주 할 일을 이해하고 관심 옵션으로 저장한다.
+2. v6.6 대비 v7.0 핵심 변화
+영역
+v6.6 상태
+v7.0 확인
+기획 판단
+백엔드 라우팅 정리
+config/urls.py에 많은 endpoint가 직접 연결되거나 앱 경계가 약하게 보일 수 있었다.
+config/urls.py는 include()로 app별 urls.py를 연결한다. profiles, recommendations, notices, notice_docs, funding, ai_coach가 각자의 URL 책임을 가진다. 루트 apps/services.py는 제거되었고 앱별 services만 남았다.
+팀이 배운 Django 방식과 일치한다. 기능이 늘어도 URL과 view의 책임을 앱 단위로 찾기 쉬워졌다.
+프론트엔드 형식 정리
+Vue 3/Vite 구조는 있었지만 TypeScript 흔적과 설정 혼재 리스크가 있었다.
+프론트엔드는 Vue + JavaScript + Vite 기준으로 정리되었다. main.js, router/index.js, store/api JS 파일 흐름을 사용하며 .ts, tsconfig, vite.config.ts, vue.config.js, Vue CLI 잔재는 없다. package build도 vite build로 단순화되었다.
+팀 학습 범위와 실행 환경에 맞게 정리한 결정이다. 타입 안정성은 줄었지만 협업/이해/수정 속도는 올라간다.
+실제 LH/fixture 운영 방향
+실제 LH 우선, fixture 보조 fallback 정책이 v6.6에서 정리되었다.
+README와 코드에 실제 DB/LH 공고 우선, 소유형 공고가 부족할 때 fixture 보충 정책이 유지된다. 실행/수집/fixture 정책도 최신화되었다.
+v7.0에서도 fixture는 기본 데이터가 아니라 안정성 장치다. 화면에서 실제/fixture 출처를 계속 구분해야 한다.
+공고 상세 안정화
+PDF/공급정보/LLM 기반 옵션의 면적·상세 연결이 일부 불안정할 수 있었다.
+LLM/공급정보 기반 옵션에서 0㎡로 보이던 문제를 보정하는 흐름이 추가되었다. 분석 실패 시 상세 화면 전체가 죽지 않도록 처리하고, option_id 기준 자금 계산 연결도 보완되었다.
+사용자가 상세 화면에서 막히지 않는 것이 중요하다. 분석 실패는 화면 실패가 아니라 상태 표시와 다음 행동 안내로 처리해야 한다.
+현재 검토 가능 공고
+실제 LH 공고가 들어와도 과거 마감 공고가 추천 상단에 보일 수 있었다.
+마감 지난 공고는 대시보드/추천/캘린더에서 제외한다. /api/notices?active=1이 추가되어 접수 마감일이 오늘 이후인 공고만 조회할 수 있다.
+서비스가 “지금 볼 수 있는 후보”를 보여주는 방향으로 정리되었다. 발표와 사용자 경험 모두에서 중요하다.
+추천 점수 체계
+정책/상품 연계도가 추천 점수에 포함되어 제품 중심축이 흐려질 위험이 있었다.
+정책 점수는 제거되고 정책/상품은 보조 정보로 분리되었다. 최종 점수는 자격 35 + 자금 25 + 지역 30 + 일정 10 = 100점이다. 정렬은 총점 우선, option_fit_score는 보조 기준이다.
+제품 메시지가 선명해졌다. 추천은 “정책을 많이 붙여서 높은 점수”가 아니라 현재 조건과 공고/옵션 적합도를 보는 것이다.
+README/잔재 정리
+README 최신화가 필요했고 TypeScript/Vue CLI/정책 점수 잔재가 남을 가능성이 있었다.
+README는 실제 LH 수집, fixture fallback, 현재 검토 가능 공고 API, 100점 추천 기준, 마감 공고 제외 기준을 설명한다. apps.services, TypeScript import/type, tsconfig, vue.config.js, vite.config.ts, policy_link 잔재가 없다.
+팀원 온보딩과 발표 전 점검에 유리하다. 문서와 코드의 불일치 리스크가 줄었다.
+검증 기록
+v6.6 기준 test 61개와 build 통과가 기록되었다.
+팀 로컬 확인 기준 python manage.py test 63개 OK, npm.cmd run build 통과, 추천 결과 100점 만점 정렬 확인.
+v7.0은 구조 변경이 많았으므로 기능 테스트보다 잔재 점검과 회귀 테스트가 특히 중요하다.
+3. 제품 포지션과 핵심 메시지
+3-1. 추천 포지셔닝: 공고문 읽어주는 청약 자금 준비 코치
+비교 대상
+피해야 할 경쟁 구도
+우리가 잡아야 할 포지션
+청약홈/LH
+공식성·정확성 경쟁
+공식 원문을 대신하지 않고, 공식 원문을 더 쉽게 해석하고 준비 행동으로 바꾸는 보조 서비스.
+네이버 부동산/직방/호갱노노
+매물 탐색량·정밀 지도 경쟁
+공공분양 공고 안의 주택형 옵션과 납부 일정 해석에 집중.
+일반 AI 챗봇
+범용 답변 품질 경쟁
+공식 PDF 근거와 내 조건을 함께 읽는 제한형 전문 코치.
+금융상품/정책 추천 서비스
+상품 수·정책 수 경쟁
+계약금과 중도금 준비를 돕는 부가 레이어. 추천 점수에는 직접 반영하지 않는다.
+3-2. 팀 전체가 반복해야 할 설명 문장
+“공고 추천”이 아니라 “공고 안의 주택형 옵션 추천”입니다.
+“AI가 판단합니다”가 아니라 “공식 공고문 근거를 AI가 쉽게 설명합니다”입니다.
+“당첨 가능성 예측”이 아니라 “준비 가능성 점검”입니다.
+“정책·상품까지 다 해주는 서비스”가 아니라 “계약금/중도금/할부금 준비를 돕는 보조 정보를 붙이는 서비스”입니다.
+v7.0부터는 “현재 검토 가능한 공고만 추천하고, 정책/상품은 점수가 아니라 보조 정보로 분리한 서비스”라고 설명할 수 있습니다.
+v7.0의 코드 구조는 Django app별 URL 분리와 Vue + JavaScript + Vite 기준으로 정리되어 팀원이 더 쉽게 따라올 수 있습니다.
+4. 대표 사용자와 핵심 Use Case
+항목
+대표 사용자 값
+사용자
+만 27세 사회초년생, 첫 집 마련을 막 준비하기 시작한 직장인
+소득/자산
+연소득 3,600만 원, 보유 현금 800만 원, 부채 300만 원
+청약 조건
+무주택, 청약통장 가입 24개월, 생애최초/청년 조건 관심
+저축 여력
+월 저축 가능액 80만 원, 12~24개월 안에 계약금 준비 희망
+희망 조건
+서울 또는 경기 남부, 전용 49~59㎡, 소유형 공공분양 우선
+서비스 결과
+현재 검토 가능한 공고 TOP 3, Top-N 주택형 옵션, 계약금 부족액, 중도금/할부금/잔금 일정, 공식 근거, AI 답변, 관심 옵션 저장
+4-1. 핵심 Use Case 흐름
+사용자는 프로필에서 자금·청약·희망 면적/가격 조건을 입력한다.
+서비스는 실제 LH DB 데이터를 우선 조회하고, DB가 비어 있거나 소유형 공고가 너무 적으면 fixture를 뒤에 보충한다.
+마감 지난 공고는 대시보드/추천/캘린더에서 제외하고, 현재 검토 가능한 공고 중심으로 추천한다.
+추천 결과에서 서비스 대상 공고와 Top-N 주택형 옵션을 확인한다.
+공고 상세에서 공식 공고문 분석 상태, 체크리스트, 주택형 옵션별 근거 문장을 확인한다.
+FundingPage에서 선택 옵션의 계약금, 중도금, 입주잔금, 할부금, 융자금, 부족액, 월 준비 목표를 본다.
+AI 코치 추천 질문을 눌러 공식 확인 포인트와 이번 주 행동을 묻는다.
+관심 공고 또는 관심 주택형 옵션을 저장하고 FavoritesPage에서 다시 비교한다.
+4-2. v7.0 완료 기준
+사용자는 추천 결과를 보고 “어떤 공고가 좋은지”보다 “어떤 주택형 옵션을 검토할지”를 이해한다.
+대시보드/추천/캘린더는 접수 마감일이 지난 공고를 기본 후보에서 제외한다.
+화면은 실제 LH API 데이터와 fixture fallback을 구분할 수 있다.
+자금 화면에서 중도금 0회/1회/다회차/10회 이상, 할부금, 입주잔금이 NaN·음수·비현실적 0원 오류 없이 표시된다.
+추천 점수는 정책 점수 없이 100점 만점으로 계산되고, 정책/상품은 보조 정보로 별도 표시된다.
+외부 API와 LLM이 실패해도 fixture/template fallback으로 핵심 흐름이 완주된다.
+5. 서비스 범위, 비범위, 우선순위
+구분
+핵심 범위
+후순위/제외
+v7.0 판단
+주택 유형
+공공분양주택, 신혼희망타운 공공분양, 민간참여형 공공분양, 공공분양 잔여세대/무순위/선착순 공고
+행복주택, 국민임대, 영구임대, 매입임대, 전세임대, 장기전세, 분양전환임대, 오피스텔, 상가, 토지
+첫 집 “소유” 준비가 핵심이다. 잔여세대라도 소유형 공공분양이면 검토 대상이고, 오피스텔/상가/토지/임대형은 제외한다.
+추천 단위
+공고 + HousingUnitOption + 납부안(option_type)
+공고 대표값만으로 최종 판단
+왕숙2처럼 사전청약/일반공급 납부안이 나뉘는 경우 사용자에게 더 친절한 선택 UI가 필요하다.
+추천 점수
+자격 35 + 자금 25 + 지역 30 + 일정 10 = 100점
+정책 점수, 상품 점수의 직접 반영
+정책/상품은 보조 정보다. 최종 정렬은 total_score 우선, option_fit_score 보조 기준으로 유지한다.
+AI 역할
+요약, Q&A, chunk 기반 구조화 보조, 공식 근거 설명
+당첨 예측, 신청 가능 확정, 대출 승인 판단
+AI는 공식 근거와 계산 결과를 설명하는 코치다. 검증 없는 결과 직행은 금지한다.
+데이터
+실제 LH DB 우선 + fixture 보조 fallback + active 공고 필터
+fixture만 고정 데이터처럼 노출
+실제 공고가 적을 때도 화면은 비지 않되, data_source로 실제/fixture를 구분한다.
+프론트 구조
+Vue 3 + JavaScript + Vite
+TypeScript/Vue CLI 잔재 혼재
+팀이 현재 다루기 쉬운 기술 기준으로 정리되었다. 앞으로도 파일/설정 혼재를 막는다.
+5-1. 기능 우선순위 재정의
+우선순위
+기능
+이유
+P0 완료 기준
+소유형 공공분양 필터, 실제 LH import, fixture fallback, active 공고 필터, 공식 PDF 분석, 주택형 옵션 추출, 다양한 PaymentSchedule, option_id 자금 로드맵, 100점 추천 점수, AI fallback, 대표 흐름/PDF 회귀/AI smoke 명령
+핵심 Use Case 완주에 직접 필요하다. 대부분 코드화되어 있고 팀 로컬 검증 기록이 있다.
+P1
+여러 납부안 선택 UX, PDF 파서 고도화, 서비스 범위 검토 필요 상태, 추천 점수 로직 개선, LLM 보조 분석/답변, 운영 리포트 강화, 실제 LH E2E 리포트, 상세/자금 화면 문구 정리
+신뢰도와 사용성 고도화에 필요하다.
+P2
+관리자 검수 화면, 비동기 분석 job, OCR/HWP, 공고문 변경 감지, 알림/캘린더, CI/CD
+운영 품질과 확장성에 필요하다.
+P3
+마이데이터, 대출/DSR 교육용 시뮬레이터, 정밀 정책 수급 판정
+개인정보/법적 리스크가 커서 충분한 검토 후 진행한다.
+6. 전체 사용자 여정과 화면/API 흐름
+메인 스트림: 실제 LH/fixture 데이터 조회 -> 조건 입력 -> 현재 검토 가능 공고/Top-N 옵션 -> 공고 상세/근거 확인 -> 옵션별 자금 로드맵 -> AI 코치 질문 -> 관심 저장/재비교
+단계
+화면/명령
+주요 API/명령
+성공 기준
+0
+데이터 준비
+import_lh --service-target-only --with-supply-info, load_firsthome_fixture --with-demo-analysis
+실제 LH 데이터가 있으면 우선 사용하고, 소유형 공고가 부족하면 fixture가 뒤에 보충된다.
+1
+Home/Dashboard
+GET /api/dashboard
+마감 전 추천 후보와 시작 CTA가 보인다.
+2
+ProfileFormPage
+GET/PUT /api/profile
+조건 저장 후 추천으로 이동한다.
+3
+RecommendationPage
+GET /api/recommendations/housing
+공고와 Top-N 옵션, 분석 상태, 주요 옵션 이유가 보인다. total_score 100점 기준으로 정렬된다.
+4
+Notice List
+GET /api/notices, GET /api/notices?active=1
+전체 공고와 현재 검토 가능 공고를 구분해 조회한다.
+5
+NoticeDetailPage
+GET /api/notices/{id}, /documents/status, /unit-options
+분석 상태, 체크리스트, 근거 문장, 옵션을 확인한다. 분석 실패가 상세 화면 전체 오류로 이어지지 않는다.
+6
+Analysis
+POST /api/notices/{id}/documents/analyze
+rules/LLM/mock 결과가 저장되고 상태가 표시된다.
+7
+FundingPage
+GET /api/recommendations/funding/{id}?option_id=...
+선택 옵션 기준 계약금·중도금·입주잔금·할부금·부족액을 본다.
+8
+FloatingCoachChat
+POST /api/ai/chat
+답변, 추천 행동, 사용한 근거 chip이 표시된다.
+9
+FavoritesPage
+GET/POST/DELETE /api/favorites
+저장한 공고/옵션/상품/정책을 다시 확인한다.
+검증
+관리 명령
+check_representative_flow, check_sample_pdf_regression, check_ai_chat_smoke
+대표 시나리오, PDF 회귀, AI fallback/LLM smoke를 반복 검증한다.
+7. 화면별 UX 설계 기준과 CTA
+화면
+현재 상태
+다음 과제
+HomePage
+현재 검토 가능 공고를 중심으로 대시보드와 캘린더를 구성한다. README는 v7.0 기준으로 업데이트되었다.
+첫 화면에서 “실제 공고문 해석 + 옵션 자금 준비 + 현재 검토 가능 후보”를 더 즉시 전달한다.
+Recommen-
+dationPage
+정책 점수가 제거된 100점 기준으로 추천된다. 옵션 정보는 카드 아래쪽에 자연스럽게 배치되어 공고보다 주택형 옵션을 보게 한다.
+옵션 간 생활형 차이를 강화한다. 예: 계약금 부족액, 월 준비 목표, 중도금/할부금 부담, 근거 상태.
+Notice-
+DetailPage
+공식 분석 상태, 체크리스트, 근거 문장, 주택형 옵션 표시가 핵심이다. 분석 실패 시 화면 전체가 죽지 않도록 처리한다.
+needs_review 원인과 원문 대조 CTA를 더 명확히 한다. 여러 납부안이 있는 경우 option_type 라벨을 사용자 언어로 바꾼다.
+FundingPage
+중도금과 할부금을 구분 표시하고, 할부금 요약 badge와 payment_type별 라벨을 제공한다. option_id 자금 계산 연결이 보완되었다.
+사전청약/일반공급 납부안 선택, 저장 옵션 비교표, 발코니/추가선택품목 분리 표시를 강화한다.
+FloatingCoachChat
+5개 추천 질문, route notice/option context, 사용한 근거 chip 구조를 유지한다.
+LLM이 빈약한 context_refs를 반환해도 서버 공식 refs를 병합/유지한다.
+FavoritesPage
+저장 주택형 표시와 자금 페이지 이동이 가능하다.
+옵션 비교 표, 메모/그룹, 빈 상태 문구를 P1/P2에서 검토한다.
+MapPage
+지역별 소유형 공고 리스트, 분석 상태, 옵션 수 표시.
+정밀 지도보다 분석 상태/옵션 수 중심 탐색 유지. active 공고 필터와 결합해 마감 전 후보 중심 탐색을 강화한다.
+AiCoachPage
+요약형 AI UX 유지.
+FloatingCoachChat과 역할 중복을 줄이고 상세/자금 화면의 질문 버튼 중심 경험으로 정리.
+8. 현재 프로젝트 구조와 코드 분석 요약
+항목
+v7.0 기준 확인
+백엔드 코드 규모
+backend/apps 및 backend/config 기준 Python 코드 약 116개 파일, 약 8,800 lines. migrations 제외 기준이며 app별 urls.py가 신설되어 라우팅 경계가 명확해졌다.
+프론트 코드 규모
+frontend/src 기준 Vue/JS/CSS 코드 약 20개 파일, 약 3,800 lines. TypeScript 파일 없이 JavaScript/Vite 기준으로 정리되어 있다.
+테스트 코드
+backend/apps/*/tests.py의 test_ 함수 63개 확인. 팀 로컬 기록 기준 python manage.py test 63개 통과.
+핵심 백엔드 앱
+profiles, notices, notice_docs, recommendations, funding, ai_coach, products, policies, fixture_store.
+핵심 프론트 화면
+Home, Auth, ProfileForm, Recommendation, NoticeDetail, Funding, Map, AiCoach, Favorites, FloatingCoachChat.
+백엔드 라우팅
+config/urls.py는 include()로 app별 urls.py를 연결한다. profiles, recommendations, notices, notice_docs, funding, ai_coach가 각각 urls.py를 가진다.
+프론트 설정
+package.json build는 vite build. vite.config.js는 Vue와 Tailwind Vite plugin을 사용한다. tsconfig, vue.config.js, vite.config.ts 파일은 없다.
+잔재 점검
+apps.services import 잔재, TypeScript import/type 잔재, policy_link/정책 점수 잔재가 발견되지 않는다. /85 검색 결과는 Tailwind 색상 투명도 표현으로 정상이다.
+샘플 PDF
+sample_pdfs에 include/exclude PDF 샘플, lh_detail_page.html, expected.json, manifest.json이 존재한다.
+검증 기록
+팀 로컬 확인 기준 migrate, python manage.py test 63개, check_sample_pdf_regression, npm.cmd run build 통과 및 추천 결과 100점 만점 정렬 확인.
+9. 백엔드 앱별 책임과 구현 상태
+앱/모듈
+현재 책임
+v7.0 구현/변경
+다음 과제
+profiles
+UserProfile, Favorite, 로그인/세션/비로그인 client_id
+Favorite 타입 option 흐름 유지. 공고/옵션/상품/정책 저장 구조가 메인 스트림에 연결된다. app별 urls.py로 인증/프로필/관심목록 endpoint가 정리되었다.
+옵션 메모, 비교 그룹, 타 사용자 접근 방지 테스트 강화.
+notices
+HousingNotice, LH import, 소유형/제외 분류, 공고 목록/상세
+/api/notices?active=1로 마감 전 공고 조회를 지원한다. import_lh --service-target-only, 공급정보 API 보강, 소유형 후보 우선 수집, 잔여세대 공공분양 포함 기준을 유지한다.
+실제 공공분양이 잡히는 시점에 10~30건 분석 성공률 재측정. 애매한 공고의 검토 필요 상태 정교화.
+fixture_store
+DB 우선 조회 + fixture fallback
+DB가 비면 fixture 사용, DB 소유형 공고가 최소 개수보다 적으면 fixture 보충. current_notices()는 접수 마감일이 오늘 이후인 공고만 반환한다.
+화면에서 LH API와 fixture fallback 구분을 명확히 유지.
+notice_docs
+공식 문서 메타, PDF 분석, 옵션/납부/체크리스트/evidence 저장
+표 기반 PDF 추출 우선, 다양한 payment_type, pre_subscription/general_supply 구분, 면적 보정, 분석 실패 격리, 샘플 기반 파서 개선 흐름을 유지한다.
+표 헤더가 아닌 주석 날짜 연결, 발코니/추가선택품목 분리, validator warning 세분화, 관리자 검수.
+Recommend-
+dations
+추천 점수, option_fit_score, best/top options, dashboard
+정책 점수를 제거했다. score_detail은 eligibility/funding/location/schedule만 반환하고 score_max는 100이다. ranked_recommendations는 total_score 우선, option_fit_score 보조로 정렬한다.
+중도금/할부금 부담을 option_fit_score에 더 정교하게 반영.
+funding
+공고 대표값 또는 option_id PaymentSchedule 기반 자금 계산
+installment_payment를 합산하고 timeline에 payment_type/evidence_text 제공. option_id 연결 보완으로 상세/추천에서 FundingPage 이동이 안정화되었다.
+여러 납부안 선택 UI, 발코니/추가선택품목 별도 표시, schedule_source/근거 표시 강화.
+ai_coach
+provider switch, chat/summary, logs, safety filter
+앱별 urls.py로 /api/ai/coach-summary, /api/ai/chat이 분리되었다. AI 코치 구조와 근거 context 흐름은 유지된다.
+추출 실패/애매한 공고에 LLM 보조 적용, context_refs 공식 refs 병합/검증, 비용/성능 리포트.
+Products
+/policies
+금융상품/청년정책 수집 및 매칭
+정책/상품은 추천 점수에서 제외되고 보조 정보로만 유지된다.
+계약금/중도금 보조 레이어로 제한하고 evidence 연결.
+10. 프론트엔드 화면별 책임과 구현 상태
+화면/컴포넌트
+현재 기능
+v7.0 상태
+App.vue / main.js / router/index.js
+앱 진입점, 라우팅, 전역 레이아웃
+Vue + JavaScript + Vite 기준으로 정리되었다. TypeScript 설정과 Vue CLI 잔재 없이 Vite 기준 실행/빌드가 가능하다.
+RecommendationPage.vue
+추천 카드, Top-N 옵션, 분석 상태, Funding 링크
+정책 점수 제거 후 100점 체계로 표시된다. 옵션 정보를 메인 카드 하단에 배치해 큰 공백을 줄이고, 공고보다 옵션을 보게 하는 방향으로 개선.
+FundingPage.vue
+선택 option_id 자금 로드맵, 옵션 비교, 상품/정책 후보
+중도금/할부금 구분 표시, 할부금 요약 badge, payment_type별 라벨, 공고/옵션/상품/정책 저장 버튼 유지.
+NoticeDetailPage.vue
+분석 상태/근거/옵션/체크리스트
+분석 실패 시 상세 화면 전체가 깨지지 않도록 처리. LLM/공급정보 기반 옵션 면적 보정 흐름과 option_id Funding 연결을 유지.
+FloatingCoachChat.vue
+AI 플로팅 채팅
+5개 quick prompt, route option_id 감지, context_refs를 “사용한 근거” chip으로 표시하는 구조 유지.
+FavoritesPage.vue
+관심 목록
+notice/option/product/policy를 분리 표시하고 저장 주택형을 FundingPage로 연결.
+HomePage.vue
+대시보드, 캘린더, 시작 CTA
+fetchNotices({ active: 1 })를 사용해 마감 전 공고 중심으로 캘린더/후보를 구성한다.
+MapPage.vue
+지역별 소유형 공고 리스트
+정밀 지도보다 분석 상태/옵션 수 중심 탐색 유지.
+AiCoachPage.vue
+요약형 AI UX
+FloatingCoachChat과 역할 중복을 줄이고 상세/자금 화면 질문 중심 경험으로 정리할 필요가 있다.
+11. 실제 LH 우선 수집과 Fixture fallback 전략
+v7.0에서도 “실제 LH 우선, fixture는 보조 안전망” 원칙은 유지된다. 차이는 현재 검토 가능한 공고(active)와 마감 지난 공고를 더 명확히 분리했다는 점이다.
+11-1. LH import 운영 기준
+기능
+현재 동작
+주의점
+--service-target-only
+소유형 공공분양 서비스 대상만 DB에 저장한다. 임대형/토지/상가/오피스텔 등은 제외한다.
+잔여세대·선착순이라도 공공분양 소유형이면 포함할 수 있다. 애매한 공고는 검토 필요로 분리하는 정책이 필요하다.
+--max-pages 기본 5
+최신 1~3페이지만 보면 임대형만 들어올 수 있어 기본 탐색 범위를 넓혔다.
+소유형 공고가 적은 시기에는 더 늘리거나 readiness report로 범위 밖 정상 제외를 설명한다.
+--with-supply-info
+LH 공급정보 API로 주택형, 평균분양가격, 대표 면적을 보강하고 임시 HousingUnitOption/PaymentSchedule을 만든다.
+정확한 계약금/중도금 회차는 공식 PDF 분석 결과가 우선이다. 임시 옵션은 LH 공급정보 API 기반임을 표시해야 한다.
+active=1
+접수 마감일이 오늘 이후인 공고만 조회한다.
+대시보드/추천/캘린더는 기본적으로 현재 검토 가능한 공고를 사용해야 한다. 전체 목록 확인은 /api/notices로 분리한다.
+11-2. Fixture fallback 정책
+상황
+동작
+사용자/발표 의미
+DB가 비어 있음
+fixture 공고/상품/정책을 사용한다.
+처음 실행하거나 API 키가 없어도 핵심 흐름이 비지 않는다.
+DB에 실제 공고가 있으나 소유형 서비스 대상이 적음
+FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true이고 서비스 대상 수가 FIRSTHOME_MIN_SERVICE_NOTICES보다 작으면 fixture를 뒤에 보충한다.
+실제 LH 우선 흐름을 유지하면서 추천 화면이 빈 상태가 되지 않는다.
+fixture 보충을 끄고 싶음
+FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=false로 설정한다.
+운영/검증 시 실제 DB 결과만 확인할 수 있다.
+마감 지난 공고가 많음
+current_notices()와 /api/notices?active=1을 사용한다.
+사용자에게 지금 검토 가능한 공고만 보여준다.
+운영 원칙: 추천 카드와 상세 화면에서는 data_source를 통해 LH API, fixture, fixture fallback을 구분해야 한다. fixture가 섞이는 것은 실패가 아니라 시연 안정성 장치지만, 사용자에게 공식 분석 결과처럼 보이면 안 된다.
+12. 공식 공고문 PDF 분석/회귀 파이프라인
+v7.0의 PDF 분석 방향은 v6.6과 같다. 표를 우선 읽고, 납부 구조를 타입으로 구분하며, 틀릴 수 있는 결과는 needs_review로 분리한다. 이번 버전에서는 기능 추가보다 상세 화면 안정성, 면적 보정, option_id 자금 연결을 보완한 것이 중요하다.
+12-1. 분석 파이프라인
+POST /api/notices/{id}/documents/analyze 요청 또는 analyze_notice_documents 관리 명령으로 분석을 시작한다.
+discover_documents_for_notice가 source_url/document_url/file_name 기준으로 문서 후보를 찾는다.
+file://, local path, http/https PDF를 resolve하고 원격 PDF는 캐시한다.
+pypdf 텍스트 추출과 pdfplumber table row 병합으로 페이지별 텍스트를 만든다.
+표 블록이 있으면 공급금액/납부일정 표를 우선 파싱하고, 평문 compact regex는 fallback으로 사용한다.
+rules extractor가 주택형/금액/일정/체크리스트를 추출하고, 부족하거나 경고가 있으면 LLM structured extraction을 보조로 시도한다.
+validators가 필수 필드, payment schedule, source_text, 금액 합계 등을 검증하고 NoticeExtraction, HousingUnitOption, PaymentSchedule, Checklist, Evidence를 저장한다.
+analysis_summary가 verified/needs_review/mock/failed/discovered/excluded 등 사용자 표시 상태로 변환된다.
+12-2. PDF 샘플 기반 개선과 남은 과제
+샘플/유형
+현재 반영
+다음 과제
+울산다운2 잔여세대/신혼희망타운 계열
+계약금 + 입주잔금 + 융자금 + 할부금 구조를 추출한다. 할부금은 installment_payment, 융자금은 loan_amount로 분리된다.
+입주잔금은 payment_type move_in_balance 또는 final_payment 표시 정책을 화면 언어와 함께 정리한다.
+왕숙2 아테라
+사전청약 당첨자와 일반/특별공급 당첨자의 납부안을 pre_subscription, general_supply로 분리한다.
+사용자가 어떤 납부안을 보고 있는지 UI에서 “사전청약 당첨자”, “일반/특별공급 당첨자”로 선택하게 만든다.
+아산배방 오피스텔
+서비스 범위 밖으로 제외된다.
+오피스텔/상가/토지/임대형 제외 사유를 사용자와 관리자 리포트에서 명확히 표시한다.
+LLM/공급정보 기반 옵션
+exclusive_area_m2가 0으로 남을 때 source_meta의 supply_summary 또는 unit_type에서 면적을 보정한다.
+보정 출처를 화면/검수 리포트에서 표시하고, 0㎡가 다시 노출되지 않도록 regression을 추가한다.
+분석 실패 케이스
+문서 분석 API 실패가 상세 화면 전체 오류로 이어지지 않도록 기본 상세/상태 표시를 유지한다.
+실패 원인을 PDF 없음, 다운로드 실패, 표 추출 실패, 금액 불일치 등으로 세분화한다.
+12-3. 분석 상태는 제품 신뢰도의 언어다
+stage
+사용자 표시
+의미
+다음 행동
+verified
+공식 분석 완료
+공식 PDF 분석 결과가 있고 검증 경고가 낮다.
+옵션과 자금 일정을 비교한다.
+needs_review
+근거 검토 필요
+분석 결과는 있으나 validator 경고가 있다.
+금액/일정의 원문 근거를 확인한다.
+mock
+임시 추정
+PDF 분석 실패 또는 미실행으로 mock 값이 사용됐다.
+공식 PDF 분석을 다시 실행한다.
+failed
+분석 실패
+문서 확보/파서/추출/검증 실패.
+실패 원인을 확인하고 재시도한다.
+discovered
+문서 발견
+문서 후보는 있으나 분석 전.
+분석하기를 실행한다.
+excluded
+서비스 제외
+소유형 공공분양 범위 밖.
+추천/지도 기본 대상에서 제외한다.
+13. 추천/자금 로드맵/관심 저장 구조
+13-1. 추천 점수 구조
+점수 요소
+배점
+계산 기준
+v7.0 판단
+청약 자격 적합도
+35
+무주택, 청약통장 기간, 나이/청년 조건, 소득/자산 조건, 특별공급 관심
+확정 판정이 아니라 준비 적합도다. 공식 기준 확인 필요 문구를 유지한다.
+자금 준비 가능성
+25
+계약금 준비율, 부족액, 월 저축 필요액 대비 가능액, 준비 기간
+계약금 중심에서 중도금/할부금 현금흐름까지 고도화해야 한다.
+지역·주택유형 적합도
+30
+희망 지역/권역/공급유형 일치
+정책 점수를 제거한 만큼 지역/주택유형 적합도가 커졌다. 사용자 선호 조건 입력 품질이 중요하다.
+일정 적합도
+10
+접수일, 계약일, 입주 예정 시점의 준비 가능성
+마감 지난 공고를 제외하는 active 필터와 함께 봐야 한다.
+정책/상품
+0
+추천 점수에 직접 반영하지 않는다.
+계약금/중도금 준비를 돕는 보조 정보로 분리한다.
+13-2. option_fit_score 개선 방향
+요소
+현재 의미
+v7.0 판단
+희망 면적/분양가
+HousingUnitOption의 exclusive_area_m2와 base_price를 사용자 프로필과 비교한다.
+실제 주택형 옵션 기준으로 더 강화해야 한다. LH 공급정보 임시 옵션도 들어오므로 source 신뢰도 표시가 필요하다.
+계약금
+down_payment와 max_down_payment/asset을 비교한다.
+가장 직관적인 부족액 지표이므로 추천 카드와 FundingPage에서 계속 전면에 둔다.
+중도금
+middle_payment를 24개월 월 환산 부담으로 단순 비교한다.
+회차/기간/날짜가 다양하므로 실제 PaymentSchedule 기반 월별 현금흐름으로 고도화해야 한다.
+할부금
+installment_payment로 별도 합산하고 UI badge로 표시한다.
+신혼희망타운 잔여세대 같은 구조에서 중요한 지표이므로 점수에도 반영할 필요가 있다.
+분석 상태
+공식 분석/임시 추정/검토 필요를 구분한다.
+추천 순위에는 단순 점수뿐 아니라 데이터 신뢰도도 함께 고려해야 한다.
+13-3. 관심 저장 구조
+저장 타입
+현재 지원
+사용자 가치
+다음 과제
+notice
+지원
+공고 전체를 나중에 다시 확인.
+공고별 분석 상태 변화 알림은 후순위.
+option
+지원
+검토할 주택형 옵션을 저장하고 옵션 자금 페이지로 바로 이동.
+옵션 메모, 비교 그룹, 저장 옵션 comparison.
+product
+지원
+계약금 준비 보조 상품 저장.
+상품 조건 evidence 연결.
+policy
+지원
+청년/주거 정책 후보 저장.
+정책 대상 조건 evidence 연결.
+14. AI 코치와 LLM/임베딩 전략
+14-1. AI의 제품상 역할
+AI 기능
+해야 할 일
+하지 말아야 할 일
+v7.0 상태
+공식 공고문 구조화
+후보 chunk/표를 읽고 주택형·납부 일정·체크리스트 JSON 추출 보조
+전체 PDF를 무작정 넣고 원문에 없는 값을 생성
+rules/표 기반 구조가 먼저 정리된 상태. 다음은 실패/애매한 공고에 LLM 보조 적용.
+AI 코치 요약
+부족액, 일정, 공식 확인 항목, 이번 주 할 일을 쉬운 말로 정리
+신청 가능/당첨 가능/대출 승인 확정 표현
+template fallback과 safety 유지. 공고문 근거 기반 답변 고도화 필요.
+AI 채팅
+선택 옵션과 funding/evidence/checklist context 기반으로 짧고 안전한 답변
+일반 부동산 상담이나 금융 자문으로 범위 확장
+추천 질문 5개와 근거 chip 구조 유지.
+임베딩 검색
+PDF/정책 chunk 후보를 의미적으로 좁힘
+검증 없이 LLM 답변을 곧바로 공식 결과처럼 표시
+아직 미구현. P1 핵심 과제.
+14-2. v7.0 AI 우선순위
+우선순위
+과제
+이유
+완료 기준
+1
+AI 답변 context 강화
+사용자가 “왜 추천됐는지”, “뭘 준비해야 하는지”를 공고문 근거 기반으로 이해해야 한다.
+context_refs에 option/payment/checklist/evidence가 명확히 포함되고 UI chip이 유지된다.
+2
+LLM 보조 추출 적용
+규칙 추출 실패/애매한 공고를 모두 mock으로 넘기면 실제 운영 가치가 떨어진다.
+AI_ENABLE_LLM_EXTRACTION=true 환경에서 실패/경고 케이스를 LLM이 보조하고, 검증 결과가 저장된다.
+3
+retrieval/evidence 품질 강화
+LLM 모델보다 올바른 근거를 넣는 것이 답변 품질을 좌우한다.
+공급금액/계약금/중도금/소득/자산 질의별 Top-K 후보 확인.
+4
+비용/성능 로그 정교화
+운영 단계에서 비용 폭증과 timeout을 제어해야 한다.
+token/cost/latency/cache_hit/provider별 지표 저장 및 리포트화.
+5
+로컬 LLM 후보 검증
+시연 안정성과 비용 절감에 유리하지만 품질 한계가 있다.
+kanana-nano 등 1개 모델을 같은 chunk 입력으로 비교.
+15. 현재 개발 현황과 남은 리스크
+15-1. 구현 완료 또는 1차 완료
+백엔드 라우팅을 config/urls.py + app별 urls.py 구조로 정리했다.
+루트 apps/services.py를 제거하고 app별 services 책임을 유지했다.
+프론트엔드를 Vue 3 + JavaScript + Vite 기준으로 정리했다. TypeScript/Vue CLI 설정 잔재가 없다.
+실제 LH 데이터 우선, fixture 보조 fallback 정책을 README와 코드에 유지했다.
+공고 상세에서 분석 실패가 전체 화면 실패로 이어지지 않도록 처리했다.
+LLM/공급정보 기반 옵션에서 0㎡로 보이는 문제를 보정하는 흐름을 추가했다.
+마감 지난 공고를 대시보드/추천/캘린더에서 제외하고 /api/notices?active=1을 추가했다.
+추천 점수에서 정책 점수를 제거하고 자격 35 + 자금 25 + 지역 30 + 일정 10 = 100점 체계로 정리했다.
+정책/상품은 추천 점수에서 분리해 계약금/중도금 준비 보조 정보로 유지했다.
+option_id 기반 FundingPlan, 중도금/할부금 구분 UI, 할부금 요약 badge 흐름을 유지했다.
+README에 실제 LH 수집, fixture fallback, 100점 추천 점수, active 공고 API, 마감 공고 처리 기준을 반영했다.
+팀 로컬 기록 기준 migrate, python manage.py test 63개, sample PDF regression, frontend build 통과.
+15-2. 남은 리스크
+리스크
+왜 중요한가
+대응
+여러 납부안 표시 부족
+왕숙2처럼 사전청약/일반공급 납부안이 함께 있으면 사용자가 어떤 기준인지 헷갈릴 수 있다.
+option_type을 사용자 언어로 바꾸고 선택 UI를 만든다.
+PDF 표 다양성
+LH 공고 표 구조가 계속 다르면 추출 오류가 발생한다.
+회귀 샘플 확대, 파서별 test, needs_review 유지.
+날짜 주석 연결
+납부일이 표 헤더가 아니라 주석에 있으면 일정 연결이 틀릴 수 있다.
+주석/페이지 주변 문맥에서 due_date를 연결하는 룰을 고도화한다.
+발코니/추가선택품목 오탐
+분양가와 별도 선택 비용이 섞이면 자금 계산이 왜곡된다.
+balcony_extension_price와 additional options를 base_price와 분리 표시한다.
+실제/fixture 혼합 인식
+사용자는 실제 LH 공고인지 fixture fallback인지 모르면 신뢰도를 잘못 판단한다.
+data_source 배지와 공식/임시 문구를 강화한다.
+추천 점수 단순화
+계약금뿐 아니라 중도금/할부금 부담이 실질적인 자금 난이도를 결정한다.
+option_fit_score에 중도금/할부금 현금흐름을 반영한다.
+관리자 검수 부재
+needs_review 결과를 사람이 고칠 수 없다.
+P2에서 검수/수정 화면을 만든다.
+형식 정리 후 회귀 리스크
+라우팅/JS 전환은 기능 추가보다 잔재와 import 누락이 위험하다.
+app별 URL smoke, 주요 화면 수동 점검, build/test 게이트 유지.
+16. QA, 보안, 운영 기준
+16-1. QA 명령과 검증 흐름
+구분
+명령
+v7.0 판단
+Backend 기본
+python manage.py check / python manage.py makemigrations --check --dry-run / python manage.py migrate / python manage.py test
+팀 로컬 기록 기준 migrate 및 63 tests 통과.
+Frontend 기본
+npm ci / npm.cmd run build
+팀 로컬 기록 기준 build 통과. v7.0부터 build script는 vite build다.
+대표 흐름
+python manage.py check_representative_flow --report-json=reports/representative_flow.json
+fixture + demo analysis 기준 P0 flow를 확인.
+PDF 회귀
+python manage.py check_sample_pdf_regression --report-json=reports/sample_pdf_regression.json
+7개 샘플 기준 회귀. 신규 실제 PDF 샘플은 expected/manifest와 함께 관리한다.
+AI smoke
+python manage.py check_ai_chat_smoke --report-json=reports/ai_chat_smoke.json
+fallback/LLM smoke를 분리해 provider별 결과를 기록한다.
+LH 운영 데이터
+python manage.py import_lh --service-target-only --with-supply-info / python manage.py analyze_notice_documents --provider=LH --limit 20
+실제 LH 소유형 공고를 수집하고 분석 결과를 화면에서 E2E 점검한다.
+라우팅/형식 점검
+config/urls.py include, app별 urls.py, frontend JS/Vite 설정, grep 잔재 확인
+apps.services, TypeScript import/type, tsconfig/vue.config/vite.config.ts, policy_link 잔재가 없어야 한다.
+16-2. 보안/개인정보/API Key
+.env와 API Key는 Git/ZIP/문서/로그에 포함하지 않는다.
+backend/reports/는 로컬 산출물이므로 공유 여부를 팀에서 명확히 정한다.
+AI raw_response와 prompt에는 개인정보가 들어갈 수 있으므로 저장/마스킹 정책이 필요하다.
+소득/자산/부채/월저축 입력값은 본인만 접근하고 원문 금액 로그를 최소화한다.
+배포 환경에서는 CORS, CSRF, 쿠키 SameSite/Secure, DEBUG=false를 별도 점검한다.
+17. P1/P2 개발 로드맵
+17-1. P1: 다음 스프린트에서 품질을 올릴 것
+우선순위
+작업
+완료 기준
+P1-1
+실제 LH import 후 운영 데이터 E2E 점검
+import_lh --service-target-only --with-supply-info -> analyze_notice_documents -> 추천/상세/자금/AI 화면을 실제 DB 기준으로 확인.
+P1-2
+여러 납부안 선택 UX
+pre_subscription/general_supply를 “사전청약 당첨자”, “일반/특별공급 당첨자”로 표시하고 사용자가 선택할 수 있다.
+P1-3
+PDF 파서 고도화
+표 구조 샘플을 계속 누적하고, 주석 날짜 연결, 발코니/추가선택품목 분리, 융자금/할부금 warning을 세분화.
+P1-4
+서비스 범위 분류 정교화
+민간참여 공공분양, 신혼희망타운, 잔여세대 공공분양은 포함하고 오피스텔/상가/토지/임대형은 제외. 애매한 공고는 검토 필요로 분리.
+P1-5
+추천 점수 로직 개선
+희망 면적/분양가 적합도뿐 아니라 중도금/할부금 부담을 option_fit_score에 반영.
+P1-6
+AI 연결 고도화
+추출 실패/애매한 공고에 LLM 보조 분석을 적용하고, 추천 이유/준비 행동을 공고문 근거 기반으로 답변.
+P1-7
+관리자/운영용 리포트 강화
+분석 성공/실패/검토 필요 개수와 실패 원인을 PDF 없음, 표 추출 실패, 범위 밖, 금액 불일치 등으로 분류.
+P1-8
+발표 전 데이터 전환 절차
+실제 API 실패 또는 소유형 공고 부족 시 fixture fallback이 자연스럽게 보이는지 확인하고 demo DB/실제 DB 전환 절차 정리.
+P1-9
+v7.0 구조 회귀 점검
+app별 URL, JS/Vite 전환, active 공고 필터, 100점 추천 점수 체계가 README/화면/API와 일치하는지 수동 QA.
+17-2. P2: 운영/확장 기능
+관리자 검수/수정 화면: needs_review extraction을 사람이 승인/수정.
+비동기 분석 job: queued/running/succeeded/needs_review/failed/retry 상태와 중복 요청 제어.
+OCR/HWP fallback: 이미지 기반 PDF와 HWP 공고문 대응.
+공고문 변경 감지: 정정공고/첨부 변경 시 기존 extraction과 비교.
+알림/캘린더: 접수 마감, 계약금 납부, 서류 준비 일정.
+CI/CD: test/build 자동화와 배포 환경 변수 관리.
+18. 발표/시연 스토리라인
+v7.0 발표 핵심은 “실제 LH 데이터를 우선 쓰고, 현재 검토 가능한 공고만 추천하며, 공식 PDF 표를 읽어 주택형별 현금 흐름으로 바꾸고, fixture는 소유형 공고가 부족할 때만 보조한다”이다. v6.6의 실제 LH 우선 메시지에 v7.0의 구조 정리, 100점 추천 체계, 마감 공고 제외를 덧붙이면 된다.
+시연 루트
+강조 메시지
+백업
+실제 LH 수집 루트
+실제 LH API에서 소유형 공공분양 후보를 우선 수집하고 공급정보로 임시 옵션을 보강한다.
+API 실패 시 fixture 안정 루트로 전환.
+현재 검토 가능 공고 루트
+마감 지난 공고는 대시보드/추천/캘린더에서 제외하고 /api/notices?active=1로 현재 후보를 확인한다.
+전체 목록은 /api/notices로 확인 가능.
+100점 추천 점수 루트
+정책 점수 없이 자격 35, 자금 25, 지역 30, 일정 10으로 설명 가능한 점수를 만든다.
+정책/상품은 보조 정보 카드로 따로 설명.
+공식 PDF 분석 루트
+공식 공고문에서 공급금액/납부일정을 읽고 주택형 옵션으로 저장한다.
+분석 완료 fixture 또는 sample PDF regression 결과.
+울산다운2/할부금 루트
+공고마다 다른 계약금+입주잔금+융자금+할부금 구조도 payment_type으로 구분한다.
+sample PDF regression report.
+왕숙2 납부안 루트
+사전청약 당첨자와 일반/특별공급 당첨자 납부안을 구분할 수 있다.
+UI 선택은 다음 과제라고 명확히 설명.
+옵션 저장 루트
+사용자는 공고가 아니라 검토할 주택형 옵션을 저장한다.
+FavoritesPage option 목록과 FundingPage 이동.
+프로젝트 구조 정리 루트
+백엔드는 app별 urls.py, 프론트는 Vue + JavaScript + Vite로 정리되어 팀원이 이해하기 쉬워졌다.
+README와 package.json, config/urls.py를 함께 설명.
+AI 코치 루트
+AI는 확정 판단이 아니라 공식 근거 기반 참고 안내를 제공한다.
+AI_PROVIDER=template fallback, check_ai_chat_smoke.
+19. Definition of Done
+범위
+v7.0 완료 기준
+대표 Use Case
+홈 -> 조건 입력 -> 추천 -> 상세 -> 옵션 자금 비교 -> AI 질문 -> 관심 저장이 중단 없이 동작.
+프로젝트 구조
+백엔드는 config/urls.py include + app별 urls.py 구조이고, 루트 apps/services.py와 import 잔재가 없다.
+프론트 형식
+Vue 3 + JavaScript + Vite 기준으로 실행되며 .ts, tsconfig, vue.config.js, vite.config.ts, Vue CLI 잔재가 없다.
+실제 데이터
+import_lh --service-target-only --with-supply-info로 실제 소유형 공고를 우선 저장하고, 소유형 부족 시 fixture fallback이 자연스럽게 보완.
+현재 공고
+대시보드/추천/캘린더는 마감 지난 공고를 제외하고, /api/notices?active=1로 현재 검토 가능 공고를 조회.
+추천 점수
+자격 35 + 자금 25 + 지역 30 + 일정 10 = 100점으로 계산하고, 정책/상품은 보조 정보로 분리.
+공식 분석
+샘플 PDF와 실제 LH 공고 일부에서 주택형 옵션, 납부 일정, 체크리스트, evidence가 저장되고 화면에 표시.
+납부 일정
+중도금 0회/1회/다회차/10회 이상, 입주잔금, 할부금, 융자금이 구분되어 자금 로드맵에 표시.
+서비스 범위
+공공분양/신혼희망타운/민간참여/잔여세대 공공분양 포함, 오피스텔/상가/토지/임대형 제외, 애매한 공고 검토 필요 분리.
+추천/자금
+공고 대표값 fallback과 option_id PaymentSchedule 계산이 구분되어 표시. 저장한 옵션이 FundingPage로 연결.
+AI
+template/openai/local 설정이 분리되고 실패 시 fallback이 동작. AI 답변은 공식 확인 문구와 context_refs를 제공.
+QA
+migrate, backend test 63개, frontend build, representative flow, PDF regression, AI smoke가 팀 로컬/CI에서 통과.
+문서화
+README, 실행 가이드, API/화면/데이터 모델, 발표 시나리오가 최신 코드와 불일치하지 않음.
+보안
+.env와 API Key가 공유 ZIP에 포함되지 않고 민감 정보 로그와 AI raw_response 저장 정책이 정리됨.
+20. 부록: 주요 파일/명령/체크리스트
+20-1. 주요 파일 경로
+영역
+파일 경로
+설명
+설정/라우팅
+backend/config/settings.py, backend/config/urls.py
+환경 변수, FIRSTHOME_FIXTURE_FALLBACK, AI_SETTINGS, app별 URL include.
+app별 URL
+backend/apps/*/urls.py
+profiles, notices, notice_docs, recommendations, funding, ai_coach endpoint 분리.
+공고 모델/분류
+backend/apps/notices/models.py, services/classifier.py, services/lh.py
+HousingNotice, LH 정규화, 소유형 공공분양 분류, 공급정보 요약.
+LH 수집 명령
+backend/apps/notices/management/commands/import_lh.py
+--service-target-only, --with-supply-info, --supply-limit, 임시 옵션 생성.
+fixture fallback
+backend/apps/fixture_store.py
+DB 우선 조회, fixture fallback/supplement, current_notices active 필터.
+공식 문서 모델
+backend/apps/notice_docs/models.py
+NoticeDocument, NoticeExtraction, HousingUnitOption, PaymentSchedule, Checklist, Evidence.
+공식 문서 분석
+backend/apps/notice_docs/services/analysis.py
+분석 전체 orchestration.
+PDF 파서
+backend/apps/notice_docs/services/pdf_parser.py
+원격 PDF 다운로드/캐시, pypdf/pdfplumber 추출.
+규칙 추출/검증
+extractors.py, validators.py
+주택형/금액/일정/체크리스트 추출 및 검증. 표 기반 파서와 납부 타입 확장.
+추천/자금
+backend/apps/recommendations/services/ranking.py, scoring.py, backend/apps/funding/services/calculator.py
+100점 점수 체계, option_fit_score와 FundingPlan, installment_payment 합산.
+프론트 API
+frontend/src/api/firsthome.js
+Axios API wrapper. JavaScript 기준.
+프론트 설정
+frontend/package.json, frontend/vite.config.js, frontend/src/main.js
+Vite build/dev, Vue plugin, Tailwind Vite plugin, 앱 진입점.
+핵심 화면
+RecommendationPage.vue, NoticeDetailPage.vue, FundingPage.vue, FavoritesPage.vue, FloatingCoachChat.vue
+추천/상세/자금/관심/AI 코치 화면.
+20-2. 핵심 명령
+# Backend 기본cd backendpython manage.py checkpython manage.py makemigrations --check --dry-runpython manage.py migratepython manage.py test
+# Fixture + demo analysispython manage.py load_firsthome_fixture --with-demo-analysis
+# 실제 LH 데이터 우선 수집python manage.py import_lh --dry-run --service-target-only --page-size 100 --max-pages 5 --with-supply-info --supply-limit 30python manage.py import_lh --service-target-only --page-size 100 --max-pages 5 --with-supply-info --supply-limit 30python manage.py analyze_notice_documents --provider=LH --limit 20 --report-json=reports/lh_actual_readiness.json --report-md=reports/lh_actual_readiness.md
+# 검증 게이트python manage.py check_representative_flow --report-json=reports/representative_flow.jsonpython manage.py check_sample_pdf_regression --report-json=reports/sample_pdf_regression.jsonpython manage.py check_ai_chat_smoke --report-json=reports/ai_chat_smoke.jsonpython manage.py check_ai_chat_smoke --require-llm --report-json=reports/ai_chat_smoke_llm.json
+# Frontendcd frontendnpm cinpm.cmd run build
+20-3. v7.0 팀 체크리스트
+v6.6 문서 대신 v7.0 문서를 기준 공유 문서로 둔다.
+프로젝트를 설명할 때 특정 ZIP 파일명을 서비스 버전명처럼 말하지 않는다. 현재 프로젝트 상태는 v7.0으로 표현한다.
+공유 repo에는 .env, reports, DB 파일, 캐시 PDF가 들어가지 않게 한다.
+백엔드 라우팅 변경 시 app별 urls.py와 config/urls.py include가 함께 맞는지 확인한다.
+프론트 변경 시 TypeScript/Vue CLI 잔재가 다시 생기지 않았는지 확인한다.
+추천 점수 관련 변경은 자격 35, 자금 25, 지역 30, 일정 10 체계와 score_max=100을 확인한다.
+대시보드/추천/캘린더는 active 공고 기준으로 동작하는지 확인한다.
+실제 LH 수집 시 --service-target-only와 --with-supply-info 사용 여부를 팀이 통일한다.
+PDF 파서 변경은 sample PDF regression을 반드시 통과해야 한다.
+여러 납부안, 할부금, 입주잔금이 있는 공고는 FundingPage에서 사람이 눈으로 확인한다.
+AI 관련 변경은 check_ai_chat_smoke와 safety 문구를 같이 확인한다.
+대표 시나리오는 실제 데이터 루트와 fixture 안정 루트를 모두 준비한다.

@@ -194,6 +194,7 @@ def _save_checklists(notice: HousingNotice, document: NoticeDocument, rows: list
             title=row["title"],
             condition_text=row["condition_text"],
             evidence_text=row["evidence_text"],
+            page_no=row.get("page_no"),
             confidence=row["confidence"],
         )
 

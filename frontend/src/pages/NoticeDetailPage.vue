@@ -1,17 +1,19 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { ArrowLeft, Bookmark, Bot, CalendarDays, CheckCircle2, ExternalLink, FileCheck2, FileText, ShieldAlert, WalletCards } from 'lucide-vue-next';
+import { ArrowLeft, Bookmark, Bot, CalendarDays, CheckCircle2, ExternalLink, FileCheck2, ShieldAlert, WalletCards } from 'lucide-vue-next';
 import { addFavorite, analyzeNoticeDocument, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeDocumentStatus, fetchNoticeEligibilityChecklists, fetchNoticeUnitOptions, removeFavorite } from '../api/firsthome';
 import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
 import { formatMoney } from '../utils/format';
 const route = useRoute();
 const noticeId = computed(() => Number(route.params.noticeId ?? 0));
+const selectedOptionId = computed(() => Number(route.query.option_id ?? 0) || null);
 const selectedNotice = ref(null);
 const recommendation = ref(null);
 const fundingPlan = ref(null);
 const documentStatus = ref(null);
 const unitOptions = ref([]);
+const activeOptionType = ref('');
 const eligibilityChecklists = ref([]);
 const favorites = ref([]);
 const loading = ref(true);
@@ -21,11 +23,6 @@ const error = ref('');
 const analysisError = ref('');
 function priceLabel(price) {
     return price > 0 ? formatMoney(price) : '공식 확인 필요';
-}
-function scoreLabel(item) {
-    if (!item)
-        return '';
-    return `${item.total_score}/${item.score_max ?? 100}점`;
 }
 function extractionLabel(schemaVersion, source) {
     if (!schemaVersion)
@@ -37,6 +34,46 @@ function extractionLabel(schemaVersion, source) {
     if (schemaVersion === 'mock-v1')
         return 'mock fallback';
     return schemaVersion;
+}
+function ownershipTypeLabel(type) {
+    const labels = {
+        public_sale: '공공분양',
+        private_participation_public_sale: '민간참여 공공분양',
+        newlywed_public_sale: '신혼희망타운 공공분양',
+        unknown: '유형 확인 필요',
+    };
+    return labels[type] ?? type ?? '공공분양';
+}
+function optionTypeLabel(type) {
+    const labels = {
+        pre_subscription: '사전청약 당첨자',
+        general_supply: '본청약·일반 공급',
+        basic: '기본 유형',
+        minus: '마이너스 옵션',
+    };
+    return labels[type] ?? type ?? '기본 유형';
+}
+function optionTypeOrder(type) {
+    const order = {
+        general_supply: 1,
+        basic: 2,
+        pre_subscription: 3,
+        minus: 4,
+    };
+    return order[type] ?? 99;
+}
+function checklistPageLabel(item) {
+    return item.page_no ? `공고문 ${item.page_no}쪽` : '공고문 페이지 확인 필요';
+}
+function shouldShowChecklistCondition(item) {
+    return item.condition_text && !item.condition_text.includes('공식 공고문 원문 기준');
+}
+function preferredFundingOptionId() {
+    const routeOption = unitOptions.value.find((option) => option.id === selectedOptionId.value);
+    const selectedType = currentOptionType();
+    if (routeOption && (routeOption.option_type || 'basic') === selectedType)
+        return routeOption.id;
+    return representativeOptionIdForType(selectedType) ?? unitOptions.value[0]?.id ?? null;
 }
 const noticeFavorite = computed(() => {
     if (!selectedNotice.value)
@@ -51,12 +88,32 @@ const isFavorite = computed(() => {
 const currentAnalysisSummary = computed(() => {
     return analysisSummary(documentStatus.value?.analysis_summary ?? selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status);
 });
-const extractionEvidence = computed(() => documentStatus.value?.latest_extraction?.evidence ?? []);
 const summaryPrice = computed(() => {
     const planPrice = Number(fundingPlan.value?.price || 0);
     const noticePrice = Number(selectedNotice.value?.price || 0);
     return planPrice > 0 ? planPrice : noticePrice;
 });
+const groupedUnitOptions = computed(() => {
+    const groups = new Map();
+    for (const option of unitOptions.value) {
+        const key = option.option_type || 'basic';
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                label: optionTypeLabel(key),
+                options: [],
+            });
+        }
+        groups.get(key).options.push(option);
+    }
+    return [...groups.values()].sort((left, right) => optionTypeOrder(left.key) - optionTypeOrder(right.key));
+});
+const hasMultipleOptionGroups = computed(() => groupedUnitOptions.value.length > 1);
+const activeUnitOptionGroup = computed(() => {
+    const selectedType = currentOptionType();
+    return groupedUnitOptions.value.find((group) => group.key === selectedType) ?? groupedUnitOptions.value[0] ?? null;
+});
+const visibleUnitOptions = computed(() => activeUnitOptionGroup.value?.options ?? []);
 const officialChecklist = computed(() => {
     if (eligibilityChecklists.value.length) {
         return eligibilityChecklists.value.map((item) => ({
@@ -65,6 +122,7 @@ const officialChecklist = computed(() => {
             title: item.title,
             condition_text: item.condition_text,
             evidence_text: item.evidence_text,
+            page_no: item.page_no,
             confidence: item.confidence,
             isExtracted: true,
         }));
@@ -78,6 +136,7 @@ const officialChecklist = computed(() => {
             title: '공급유형 자격 확인',
             condition_text: `${selectedNotice.value.supply_type} 세부 자격과 우선공급 기준을 공식 공고문에서 확인합니다.`,
             evidence_text: '공고 기본 정보 기반 임시 체크리스트입니다. 공고문 분석 후 공식 근거 문장으로 대체됩니다.',
+            page_no: null,
             confidence: 0,
             isExtracted: false,
         },
@@ -87,6 +146,7 @@ const officialChecklist = computed(() => {
             title: '소득·자산·서류 확인',
             condition_text: `${selectedNotice.value.required_documents.slice(0, 2).join(', ')} 발급 가능 여부와 소득·자산 기준을 확인합니다.`,
             evidence_text: '공고 기본 정보 기반 임시 체크리스트입니다.',
+            page_no: null,
             confidence: 0,
             isExtracted: false,
         },
@@ -96,6 +156,7 @@ const officialChecklist = computed(() => {
             title: '접수·계약 일정 확인',
             condition_text: `${selectedNotice.value.application_deadline} 접수 마감과 ${selectedNotice.value.contract_date} 계약 일정을 확인합니다.`,
             evidence_text: '공고 목록의 대표 일정 기반입니다. 실제 납부 일정은 공식 공고문을 우선합니다.',
+            page_no: null,
             confidence: 0,
             isExtracted: false,
         },
@@ -111,6 +172,7 @@ async function loadDetail() {
     loading.value = true;
     error.value = '';
     analysisError.value = '';
+    activeOptionType.value = '';
     try {
         const targetNoticeId = await resolveNoticeId();
         const [noticeResponse, favoriteResponse, recommendations] = await Promise.all([
@@ -122,6 +184,7 @@ async function loadDetail() {
         favorites.value = favoriteResponse;
         recommendation.value = recommendations.find((item) => item.notice_id === targetNoticeId) ?? null;
         await loadDocumentAnalysis(targetNoticeId);
+        syncActiveOptionType();
         await refreshFundingPlan(targetNoticeId);
     }
     catch {
@@ -141,13 +204,52 @@ async function loadDocumentAnalysis(targetNoticeId) {
     unitOptions.value = optionResponse;
     eligibilityChecklists.value = checklistResponse;
 }
+function defaultOptionType() {
+    if (groupedUnitOptions.value.some((group) => group.key === 'general_supply'))
+        return 'general_supply';
+    if (groupedUnitOptions.value.some((group) => group.key === 'basic'))
+        return 'basic';
+    return groupedUnitOptions.value[0]?.key ?? '';
+}
+function currentOptionType() {
+    return activeOptionType.value || defaultOptionType();
+}
+function syncActiveOptionType() {
+    const routeOption = unitOptions.value.find((option) => option.id === selectedOptionId.value);
+    if (routeOption) {
+        activeOptionType.value = routeOption.option_type || 'basic';
+        return;
+    }
+    const fallbackType = defaultOptionType();
+    if (!activeOptionType.value || !groupedUnitOptions.value.some((group) => group.key === activeOptionType.value)) {
+        activeOptionType.value = fallbackType;
+    }
+}
+function representativeOptionIdForType(optionType) {
+    const options = unitOptions.value.filter((option) => (option.option_type || 'basic') === optionType);
+    if (!options.length)
+        return null;
+    const optionIds = new Set(options.map((option) => option.id));
+    const recommendedOptions = [
+        ...(recommendation.value?.top_options ?? []),
+        ...(recommendation.value?.best_option ? [recommendation.value.best_option] : []),
+    ];
+    const recommended = recommendedOptions.find((option) => optionIds.has(option.option_id));
+    return recommended?.option_id ?? options[0].id;
+}
 async function refreshFundingPlan(targetNoticeId) {
-    const optionId = unitOptions.value[0]?.id ?? null;
+    const optionId = preferredFundingOptionId();
     try {
         fundingPlan.value = await fetchFundingPlan(targetNoticeId, optionId);
     }
     catch {
         fundingPlan.value = await fetchFundingPlan(targetNoticeId);
+    }
+}
+async function selectOptionType(optionType) {
+    activeOptionType.value = optionType;
+    if (selectedNotice.value) {
+        await refreshFundingPlan(selectedNotice.value.id);
     }
 }
 async function handleAnalyzeNotice() {
@@ -164,6 +266,7 @@ async function handleAnalyzeNotice() {
         };
         unitOptions.value = response.unit_options;
         await loadDocumentAnalysis(selectedNotice.value.id);
+        syncActiveOptionType();
         await refreshFundingPlan(selectedNotice.value.id);
     }
     catch {
@@ -191,7 +294,7 @@ async function toggleFavorite() {
         savingFavorite.value = false;
     }
 }
-watch(noticeId, loadDetail);
+watch([noticeId, selectedOptionId], loadDetail);
 onMounted(loadDetail);
 </script>
 
@@ -218,15 +321,8 @@ onMounted(loadDetail);
               추천 목록
             </RouterLink>
             <div class="mt-4 flex flex-wrap items-center gap-2">
-              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{{ selectedNotice.supply_type }}</span>
-              <span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{{ selectedNotice.region }}</span>
-              <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{{ selectedNotice.data_source ?? 'fixture' }}</span>
-              <span class="rounded-md bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700">{{ selectedNotice.ownership_type ?? 'public_sale' }}</span>
-              <span class="rounded-md px-2.5 py-1 text-xs font-bold" :class="analysisBadgeClass(currentAnalysisSummary)">
-                {{ currentAnalysisSummary.label }}
-              </span>
-              <span v-if="!selectedNotice.is_price_confirmed" class="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">금액 확인 필요</span>
-              <span v-if="recommendation" class="rounded-md bg-slate-950 px-2.5 py-1 text-xs font-bold text-white">{{ scoreLabel(recommendation) }}</span>
+              <span class="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700" title="공고의 공급 유형입니다.">{{ selectedNotice.supply_type }}</span>
+              <span class="rounded-md bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700" title="서비스 내부의 소유형 청약 분류입니다.">{{ ownershipTypeLabel(selectedNotice.ownership_type) }}</span>
             </div>
             <h1 class="mt-3 text-2xl font-bold text-slate-950 sm:text-3xl">{{ selectedNotice.title }}</h1>
             <p class="mt-2 text-sm text-slate-500">{{ selectedNotice.provider }} · {{ selectedNotice.district }} · {{ selectedNotice.area }}</p>
@@ -298,13 +394,12 @@ onMounted(loadDetail);
                       분석 전
                     </span>
                   </div>
-                  <p class="mt-1 leading-6">{{ item.condition_text }}</p>
+                  <p v-if="shouldShowChecklistCondition(item)" class="mt-1 leading-6">{{ item.condition_text }}</p>
                 </div>
               </div>
-              <div v-if="item.evidence_text" class="rounded-lg border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-500">
-                <p class="mb-1 font-bold text-slate-700">근거</p>
-                <p>{{ item.evidence_text }}</p>
-                <p v-if="item.confidence" class="mt-2 font-bold text-slate-500">신뢰도 {{ Math.round(item.confidence * 100) }}%</p>
+              <div class="flex flex-wrap items-center gap-2 pl-7 text-xs font-bold text-slate-500">
+                <span class="rounded-md bg-white px-2 py-1 text-slate-600">출처 {{ checklistPageLabel(item) }}</span>
+                <span v-if="item.confidence">근거 매칭 신뢰도 {{ Math.round(item.confidence * 100) }}%</span>
               </div>
             </div>
           </div>
@@ -325,7 +420,7 @@ onMounted(loadDetail);
             주요 일정
           </h2>
           <div class="mt-5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
-            <div v-for="item in fundingPlan.timeline" :key="item.label" class="grid gap-1 bg-white p-4 text-sm">
+            <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="grid gap-1 bg-white p-4 text-sm">
               <p class="font-bold text-slate-950">{{ item.label }}</p>
               <div class="flex flex-wrap justify-between gap-3 text-slate-500">
                 <span>{{ item.date }}</span>
@@ -374,79 +469,68 @@ onMounted(loadDetail);
         </div>
       </section>
 
-      <section v-if="extractionEvidence.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="flex items-center gap-2 text-lg font-bold text-slate-950">
-          <FileText class="h-5 w-5 text-blue-700" />
-          공고문 근거 문장
-        </h2>
-        <p class="mt-1 text-sm text-slate-500">
-          분석 결과에 저장된 주요 필드별 출처입니다. 화면 계산값과 다르면 공식 원문을 우선하세요.
-        </p>
-        <div class="mt-4 grid gap-3 lg:grid-cols-2">
-          <article
-            v-for="evidence in extractionEvidence.slice(0, 6)"
-            :key="evidence.id"
-            class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-          >
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <p class="text-xs font-bold uppercase text-blue-700">{{ evidence.field_path }}</p>
-              <span class="rounded-md bg-white px-2 py-1 text-xs font-bold text-slate-600">
-                {{ evidence.page_no ? `${evidence.page_no}쪽` : '페이지 확인 필요' }}
-              </span>
-            </div>
-            <p class="mt-3 line-clamp-4 text-sm leading-6 text-slate-700">{{ evidence.source_text }}</p>
-            <p class="mt-3 text-xs font-bold text-slate-500">신뢰도 {{ Math.round(evidence.confidence * 100) }}%</p>
-          </article>
-        </div>
-      </section>
-
       <section v-if="unitOptions.length" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <h2 class="text-lg font-bold text-slate-950">검토 가능한 주택형 옵션</h2>
         <p class="mt-1 text-sm text-slate-500">
           {{ extractionLabel(documentStatus?.latest_extraction?.schema_version, documentStatus?.latest_extraction?.source) }} 기준입니다. 공식 원문과 다르면 원문이 우선입니다.
         </p>
-        <div class="mt-5 grid gap-3 lg:grid-cols-3">
-          <article v-for="option in unitOptions" :key="option.id" class="rounded-lg border border-slate-200 p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-bold text-blue-700">{{ option.unit_type }} · {{ option.floor_group }}</p>
-                <h3 class="mt-1 text-lg font-bold text-slate-950">{{ option.exclusive_area_m2 }}㎡</h3>
-              </div>
-              <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
-                신뢰도 {{ Math.round(option.confidence * 100) }}%
-              </span>
-            </div>
-            <p class="mt-2 text-xs font-bold text-slate-500">
-              {{ extractionLabel(option.extraction_schema_version, option.extraction_source) }}
-            </p>
-            <p class="mt-3 text-sm text-slate-500">기준 분양가</p>
-            <p class="text-lg font-bold text-slate-950">{{ priceLabel(option.base_price) }}</p>
-            <div class="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-100">
-              <div v-for="schedule in option.payment_schedules" :key="schedule.id" class="grid gap-1 p-3 text-xs">
-                <div class="flex justify-between gap-2">
-                  <span class="font-bold text-slate-700">{{ schedule.label }}</span>
-                  <span class="text-slate-500">{{ schedule.due_date || '일정 확인 필요' }}</span>
+        <div v-if="hasMultipleOptionGroups" class="mt-4 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+          <button
+            v-for="group in groupedUnitOptions"
+            :key="group.key"
+            type="button"
+            class="inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-bold transition"
+            :class="activeUnitOptionGroup?.key === group.key ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+            @click="selectOptionType(group.key)"
+          >
+            {{ group.label }}
+            <span class="text-xs text-slate-400">{{ group.options.length }}</span>
+          </button>
+        </div>
+        <div class="mt-5">
+          <div v-if="activeUnitOptionGroup">
+            <div class="grid gap-3 lg:grid-cols-3">
+              <article v-for="option in visibleUnitOptions" :key="option.id" class="rounded-lg border border-slate-200 p-4" :class="fundingPlan.option_id === option.id ? 'border-blue-300 bg-blue-50/40' : ''">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-bold text-blue-700">{{ option.unit_type }} · {{ option.floor_group }}</p>
+                    <h3 class="mt-1 text-lg font-bold text-slate-950">{{ option.exclusive_area_m2 }}㎡</h3>
+                  </div>
+                  <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700" title="표 기반 추출은 주택형, 분양가, 납부일정이 같은 행에서 함께 확인될 때 높은 값으로 표시됩니다.">
+                    신뢰도 {{ Math.round(option.confidence * 100) }}%
+                  </span>
                 </div>
-                <p class="text-right font-bold text-slate-950">{{ formatMoney(schedule.amount) }}</p>
-                <p v-if="schedule.evidence_text" class="rounded-md bg-slate-50 p-2 text-left leading-5 text-slate-500">
-                  {{ schedule.evidence_text }}
+                <p class="mt-2 text-xs font-bold text-slate-500">
+                  {{ extractionLabel(option.extraction_schema_version, option.extraction_source) }}
                 </p>
-              </div>
+                <p class="mt-3 text-sm text-slate-500">기준 분양가</p>
+                <p class="text-lg font-bold text-slate-950">{{ priceLabel(option.base_price) }}</p>
+                <div class="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-100">
+                  <div v-for="schedule in option.payment_schedules" :key="schedule.id" class="grid gap-1 p-3 text-xs">
+                    <div class="flex justify-between gap-2">
+                      <span class="font-bold text-slate-700">{{ schedule.label }}</span>
+                      <span class="text-slate-500">{{ schedule.due_date || '일정 확인 필요' }}</span>
+                    </div>
+                    <p class="text-right font-bold text-slate-950">{{ formatMoney(schedule.amount) }}</p>
+                  </div>
+                  <div v-if="option.loan_amount" class="grid gap-1 p-3 text-xs">
+                    <div class="flex justify-between gap-2">
+                      <span class="font-bold text-slate-700">융자금</span>
+                      <span class="text-slate-500">잔금 이후 상환</span>
+                    </div>
+                    <p class="text-right font-bold text-slate-950">{{ formatMoney(option.loan_amount) }}</p>
+                  </div>
+                </div>
+                <RouterLink
+                  :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }"
+                  class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
+                >
+                  이 옵션 자금 보기
+                  <WalletCards class="h-4 w-4" />
+                </RouterLink>
+              </article>
             </div>
-            <div v-if="option.source_text" class="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-              <p class="mb-1 font-bold text-slate-700">
-                {{ option.source_page ? `${option.source_page}쪽 근거` : '근거 문장' }}
-              </p>
-              <p class="line-clamp-3">{{ option.source_text }}</p>
-            </div>
-            <RouterLink
-              :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }"
-              class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
-            >
-              이 옵션 자금 보기
-              <WalletCards class="h-4 w-4" />
-            </RouterLink>
-          </article>
+          </div>
         </div>
       </section>
 

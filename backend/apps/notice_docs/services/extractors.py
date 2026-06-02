@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
@@ -6,11 +6,9 @@ from datetime import date
 from typing import Any
 
 from apps.notice_docs.services.pdf_parser import PdfPageText
+from apps.rules import document_extraction as extraction_rules
 
-
-PRICE_SECTION_KEYWORDS = ("주택가격", "계약금", "중도금", "잔금", "공급금액", "분양가격")
 TABLE_MARKER_PATTERN = re.compile(r"^\[table \d+\]$")
-MAX_EXTRACTED_OPTIONS = 50
 UNIT_ROW_PATTERN = re.compile(
     r"(?P<unit>\d{2,3}[A-Z])"
     r"(?P<meta>.{0,40}?)"
@@ -26,7 +24,6 @@ AREA_PREFIX_ROW_PATTERN = re.compile(
     r"(?P<amounts>\d{1,3}(?:,\d{3})+(?:\s+\d{1,3}(?:,\d{3})+){3,})"
 )
 DATE_PATTERN = re.compile(r"(?P<year>\d{2,4})[.년/-]\s*(?P<month>\d{1,2})[.월/-]\s*(?P<day>\d{1,2})")
-LOAN_KEYWORDS = ("융자금", "대출금", "주택도시기금")
 
 
 @dataclass
@@ -72,10 +69,13 @@ def extract_unit_options_from_pages(pages: list[PdfPageText]) -> list[ExtractedU
                 continue
             seen.add(key)
             options.append(option)
-            if len(options) >= MAX_EXTRACTED_OPTIONS:
+            if len(options) >= extraction_rules.MAX_EXTRACTED_OPTIONS:
                 return options
         if table_options:
             continue
+        if _is_additional_option_section(page.text):
+            continue
+
         due_dates = _extract_middle_due_dates(page.text)
         for option in _options_from_area_prefix_rows(page, due_dates):
             if not _is_valid_base_price(option.base_price) or not _is_valid_exclusive_area(option.exclusive_area_m2):
@@ -85,7 +85,7 @@ def extract_unit_options_from_pages(pages: list[PdfPageText]) -> list[ExtractedU
                 continue
             seen.add(key)
             options.append(option)
-            if len(options) >= MAX_EXTRACTED_OPTIONS:
+            if len(options) >= extraction_rules.MAX_EXTRACTED_OPTIONS:
                 return options
         compact_text = re.sub(r"\s+", "", page.text)
         for match in UNIT_ROW_PATTERN.finditer(compact_text):
@@ -97,7 +97,7 @@ def extract_unit_options_from_pages(pages: list[PdfPageText]) -> list[ExtractedU
                 continue
             seen.add(key)
             options.append(option)
-            if len(options) >= MAX_EXTRACTED_OPTIONS:
+            if len(options) >= extraction_rules.MAX_EXTRACTED_OPTIONS:
                 return options
 
     return options
@@ -239,16 +239,23 @@ def _schedules_from_table_amounts(
         return _named_schedules(rows, row), base_price, 0, 0
 
     base_price = amounts[0]
-    loan_amount = amounts[-1] if any(keyword in header_text for keyword in LOAN_KEYWORDS) and len(amounts) >= 4 else 0
-    payment_amounts = amounts[1:-1] if loan_amount else amounts[1:]
+    loan_amount = 0
+    payment_amounts = amounts[1:]
     if not payment_amounts:
         return [], base_price, loan_amount, 0
 
     middle_count = len(re.findall(r"\d+차", header_text))
+    if middle_count == 0:
+        middle_count = len(re.findall(r"\d+회차", header_text))
     if middle_count == 0 and "중도금" in header_text and len(payment_amounts) >= 3:
         middle_count = len(payment_amounts) - 2
     if middle_count == 0 and "중도금" in header_text and len(payment_amounts) >= 2:
         middle_count = 1
+
+    expected_payment_count = 1 + middle_count + (1 if "잔금" in header_text else 0)
+    if extraction_rules.has_loan_keyword(header_text) and len(payment_amounts) > expected_payment_count:
+        loan_amount = payment_amounts[-1]
+        payment_amounts = payment_amounts[:-1]
 
     schedules = [
         ExtractedSchedule(
@@ -285,6 +292,10 @@ def _schedules_from_table_amounts(
                 evidence_text=row,
             )
         )
+    if loan_amount == 0 and extraction_rules.has_loan_keyword(header_text):
+        remainder = base_price - sum(schedule.amount for schedule in schedules)
+        if 0 < remainder < base_price:
+            loan_amount = remainder
     return schedules, base_price, loan_amount, 0
 
 
@@ -322,15 +333,7 @@ def _row_unit_type(row: str) -> str:
 
 
 def _option_type_from_text(text: str) -> str:
-    if "사전청약" in text:
-        return "pre_subscription"
-    if "계약금(5%)" in text and "중도금(30%)" in text:
-        return "pre_subscription"
-    if "일반 당첨자" in text or "특별공급" in text or "일반공급" in text:
-        return "general_supply"
-    if "계약금(10%)" in text and "중도금(60%)" in text:
-        return "general_supply"
-    return "minus" if "마이너스" in text else "basic"
+    return extraction_rules.option_type_from_text(text)
 
 
 def _options_from_area_prefix_rows(page: PdfPageText, due_dates: list[date]) -> list[ExtractedUnitOption]:
@@ -382,28 +385,7 @@ def _option_from_area_prefix_match(
 
 
 def extract_checklist_items(pages: list[PdfPageText]) -> list[dict[str, Any]]:
-    categories = [
-        ("homeless", "무주택 기준 확인", ("무주택", "세대구성", "주택소유")),
-        ("income", "소득·자산 기준 확인", ("소득", "자산")),
-        ("subscription", "청약통장 요건 확인", ("입주자저축", "청약통장", "납입")),
-        ("residency", "지역 우선공급 확인", ("거주", "우선공급")),
-    ]
-    items: list[dict[str, Any]] = []
-    for category, title, keywords in categories:
-        evidence = _first_evidence(pages, keywords)
-        if not evidence:
-            continue
-        items.append(
-            {
-                "category": category,
-                "title": title,
-                "condition_text": f"{title}은 공식 공고문 원문 기준으로 확인해야 합니다.",
-                "evidence_text": evidence["text"],
-                "confidence": 0.5,
-                "page_no": evidence["page_no"],
-            }
-        )
-    return items
+    return extraction_rules.extract_checklist_items_from_pages(pages)
 
 
 def _option_from_match(page: PdfPageText, match: re.Match[str], due_dates: list[date]) -> ExtractedUnitOption:
@@ -485,7 +467,7 @@ def _split_price_amounts(amounts: list[int], context_text: str) -> tuple[int, li
     if not remaining:
         return base_price, [], 0
 
-    has_loan_column = any(keyword in context_text for keyword in LOAN_KEYWORDS)
+    has_loan_column = extraction_rules.has_loan_keyword(context_text)
     if has_loan_column and len(remaining) >= 3:
         return base_price, remaining[:-1], remaining[-1]
     return base_price, remaining, 0
@@ -528,11 +510,11 @@ def _clean_block_label(value: str) -> str:
 
 
 def _is_valid_exclusive_area(value: float) -> bool:
-    return 20 <= value <= 120
+    return extraction_rules.is_valid_exclusive_area(value)
 
 
 def _is_valid_base_price(value: int) -> bool:
-    return value >= 100_000_000
+    return extraction_rules.is_valid_base_price(value)
 
 
 def _floor_group(meta: str) -> str:
@@ -541,23 +523,20 @@ def _floor_group(meta: str) -> str:
 
 
 def _is_price_section(text: str) -> bool:
-    return sum(1 for keyword in PRICE_SECTION_KEYWORDS if keyword in text) >= 3
+    return extraction_rules.is_price_section(text)
 
 
-def _first_evidence(pages: list[PdfPageText], keywords: tuple[str, ...]) -> dict[str, Any] | None:
-    for page in pages:
-        for keyword in keywords:
-            if keyword not in page.text:
-                continue
-            return {"page_no": page.page_no, "text": _source_snippet(page.text, keyword)}
-    return None
+def _is_additional_option_section(text: str) -> bool:
+    return extraction_rules.is_additional_option_section(text)
+
+
+def _best_checklist_evidence(
+    pages: list[PdfPageText],
+    keywords: tuple[str, ...],
+    preferred_phrases: tuple[str, ...],
+) -> dict[str, Any] | None:
+    return extraction_rules.best_checklist_evidence(pages, keywords, preferred_phrases)
 
 
 def _source_snippet(text: str, needle: str, *, radius: int = 90) -> str:
-    compact = re.sub(r"\s+", " ", text or "").strip()
-    index = compact.find(needle)
-    if index < 0:
-        return compact[: radius * 2]
-    start = max(0, index - radius)
-    end = min(len(compact), index + len(needle) + radius)
-    return compact[start:end]
+    return extraction_rules.source_snippet(text, needle, radius=radius)

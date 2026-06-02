@@ -1,41 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, datetime
 from typing import Any
 
 from apps.funding.services.calculator import calculate_funding_plan, funding_score
-from apps.recommendations.services.eligibility import eligibility_score
-
-
-SCORE_WEIGHTS = {
-    "eligibility": 35,
-    "funding": 25,
-    "location": 30,
-    "schedule": 10,
-}
-
-
-def location_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
-    preferred_regions = set(profile.get("preferred_regions", []))
-    preferred_supply_types = set(profile.get("preferred_supply_types", []))
-
-    score = 0
-    score += 18 if notice.get("region") in preferred_regions else 0
-    score += 6 if any(region and region in notice.get("district", "") for region in preferred_regions) else 0
-    score += 6 if notice.get("supply_type") in preferred_supply_types or notice.get("housing_type") in preferred_supply_types else 0
-    return min(score, SCORE_WEIGHTS["location"])
-
-
-def schedule_score(notice: dict[str, Any]) -> int:
-    today = date.today()
-    days_left = (datetime.fromisoformat(notice["application_deadline"]).date() - today).days
-    contract_days = (datetime.fromisoformat(notice["contract_date"]).date() - today).days
-
-    score = 0
-    score += 3 if days_left >= 7 else 1 if days_left >= 0 else 0
-    score += 5 if contract_days >= 30 else 2 if contract_days >= 0 else 0
-    score += 2 if str(notice.get("move_in", "")) >= "2027-01" else 1
-    return min(score, 10)
+from apps.rules.scoring import SCORE_WEIGHTS, eligibility_score, location_score, schedule_score, score_max
 
 
 def score_detail(notice: dict[str, Any], profile: dict[str, Any]) -> dict[str, int]:
@@ -45,12 +13,6 @@ def score_detail(notice: dict[str, Any], profile: dict[str, Any]) -> dict[str, i
         "location": location_score(notice, profile),
         "schedule": schedule_score(notice),
     }
-
-
-def score_max() -> int:
-    return sum(SCORE_WEIGHTS.values())
-
-
 def score_reasons(notice: dict[str, Any], profile: dict[str, Any]) -> list[str]:
     plan = calculate_funding_plan(notice, profile)
     if int(notice.get("price") or 0) <= 0:
