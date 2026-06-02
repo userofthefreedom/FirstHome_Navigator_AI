@@ -18,6 +18,9 @@ class RemotePdfFetchError(RuntimeError):
     pass
 
 
+_PDF_TEXT_CACHE: dict[str, list["PdfPageText"]] = {}
+
+
 @dataclass(frozen=True)
 class PdfPageText:
     page_no: int
@@ -30,13 +33,20 @@ def parse_pdf_text(
     max_pages: int | None = None,
     include_tables: bool = True,
 ) -> list[PdfPageText]:
+    path = Path(pdf_path)
+    cache_key = _pdf_text_cache_key(path, max_pages=max_pages, include_tables=include_tables)
+    if cache_key:
+        cached_pages = _PDF_TEXT_CACHE.get(cache_key)
+        if cached_pages is not None:
+            return cached_pages
+
     try:
         from pypdf import PdfReader
     except ModuleNotFoundError as exc:
         raise PdfParserUnavailable("pypdf is required for PDF parsing. Install backend requirements.") from exc
 
-    reader = PdfReader(str(pdf_path))
-    table_text_by_page = extract_pdf_table_text(pdf_path, max_pages=max_pages) if include_tables else {}
+    reader = PdfReader(str(path))
+    table_text_by_page = extract_pdf_table_text(path, max_pages=max_pages) if include_tables else {}
     pages: list[PdfPageText] = []
     for index, page in enumerate(reader.pages):
         if max_pages is not None and index >= max_pages:
@@ -47,6 +57,8 @@ def parse_pdf_text(
         if table_text:
             text_parts.append(table_text)
         pages.append(PdfPageText(page_no=page_no, text="\n".join(part for part in text_parts if part).strip()))
+    if cache_key:
+        _PDF_TEXT_CACHE[cache_key] = pages
     return pages
 
 
@@ -89,6 +101,29 @@ def _normalize_table_row(row: list[str | None]) -> str:
 
 def _normalize_table_cell(value: str | None) -> str:
     return re.sub(r"\s+", " ", str(value or "")).strip()
+
+
+def clear_pdf_text_cache() -> None:
+    _PDF_TEXT_CACHE.clear()
+
+
+def _pdf_text_cache_key(pdf_path: Path, *, max_pages: int | None, include_tables: bool) -> str:
+    if not getattr(settings, "PDF_TEXT_CACHE_ENABLED", True):
+        return ""
+    try:
+        stat = pdf_path.stat()
+    except OSError:
+        return ""
+    key_payload = "|".join(
+        [
+            str(pdf_path.resolve()),
+            str(stat.st_size),
+            str(stat.st_mtime_ns),
+            str(max_pages or "all"),
+            "tables" if include_tables else "text",
+        ]
+    )
+    return hashlib.sha256(key_payload.encode("utf-8")).hexdigest()
 
 
 def resolve_local_pdf_path(value: str | None) -> Path | None:

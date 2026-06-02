@@ -14,6 +14,25 @@ from apps.notice_docs.services.status import fixture_analysis_summary, notice_an
 
 
 FIXTURE_PATH = settings.BASE_DIR / "fixtures" / "firsthome_mvp.json"
+METROPOLITAN_REGIONS = (
+    "서울",
+    "부산",
+    "대구",
+    "인천",
+    "광주",
+    "대전",
+    "울산",
+    "세종",
+    "경기",
+    "강원",
+    "충북",
+    "충남",
+    "전북",
+    "전남",
+    "경북",
+    "경남",
+    "제주",
+)
 
 
 @lru_cache(maxsize=1)
@@ -85,7 +104,8 @@ def _db_notices() -> list[dict[str, Any]]:
     try:
         from apps.notices.models import HousingNotice
 
-        return [_serialize_notice(notice) for notice in HousingNotice.objects.order_by("application_deadline", "id")]
+        items = [_serialize_notice(notice) for notice in HousingNotice.objects.order_by("application_deadline", "id")]
+        return sorted(items, key=lambda item: (_is_fixture_notice(item), item.get("application_deadline") or "", item["id"]))
     except (OperationalError, ProgrammingError):
         return []
 
@@ -97,7 +117,7 @@ def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
         "source_id": str(notice.get("id", "")),
         "data_source": "fixture",
         "is_price_confirmed": int(notice.get("price") or 0) > 0,
-        "source_meta": {},
+        "source_meta": {"fixture_id": notice.get("id"), "fixture_notice": True},
         "ownership_type": notice.get("ownership_type") or classification.ownership_type,
         "is_service_target": notice.get("is_service_target", classification.is_service_target),
         "exclude_reason": notice.get("exclude_reason", classification.exclude_reason),
@@ -112,40 +132,292 @@ def _notices_with_fixture_supplement(
     db_notices: list[dict[str, Any]],
     fixture_notices: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    if not db_notices:
-        return fixture_notices
-
     fallback_settings = getattr(settings, "FIRSTHOME_FIXTURE_FALLBACK", {})
     if not fallback_settings.get("ENABLE_SUPPLEMENT", True):
-        return db_notices
+        return db_notices or fixture_notices
 
-    min_service_notices = int(fallback_settings.get("MIN_SERVICE_NOTICES", 3) or 0)
-    if min_service_notices <= 0:
-        return db_notices
-
-    db_service_count = sum(
-        1
-        for notice in db_notices
-        if notice.get("is_service_target") and is_current_notice(notice)
+    min_per_region = int(
+        fallback_settings.get(
+            "MIN_ACTIVE_SERVICE_NOTICES_PER_REGION",
+            fallback_settings.get("MIN_SERVICE_NOTICES", 5),
+        )
+        or 0
     )
-    if db_service_count >= min_service_notices:
-        return db_notices
+    if min_per_region <= 0:
+        return db_notices or fixture_notices
 
-    existing_ids = {str(notice.get("id")) for notice in db_notices}
-    existing_source_ids = {str(notice.get("source_id")) for notice in db_notices if notice.get("source_id")}
-    needed = min_service_notices - db_service_count
-    supplements: list[dict[str, Any]] = []
-    for notice in fixture_notices:
-        if not notice.get("is_service_target"):
+    if _materialize_fixture_supplements(db_notices, fixture_notices, min_per_region=min_per_region):
+        return _db_notices()
+
+    return db_notices or fixture_notices
+
+
+def _materialize_fixture_supplements(
+    db_notices: list[dict[str, Any]],
+    fixture_notices: list[dict[str, Any]],
+    *,
+    min_per_region: int,
+) -> bool:
+    try:
+        from apps.notices.models import HousingNotice
+    except (OperationalError, ProgrammingError):
+        return False
+
+    changed = _sync_existing_fixture_notices(fixture_notices)
+    actual_counts = {region: 0 for region in METROPOLITAN_REGIONS}
+    fixture_counts = {region: 0 for region in METROPOLITAN_REGIONS}
+    for notice in db_notices:
+        if not notice.get("is_service_target") or not is_current_notice(notice):
             continue
-        if not is_current_notice(notice):
+        region_key = _metropolitan_region(notice)
+        if region_key not in actual_counts:
             continue
-        if str(notice.get("id")) in existing_ids or str(notice.get("source_id")) in existing_source_ids:
+        if _is_fixture_notice(notice):
+            fixture_counts[region_key] += 1
+        else:
+            actual_counts[region_key] += 1
+
+    for region in METROPOLITAN_REGIONS:
+        needed = max(0, min_per_region - actual_counts[region] - fixture_counts[region])
+        if needed <= 0:
             continue
-        supplements.append({**notice, "data_source": "fixture fallback"})
-        if len(supplements) >= needed:
-            break
-    return [*db_notices, *supplements]
+        candidates = [
+            notice
+            for notice in fixture_notices
+            if notice.get("is_service_target")
+            and is_current_notice(notice)
+            and _metropolitan_region(notice) == region
+        ]
+        for notice in candidates[:needed]:
+            if _materialize_fixture_notice(notice):
+                changed = True
+
+    return changed
+
+
+def _sync_existing_fixture_notices(fixture_notices: list[dict[str, Any]]) -> bool:
+    from apps.notices.models import HousingNotice
+
+    changed = False
+    fixture_by_id = {int(notice["id"]): notice for notice in fixture_notices if notice.get("id")}
+    existing_notices = HousingNotice.objects.filter(source_meta__fixture_id__in=fixture_by_id.keys())
+    for existing in existing_notices:
+        fixture_id = int(existing.source_meta.get("fixture_id"))
+        fixture_notice = fixture_by_id.get(fixture_id)
+        if fixture_notice and _fixture_notice_is_stale(existing, fixture_notice):
+            _materialize_fixture_notice(fixture_notice)
+            changed = True
+    return changed
+
+
+def _fixture_notice_is_stale(existing: Any, notice: dict[str, Any]) -> bool:
+    fixture_id = int(notice["id"])
+    expected_fields = {
+        "source_id": f"fixture-{fixture_id}",
+        "title": notice["title"],
+        "region": notice["region"],
+        "district": notice["district"],
+        "supply_type": notice["supply_type"],
+        "housing_type": notice["housing_type"],
+        "area": notice.get("area", ""),
+        "price": int(notice.get("price", 0) or 0),
+        "application_deadline": _parse_iso_date(notice.get("application_deadline")),
+        "winner_date": _parse_iso_date(notice.get("winner_date")),
+        "contract_date": _parse_iso_date(notice.get("contract_date")),
+        "move_in": notice.get("move_in", ""),
+        "source_url": "",
+    }
+    return any(getattr(existing, key) != value for key, value in expected_fields.items())
+
+
+def _materialize_fixture_notice(notice: dict[str, Any]) -> bool:
+    from apps.notices.models import HousingNotice
+
+    fixture_id = int(notice["id"])
+    source_id = f"fixture-{fixture_id}"
+    existing = HousingNotice.objects.filter(source_meta__fixture_id=fixture_id).first()
+    if existing is None:
+        existing = HousingNotice.objects.filter(source_id=source_id).first()
+
+    classification = classify_notice_payload(notice)
+    defaults = {
+        "source_id": source_id,
+        "title": notice["title"],
+        "provider": notice.get("provider", "Fixture"),
+        "region": notice["region"],
+        "district": notice["district"],
+        "supply_type": notice["supply_type"],
+        "housing_type": notice["housing_type"],
+        "area": notice.get("area", ""),
+        "price": int(notice.get("price", 0) or 0),
+        "contract_rate": float(notice.get("contract_rate", 0.1) or 0.1),
+        "application_deadline": _parse_iso_date(notice.get("application_deadline")),
+        "winner_date": _parse_iso_date(notice.get("winner_date")),
+        "contract_date": _parse_iso_date(notice.get("contract_date")),
+        "move_in": notice.get("move_in", ""),
+        "competition": notice.get("competition", ""),
+        "source_url": "",
+        "tags": notice.get("tags", []),
+        "required_documents": notice.get("required_documents", []),
+        "cautions": notice.get("cautions", []),
+        "source_meta": {"fixture_id": fixture_id, "fixture_notice": True},
+        "ownership_type": notice.get("ownership_type") or classification.ownership_type,
+        "is_service_target": notice.get("is_service_target", classification.is_service_target),
+        "exclude_reason": notice.get("exclude_reason", classification.exclude_reason),
+        "official_document_status": "analyzed",
+    }
+
+    created = False
+    if existing is None:
+        if not HousingNotice.objects.filter(id=fixture_id).exists():
+            existing = HousingNotice.objects.create(id=fixture_id, **defaults)
+        else:
+            existing = HousingNotice.objects.create(**defaults)
+        created = True
+    else:
+        for key, value in defaults.items():
+            setattr(existing, key, value)
+        existing.save(update_fields=[*defaults.keys(), "updated_at"])
+    seed_fixture_notice_analysis(existing, notice)
+    return created
+
+
+def seed_fixture_notice_analysis(notice: Any, fixture_notice: dict[str, Any] | None = None) -> dict[str, Any]:
+    from django.utils import timezone
+
+    from apps.notice_docs.models import (
+        EligibilityChecklist,
+        ExtractionEvidence,
+        HousingUnitOption,
+        NoticeDocument,
+        NoticeExtraction,
+        PaymentSchedule,
+    )
+
+    fixture_notice = fixture_notice or _fixture_notice_payload_for_model(notice)
+    if not fixture_notice:
+        return {}
+
+    document, _created = NoticeDocument.objects.update_or_create(
+        notice=notice,
+        file_id=f"fixture-{fixture_notice['id']}",
+        defaults={
+            "provider": notice.provider,
+            "file_name": f"{fixture_notice['title']}_fixture.pdf"[:220],
+            "document_url": "",
+            "source_url": "",
+            "status": "analyzed",
+            "error_message": "",
+            "analyzed_at": timezone.now(),
+        },
+    )
+    NoticeExtraction.objects.filter(notice=notice).delete()
+    extraction = NoticeExtraction.objects.create(
+        notice=notice,
+        document=document,
+        schema_version="rules-v1",
+        status="valid",
+        confidence=0.86,
+        raw_json={
+            "source": "fixture_rules",
+            "fixture_id": fixture_notice["id"],
+            "option_count": len(fixture_notice.get("unit_options", [])),
+            "required_documents": fixture_notice.get("required_documents", []),
+            "status": "valid",
+        },
+    )
+
+    HousingUnitOption.objects.filter(notice=notice).delete()
+    for option_payload in fixture_notice.get("unit_options", []):
+        option = HousingUnitOption.objects.create(
+            notice=notice,
+            document=document,
+            extraction=extraction,
+            unit_type=option_payload["unit_type"],
+            exclusive_area_m2=float(option_payload.get("exclusive_area_m2", 0) or 0),
+            floor_group=option_payload.get("floor_group", "전체"),
+            option_type=option_payload.get("option_type", "general_supply"),
+            base_price=int(option_payload.get("base_price", 0) or 0),
+            loan_amount=int(option_payload.get("loan_amount", 0) or 0),
+            balcony_extension_price=int(option_payload.get("balcony_extension_price", 0) or 0),
+            confidence=float(option_payload.get("confidence", 0.86) or 0.86),
+            source_page=int(option_payload.get("source_page", 4) or 4),
+            source_text=option_payload.get("source_text", "fixture: 발표용 보강 공고의 주택형별 공급금액 표"),
+        )
+        for schedule_payload in option_payload.get("payment_schedules", []):
+            PaymentSchedule.objects.create(
+                unit_option=option,
+                label=schedule_payload["label"],
+                due_date=_parse_iso_date(schedule_payload.get("due_date")),
+                amount=int(schedule_payload.get("amount", 0) or 0),
+                payment_type=schedule_payload.get("payment_type", "other"),
+                sequence=int(schedule_payload.get("sequence", 0) or 0),
+                evidence_text=schedule_payload.get("evidence_text", "fixture: 공급금액 및 납부일정 표"),
+            )
+        ExtractionEvidence.objects.create(
+            extraction=extraction,
+            field_path=f"unit_options.{option.unit_type}.base_price",
+            page_no=option.source_page,
+            source_text=option.source_text,
+            confidence=option.confidence,
+        )
+
+    EligibilityChecklist.objects.filter(notice=notice).delete()
+    for row in _fixture_checklist_rows(fixture_notice):
+        EligibilityChecklist.objects.create(notice=notice, document=document, **row)
+
+    notice.official_document_status = "analyzed"
+    notice.required_documents = fixture_notice.get("required_documents", notice.required_documents)
+    notice.save(update_fields=["official_document_status", "required_documents", "updated_at"])
+    return {"document": document, "extraction": extraction, "unit_options": list(notice.unit_options.all())}
+
+
+def _fixture_notice_payload_for_model(notice: Any) -> dict[str, Any] | None:
+    source_meta = getattr(notice, "source_meta", {}) or {}
+    fixture_id = source_meta.get("fixture_id") if isinstance(source_meta, dict) else None
+    if fixture_id is None:
+        return None
+    for item in load_fixture().get("notices", []):
+        if int(item.get("id") or 0) == int(fixture_id):
+            return item
+    return None
+
+
+def _fixture_checklist_rows(fixture_notice: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "category": "homeless",
+            "title": "무주택 기준 확인",
+            "condition_text": "",
+            "evidence_text": "fixture: 무주택세대구성원 및 주택소유여부 판정 기준",
+            "page_no": 12,
+            "confidence": 0.86,
+        },
+        {
+            "category": "income",
+            "title": "소득·자산 기준 확인",
+            "condition_text": "",
+            "evidence_text": "fixture: 공급유형별 소득 및 자산 기준",
+            "page_no": 14,
+            "confidence": 0.84,
+        },
+        {
+            "category": "residency",
+            "title": "지역 우선공급 확인",
+            "condition_text": "",
+            "evidence_text": f"fixture: {fixture_notice.get('region')} 거주자 우선공급 기준",
+            "page_no": 10,
+            "confidence": 0.82,
+        },
+        {
+            "category": "subscription",
+            "title": "청약통장 요건 확인",
+            "condition_text": "",
+            "evidence_text": "fixture: 입주자저축 가입기간 및 납입인정 기준",
+            "page_no": 18,
+            "confidence": 0.84,
+        },
+    ]
 
 
 def _fixture_product(product: dict[str, Any]) -> dict[str, Any]:
@@ -315,11 +587,66 @@ def _serialize_policy(policy: Any) -> dict[str, Any]:
 
 
 def _notice_data_source(notice: Any) -> str:
+    source_meta = getattr(notice, "source_meta", {}) or {}
+    if isinstance(source_meta, dict) and source_meta.get("fixture_id"):
+        return "fixture"
     if notice.provider == "LH" and notice.source_id and not str(notice.source_id).isdigit():
         return "LH API"
     if notice.source_id:
         return "DB"
-    return "fixture"
+    return "DB"
+
+
+def _is_fixture_notice(notice: dict[str, Any] | Any) -> bool:
+    getter = notice.get if isinstance(notice, dict) else lambda key, default=None: getattr(notice, key, default)
+    data_source = str(getter("data_source", "") or "").casefold()
+    source_meta = getter("source_meta", {}) or {}
+    return "fixture" in data_source or (isinstance(source_meta, dict) and bool(source_meta.get("fixture_id")))
+
+
+def _metropolitan_region(notice: dict[str, Any]) -> str:
+    text = " ".join(
+        str(notice.get(key) or "")
+        for key in ("region", "district", "title")
+    )
+    normalized = text.replace(" ", "")
+    checks = (
+        ("서울", ("서울",)),
+        ("부산", ("부산",)),
+        ("대구", ("대구",)),
+        ("인천", ("인천",)),
+        ("광주", ("광주",)),
+        ("대전", ("대전",)),
+        ("울산", ("울산",)),
+        ("세종", ("세종",)),
+        ("경기", ("경기", "경기도")),
+        ("강원", ("강원",)),
+        ("충북", ("충북", "충청북도")),
+        ("충남", ("충남", "충청남도")),
+        ("전북", ("전북", "전라북도", "전북특별자치도")),
+        ("전남", ("전남", "전라남도")),
+        ("경북", ("경북", "경상북도")),
+        ("경남", ("경남", "경상남도")),
+        ("제주", ("제주",)),
+    )
+    for region, aliases in checks:
+        if any(alias.replace(" ", "") in normalized for alias in aliases):
+            return region
+    return str(notice.get("region") or "")
+
+
+def _parse_iso_date(value: Any) -> date | None:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return date.fromisoformat(text[:10])
+    except ValueError:
+        return None
 
 
 def _product_data_source(product: Any) -> str:

@@ -7,16 +7,23 @@ from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 
-from apps.notice_docs.models import HousingUnitOption, NoticeDocument, PaymentSchedule
+from apps.ai_coach.models import AiExtractionResult
+from apps.ai_coach.services.ai_client import AiClientError
+from apps.notice_docs.models import HousingUnitOption, NoticeDocument, NoticeExtraction, PaymentSchedule
 from apps.notice_docs.services import analyze_notice_document, analyze_notice_with_mock_data, parse_lh_document_candidates
-from apps.notice_docs.services.extractors import extract_checklist_items, extract_unit_options_from_pages
-from apps.notice_docs.services.llm_extractors import _option_from_payload
-from apps.notice_docs.services.pdf_parser import PdfPageText, download_remote_pdf, extract_pdf_table_text
+from apps.notice_docs.services.extractors import (
+    extract_checklist_items,
+    extract_required_documents_from_pages,
+    extract_unit_options_from_pages,
+)
+from apps.notice_docs.services.llm_extractors import _checklists_from_payload, _option_from_payload, extract_notice_document_with_llm
+from apps.notice_docs.services.pdf_parser import PdfPageText, clear_pdf_text_cache, download_remote_pdf, extract_pdf_table_text, parse_pdf_text
 from apps.notice_docs.services.retrieval import (
     build_document_chunks,
     candidate_chunks_for_notice_document,
     search_document_chunks,
 )
+from apps.notice_docs.services.schemas import NOTICE_DOCUMENT_EXTRACTION_SCHEMA
 from apps.notices.models import HousingNotice
 
 
@@ -74,6 +81,19 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertEqual(candidates[0].file_id, "66680738")
         self.assertIn("입주자모집공고문.pdf", candidates[0].file_name)
         self.assertIn("/lhapply/lhFile.do?fileid=66680738", candidates[0].document_url)
+
+    def test_lh_html_discovery_ranks_notice_pdf_above_auxiliary_files(self):
+        html = """
+        <a href="javascript:fileDownLoad('1001');">단지 팸플릿.pdf</a>
+        <a href="javascript:fileDownLoad('1002');">동호배치도.pdf</a>
+        <a href="javascript:fileDownLoad('1003');">공급신청서 서식.hwp</a>
+        <a href="javascript:fileDownLoad('1004');">시흥하중 A1블록 신혼희망타운 입주자모집공고문.pdf</a>
+        """
+
+        candidates = parse_lh_document_candidates(html, "https://apply.lh.or.kr/lhapply/apply/detail")
+
+        self.assertEqual(candidates[0].file_id, "1004")
+        self.assertIn("입주자모집공고문", candidates[0].file_name)
 
     def test_rules_analysis_extracts_options_from_local_sample_pdf(self):
         pdf_path = settings.BASE_DIR / "fixtures" / "sample_pdfs" / "public_sale_notice_611.pdf"
@@ -159,6 +179,22 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertTrue(str(first_path).endswith("_official.pdf"))
         mock_get.assert_called_once()
 
+    @override_settings(PDF_TEXT_CACHE_ENABLED=True)
+    def test_parse_pdf_text_reuses_in_process_text_cache_only(self):
+        pdf_path = settings.BASE_DIR / "fixtures" / "sample_pdfs" / "public_sale_notice_611.pdf"
+        if not pdf_path.exists():
+            self.skipTest("sample PDF is not available")
+
+        clear_pdf_text_cache()
+        first_pages = parse_pdf_text(pdf_path, max_pages=1, include_tables=False)
+        with patch("pypdf.PdfReader") as mock_reader:
+            second_pages = parse_pdf_text(pdf_path, max_pages=1, include_tables=False)
+        cache_dir = settings.BASE_DIR / ".cache" / "pdf_text"
+
+        self.assertEqual(first_pages, second_pages)
+        mock_reader.assert_not_called()
+        self.assertFalse(cache_dir.exists())
+
     def test_extract_pdf_table_text_keeps_rows_for_rule_candidates(self):
         page = Mock()
         page.extract_tables.return_value = [
@@ -202,6 +238,92 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertIn("59A", ranked[0].chunk.text)
         self.assertTrue(any("matched" in chunk and "주택가격" in chunk for chunk in prompt_chunks))
         self.assertTrue(any("무주택" in chunk for chunk in prompt_chunks))
+
+    def test_document_retrieval_includes_required_document_chunks(self):
+        pages = [
+            PdfPageText(page_no=3, text="주택형 공급금액 안내\n[table 1]\n주택형 주택가격 계약금 중도금 잔금\n59A 320,000 32,000 192,000 96,000"),
+            PdfPageText(
+                page_no=18,
+                text=(
+                    "당첨자 제출서류 및 구비서류\n"
+                    "주민등록표등본, 가족관계증명서, 소득금액증명, 건강보험자격득실확인서, 개인정보 제공 동의서"
+                ),
+            ),
+        ]
+
+        ranked = search_document_chunks(pages, "제출서류 주민등록 가족관계 소득금액", limit=2)
+        prompt_chunks = candidate_chunks_for_notice_document(pages, limit_per_purpose=2)
+
+        self.assertEqual(ranked[0].chunk.page_no, 18)
+        self.assertIn("주민등록표등본", ranked[0].chunk.text)
+        self.assertTrue(any("제출서류" in chunk and "주민등록표등본" in chunk for chunk in prompt_chunks))
+
+    def test_required_document_extractor_collects_submission_documents(self):
+        pages = [
+            PdfPageText(page_no=2, text="공고 개요 및 신청 유의사항"),
+            PdfPageText(
+                page_no=29,
+                text=(
+                    "당첨자 제출서류 안내\n"
+                    "당첨자 본인 신분증 주민등록표등본 주민등록표초본 개인정보 수집·이용 및 제3자 제공동의서\n"
+                    "가족관계증명서 혼인관계증명서 출입국에 관한 사실증명 재직증명서 임신증명서류 또는 출생증명서"
+                ),
+            ),
+            PdfPageText(
+                page_no=32,
+                text=(
+                    "계약 시 구비서류\n"
+                    "계약금 입금 확인서류 주택취득 자금 조달 및 입주계획서 위임장 인감증명서 본인서명사실확인서"
+                ),
+            ),
+        ]
+
+        documents = extract_required_documents_from_pages(pages)
+
+        self.assertGreaterEqual(len(documents), 10)
+        self.assertIn("당첨자 본인 신분증", documents)
+        self.assertIn("주민등록표등본", documents)
+        self.assertIn("주민등록표초본", documents)
+        self.assertIn("개인정보 수집·이용 및 제3자 제공 동의서", documents)
+        self.assertIn("계약금 입금 확인서류", documents)
+
+    @patch("apps.notice_docs.services.analysis.parse_pdf_text")
+    @patch("apps.notice_docs.services.analysis.discover_documents_for_notice")
+    def test_analysis_updates_notice_required_documents_from_pdf(self, mock_discover, mock_parse_pdf_text):
+        document = NoticeDocument.objects.create(
+            notice=self.notice,
+            provider="LH",
+            file_name="notice.pdf",
+            document_url=str(settings.BASE_DIR / "fixtures" / "sample_pdfs" / "public_sale_notice_611.pdf"),
+            source_url="https://example.com/detail",
+            status="discovered",
+        )
+        mock_discover.return_value = [document]
+        mock_parse_pdf_text.return_value = [
+            PdfPageText(
+                page_no=4,
+                text=(
+                    "공급금액 및 납부일정\n"
+                    "[table 1]\n"
+                    "주택형 층 선택 주택가격 계약금 중도금 잔금 융자금\n"
+                    "59A 1층 기본형 320,000 32,000 192,000 96,000 0"
+                ),
+            ),
+            PdfPageText(
+                page_no=29,
+                text=(
+                    "당첨자 제출서류 주민등록표등본 주민등록표초본 개인정보 수집·이용 및 제3자 제공동의서 "
+                    "가족관계증명서 혼인관계증명서 출입국에 관한 사실증명"
+                ),
+            ),
+        ]
+
+        analyze_notice_document(self.notice)
+        self.notice.refresh_from_db()
+
+        self.assertIn("주민등록표초본", self.notice.required_documents)
+        self.assertIn("개인정보 수집·이용 및 제3자 제공 동의서", self.notice.required_documents)
+        self.assertIn("가족관계증명서", self.notice.required_documents)
 
     def test_checklist_extractor_prefers_detail_pages_over_intro_notice(self):
         pages = [
@@ -269,6 +391,125 @@ class NoticeDocsMockExtractionTests(TestCase):
 
         self.assertEqual(option.exclusive_area_m2, 74.95)
 
+    def test_llm_schema_matches_current_option_group_contract(self):
+        option_schema = NOTICE_DOCUMENT_EXTRACTION_SCHEMA["schema"]["properties"]["unit_options"]["items"]
+        option_types = set(option_schema["properties"]["option_type"]["enum"])
+        payment_types = set(
+            option_schema["properties"]["payment_schedules"]["items"]["properties"]["payment_type"]["enum"]
+        )
+        checklist_schema = NOTICE_DOCUMENT_EXTRACTION_SCHEMA["schema"]["properties"]["eligibility_checklists"]["items"]
+        root_required = set(NOTICE_DOCUMENT_EXTRACTION_SCHEMA["schema"]["required"])
+
+        self.assertIn("general_supply", option_types)
+        self.assertIn("pre_subscription", option_types)
+        self.assertNotIn("loan", payment_types)
+        self.assertIn("page_no", checklist_schema["properties"])
+        self.assertIn("page_no", checklist_schema["required"])
+        self.assertIn("required_documents", root_required)
+
+    def test_llm_payload_normalizes_option_type_and_checklist_page(self):
+        option = _option_from_payload(
+            {
+                "unit_type": "59A",
+                "exclusive_area_m2": 59,
+                "floor_group": "1층",
+                "option_type": "general",
+                "base_price": 500000000,
+                "loan_amount": 55000000,
+                "balcony_extension_price": 0,
+                "confidence": 0.7,
+                "source_page": 5,
+                "source_text": "본청약 계약금(10%)",
+                "payment_schedules": [
+                    {
+                        "label": "계약금",
+                        "due_date": "",
+                        "amount": 50000000,
+                        "payment_type": "down_payment",
+                        "sequence": 1,
+                        "evidence_text": "계약금",
+                    },
+                    {
+                        "label": "융자금",
+                        "due_date": "",
+                        "amount": 55000000,
+                        "payment_type": "loan",
+                        "sequence": 2,
+                        "evidence_text": "융자금",
+                    },
+                ],
+                "evidence": [],
+            },
+            notice=self.notice,
+        )
+        checklists = _checklists_from_payload(
+            {
+                "eligibility_checklists": [
+                    {
+                        "category": "income",
+                        "title": "소득 기준 확인",
+                        "condition_text": "",
+                        "evidence_text": "소득 및 자산 기준",
+                        "page_no": 15,
+                        "confidence": 0.8,
+                    }
+                ]
+            }
+        )
+
+        self.assertEqual(option.option_type, "general_supply")
+        self.assertEqual(option.loan_amount, 55000000)
+        self.assertEqual([schedule.payment_type for schedule in option.payment_schedules], ["down_payment"])
+        self.assertEqual(checklists[0]["page_no"], 15)
+
+    @patch("apps.notice_docs.services.llm_extractors.chat_completion")
+    @patch("apps.notice_docs.services.llm_extractors.llm_enabled")
+    def test_llm_extraction_falls_back_to_latest_successful_cache(self, mock_llm_enabled, mock_chat_completion):
+        mock_llm_enabled.return_value = True
+        mock_chat_completion.side_effect = AiClientError("temporary model outage")
+        AiExtractionResult.objects.create(
+            source_type="document",
+            source_id=123,
+            extraction_type="housing_notice",
+            input_hash="previous-hash",
+            status="succeeded",
+            model_name="cached-model",
+            prompt_version="notice-doc-llm-v2",
+            extracted_data={
+                "unit_options": [
+                    {
+                        "unit_type": "59A",
+                        "exclusive_area_m2": 59,
+                        "floor_group": "1층",
+                        "option_type": "general_supply",
+                        "base_price": 500000000,
+                        "loan_amount": 55000000,
+                        "balcony_extension_price": 0,
+                        "confidence": 0.82,
+                        "source_page": 5,
+                        "source_text": "59A 1층 본청약",
+                        "payment_schedules": [],
+                        "evidence": [],
+                    }
+                ],
+                "eligibility_checklists": [],
+                "required_documents": ["주민등록표등본"],
+                "warnings": [],
+            },
+        )
+
+        options, checklists, meta = extract_notice_document_with_llm(
+            notice=self.notice,
+            document_id=123,
+            pages=[PdfPageText(page_no=5, text="주택가격 계약금 중도금 잔금 59A")],
+        )
+
+        self.assertEqual(meta["source"], "llm_stale_cache")
+        self.assertEqual(options[0].option_type, "general_supply")
+        self.assertEqual(options[0].loan_amount, 55000000)
+        self.assertEqual(meta["required_documents"], ["주민등록표등본"])
+        self.assertEqual(checklists, [])
+
     def test_rules_extractor_normalizes_unit_type_and_skips_invalid_area(self):
         pages = [
             PdfPageText(
@@ -313,6 +554,25 @@ class NoticeDocsMockExtractionTests(TestCase):
             [schedule.payment_type for schedule in options[0].payment_schedules],
             ["down_payment", "middle_payment", "final_payment"],
         )
+
+    def test_rules_extractor_normalizes_broken_floor_glyphs(self):
+        pages = [
+            PdfPageText(
+                page_no=5,
+                text=(
+                    "공급금액 및 납부일정\n"
+                    "[table 1]\n"
+                    "주택형 층 주택가격 계약금 중도금 잔금 융자금\n"
+                    "51A 1Уў 555,310,000 27,765,500 111,062,000 361,482,500 55,000,000"
+                ),
+            )
+        ]
+
+        options = extract_unit_options_from_pages(pages)
+
+        self.assertEqual(len(options), 1)
+        self.assertEqual(options[0].floor_group, "1층")
+        self.assertEqual(options[0].loan_amount, 55000000)
 
     def test_rules_extractor_allows_no_middle_payment_schedule(self):
         pages = [
@@ -548,6 +808,63 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertEqual(status_response.json()["analysis_summary"]["stage"], "mock")
         self.assertTrue(status_response.json()["analysis_summary"]["is_mock"])
 
+    def test_document_status_includes_needs_review_issues(self):
+        document = NoticeDocument.objects.create(
+            notice=self.notice,
+            provider="LH",
+            file_name="review.pdf",
+            document_url="https://example.com/review.pdf",
+            status="analyzed",
+        )
+        extraction = NoticeExtraction.objects.create(
+            notice=self.notice,
+            document=document,
+            schema_version="rules-v1",
+            status="needs_review",
+            confidence=0.49,
+            raw_json={
+                "source": "rules",
+                "warnings": {
+                    "59A": ["계약금·중도금·잔금 합계와 분양가 차이가 큽니다."],
+                },
+            },
+        )
+        HousingUnitOption.objects.create(
+            notice=self.notice,
+            document=document,
+            extraction=extraction,
+            unit_type="59A",
+            exclusive_area_m2=59,
+            floor_group="1층",
+            option_type="basic",
+            base_price=500000000,
+            confidence=0.49,
+        )
+        self.notice.official_document_status = "analyzed"
+        self.notice.save(update_fields=["official_document_status"])
+
+        response = self.client.get(f"/api/notices/{self.notice.id}/documents/status")
+        summary = response.json()["analysis_summary"]
+
+        self.assertEqual(summary["stage"], "needs_review")
+        issue_codes = {issue["code"] for issue in summary["review_issues"]}
+        self.assertIn("amount_mismatch", issue_codes)
+        self.assertIn("low_confidence", issue_codes)
+        self.assertIn("required_documents_missing", issue_codes)
+        self.assertTrue(all(issue.get("action") for issue in summary["review_issues"]))
+        self.assertTrue(all(issue.get("severity") for issue in summary["review_issues"]))
+
+    @patch("apps.notice_docs.services.analysis.threading.Thread")
+    def test_analyze_api_can_start_async_job(self, mock_thread):
+        response = self.client.post(f"/api/notices/{self.notice.id}/documents/analyze?async=1")
+
+        self.assertEqual(response.status_code, 202)
+        payload = response.json()
+        self.assertEqual(payload["official_document_status"], "pending")
+        self.assertEqual(payload["document"]["status"], "pending")
+        self.assertIn("analysis_summary", payload)
+        mock_thread.return_value.start.assert_called_once()
+
     def test_batch_analysis_command_supports_dry_run(self):
         call_command("analyze_notice_documents", "--dry-run", "--limit=1")
 
@@ -599,6 +916,47 @@ class NoticeDocsMockExtractionTests(TestCase):
                 "favorite_saved",
             ],
         )
+
+    def test_sample_pdf_regression_command_writes_snapshot_report(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            expected_path = f"{temp_dir}/expected.json"
+            snapshot_path = f"{temp_dir}/snapshot.json"
+            md_path = f"{temp_dir}/regression.md"
+            with open(expected_path, "w", encoding="utf-8") as expected_file:
+                json.dump(
+                    {
+                        "samples": [
+                            {
+                                "file_name": "rent_notice_506.pdf",
+                                "kind": "exclude",
+                                "ownership_type": "excluded",
+                                "case_type": "lh_happy_house_rent",
+                                "expected": {"exclude_keywords": ["행복주택", "임대"]},
+                            }
+                        ]
+                    },
+                    expected_file,
+                    ensure_ascii=False,
+                )
+
+            call_command(
+                "check_sample_pdf_regression",
+                f"--expected={expected_path}",
+                f"--snapshot-json={snapshot_path}",
+                f"--report-md={md_path}",
+                "--kind=exclude",
+                "--max-samples=1",
+            )
+
+            with open(snapshot_path, encoding="utf-8") as snapshot_file:
+                snapshot = json.load(snapshot_file)
+            with open(md_path, encoding="utf-8") as md_file:
+                markdown = md_file.read()
+
+        self.assertTrue(snapshot["ok"])
+        self.assertEqual(snapshot["samples"][0]["file_name"], "rent_notice_506.pdf")
+        self.assertEqual(snapshot["samples"][0]["stage"], "excluded_classified")
+        self.assertIn("Sample PDF Regression", markdown)
 
     def test_sample_pdf_expected_manifest_covers_current_regression_samples(self):
         expected_path = settings.BASE_DIR / "fixtures" / "sample_pdfs" / "expected.json"

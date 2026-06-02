@@ -14,7 +14,18 @@ from apps.notice_docs.services.schemas import NOTICE_DOCUMENT_EXTRACTION_SCHEMA
 from apps.notices.models import HousingNotice
 
 
-PROMPT_VERSION = "notice-doc-llm-v1"
+PROMPT_VERSION = "notice-doc-llm-v2"
+ALLOWED_OPTION_TYPES = {"basic", "general_supply", "pre_subscription", "minus", "other"}
+OPTION_TYPE_ALIASES = {
+    "general": "general_supply",
+    "general_sale": "general_supply",
+    "main": "general_supply",
+    "standard": "general_supply",
+    "pre": "pre_subscription",
+    "prior_subscription": "pre_subscription",
+    "advance": "pre_subscription",
+    "minus_option": "minus",
+}
 
 
 def extract_notice_document_with_llm(
@@ -44,7 +55,13 @@ def extract_notice_document_with_llm(
         raw_json = log.extracted_data or {}
         options = [_option_from_payload(item, notice=notice) for item in raw_json.get("unit_options", []) if isinstance(item, dict)]
         checklists = _checklists_from_payload(raw_json)
-        return options, checklists, {"source": "llm_cache", "input_hash": input_hash, "log_id": log.id}
+        return options, checklists, {
+            "source": "llm_cache",
+            "input_hash": input_hash,
+            "log_id": log.id,
+            "required_documents": _required_documents_from_payload(raw_json),
+            "warnings": [str(item) for item in raw_json.get("warnings", [])],
+        }
     if not created:
         log.status = "pending"
         log.error_message = ""
@@ -57,8 +74,9 @@ def extract_notice_document_with_llm(
                     "role": "system",
                     "content": (
                         "너는 한국 공공분양 입주자모집공고 PDF를 구조화하는 추출기다. "
-                        "원문에 없는 값은 0 또는 빈 문자열로 둔다. 금액은 반드시 원 단위 정수로 변환한다. "
-                        "확정 판정이 아니라 공고문 확인 항목만 추출한다."
+                        "공고문에 없는 값은 추정하지 말고 0 또는 빈 문자열로 둔다. "
+                        "금액은 모두 원 단위 정수로 변환한다. "
+                        "융자금은 분양가에 포함된 주택도시기금 등 대출성 금액이며, 계약금/중도금/잔금과 구분한다."
                     ),
                 },
                 {"role": "user", "content": prompt_input},
@@ -70,11 +88,26 @@ def extract_notice_document_with_llm(
         log.mark_failed(str(exc))
         stale_options, stale_checklists = _latest_successful_cached_result(document_id, exclude_input_hash=input_hash, notice=notice)
         if stale_options:
+            raw_json = (
+                AiExtractionResult.objects.filter(
+                    source_type="document",
+                    source_id=document_id,
+                    extraction_type="housing_notice",
+                    status="succeeded",
+                )
+                .exclude(input_hash=input_hash)
+                .order_by("-updated_at", "-id")
+                .values_list("extracted_data", flat=True)
+                .first()
+                or {}
+            )
             return stale_options, stale_checklists, {
                 "source": "llm_stale_cache",
                 "input_hash": input_hash,
                 "log_id": log.id,
                 "fallback_reason": str(exc),
+                "required_documents": _required_documents_from_payload(raw_json),
+                "warnings": [str(item) for item in raw_json.get("warnings", [])] if isinstance(raw_json, dict) else [],
             }
         return [], [], {"source": "llm_failed", "error": str(exc)}
 
@@ -88,7 +121,13 @@ def extract_notice_document_with_llm(
         warnings=[str(item) for item in raw_json.get("warnings", [])],
         raw_response=response.raw_response,
     )
-    return options, checklists, {"source": "llm", "input_hash": input_hash, "log_id": log.id}
+    return options, checklists, {
+        "source": "llm",
+        "input_hash": input_hash,
+        "log_id": log.id,
+        "required_documents": _required_documents_from_payload(raw_json),
+        "warnings": [str(item) for item in raw_json.get("warnings", [])],
+    }
 
 
 def _checklists_from_payload(raw_json: dict[str, Any]) -> list[dict[str, Any]]:
@@ -98,11 +137,25 @@ def _checklists_from_payload(raw_json: dict[str, Any]) -> list[dict[str, Any]]:
             "title": str(item.get("title", "공식 확인 항목")),
             "condition_text": str(item.get("condition_text", "")),
             "evidence_text": str(item.get("evidence_text", "")),
+            "page_no": max(0, int(item.get("page_no") or 0)),
             "confidence": float(item.get("confidence") or 0),
         }
         for item in raw_json.get("eligibility_checklists", [])
         if isinstance(item, dict)
     ]
+
+
+def _required_documents_from_payload(raw_json: dict[str, Any]) -> list[str]:
+    documents: list[str] = []
+    seen: set[str] = set()
+    for item in raw_json.get("required_documents", []):
+        label = re.sub(r"\s+", " ", str(item or "")).strip()
+        key = re.sub(r"\s+", "", label).casefold()
+        if not label or key in seen:
+            continue
+        seen.add(key)
+        documents.append(label)
+    return documents[:18]
 
 
 def _latest_successful_cached_result(
@@ -137,7 +190,19 @@ def _prompt_input(notice: HousingNotice, pages: list[PdfPageText]) -> str:
         f"공고명: {notice.title}\n"
         f"지역: {notice.region} {notice.district}\n"
         f"공급유형: {notice.supply_type} / {notice.housing_type}\n\n"
-        "아래 공고문 후보 페이지에서 주택형 옵션, 납부 일정, 공식 확인 체크리스트를 JSON으로 추출하세요.\n\n"
+        "아래 공고문 후보 페이지에서 주택형 옵션, 납부 일정, 공식 확인 체크리스트를 JSON으로 추출하세요.\n"
+        "- option_type은 다음 중 하나만 사용합니다.\n"
+        "  basic: 유형 구분이 명확하지 않은 기본 분양가 표\n"
+        "  general_supply: 본청약, 일반공급, 특별공급 등 일반적인 납부안\n"
+        "  pre_subscription: 사전청약 당첨자 납부안\n"
+        "  minus: 마이너스 옵션\n"
+        "  other: 위 분류로 확정하기 어려운 경우\n"
+        "- 같은 주택형/층이라도 본청약과 사전청약 납부안이 나뉘면 별도 unit_option으로 추출합니다.\n"
+        "- loan_amount는 융자금/주택도시기금처럼 분양가에 포함된 대출성 금액입니다.\n"
+        "- payment_schedules에는 계약금, 중도금, 잔금, 할부금/납부유예금 등 실제 납부 일정만 넣습니다.\n"
+        "- 융자금은 payment_schedules에 넣지 말고 반드시 loan_amount에만 기록합니다.\n"
+        "- eligibility_checklists는 출처 page_no와 근거 문장을 함께 기록합니다.\n"
+        "- required_documents에는 당첨자 제출서류와 계약 구비서류를 짧은 서류명 배열로 기록합니다.\n\n"
         + "\n\n".join(chunks)
     )
 
@@ -147,18 +212,7 @@ def _candidate_chunks(pages: list[PdfPageText], *, limit: int = 8, max_chars: in
 
 
 def _option_from_payload(item: dict[str, Any], *, notice: HousingNotice | None = None) -> ExtractedUnitOption:
-    schedules = [
-        ExtractedSchedule(
-            label=str(schedule.get("label", "")),
-            due_date=_parse_date(schedule.get("due_date")),
-            amount=max(0, int(schedule.get("amount") or 0)),
-            payment_type=str(schedule.get("payment_type") or "other"),
-            sequence=max(0, int(schedule.get("sequence") or 0)),
-            evidence_text=str(schedule.get("evidence_text", "")),
-        )
-        for schedule in item.get("payment_schedules", [])
-        if isinstance(schedule, dict)
-    ]
+    schedules, loan_amount_from_schedules = _schedules_from_payload(item.get("payment_schedules", []))
     evidence = [
         {
             "field_path": str(row.get("field_path", "")),
@@ -175,9 +229,9 @@ def _option_from_payload(item: dict[str, Any], *, notice: HousingNotice | None =
         unit_type=unit_type,
         exclusive_area_m2=exclusive_area_m2,
         floor_group=str(item.get("floor_group", "")),
-        option_type=str(item.get("option_type") or "basic"),
+        option_type=_option_type_from_payload(item),
         base_price=max(0, int(item.get("base_price") or 0)),
-        loan_amount=max(0, int(item.get("loan_amount") or 0)),
+        loan_amount=max(max(0, int(item.get("loan_amount") or 0)), loan_amount_from_schedules),
         balcony_extension_price=max(0, int(item.get("balcony_extension_price") or 0)),
         confidence=float(item.get("confidence") or 0),
         source_page=int(item.get("source_page") or 0),
@@ -185,6 +239,46 @@ def _option_from_payload(item: dict[str, Any], *, notice: HousingNotice | None =
         payment_schedules=schedules,
         evidence=evidence,
     )
+
+
+def _schedules_from_payload(raw_schedules: Any) -> tuple[list[ExtractedSchedule], int]:
+    schedules: list[ExtractedSchedule] = []
+    loan_amount = 0
+    for schedule in raw_schedules if isinstance(raw_schedules, list) else []:
+        if not isinstance(schedule, dict):
+            continue
+        amount = max(0, int(schedule.get("amount") or 0))
+        payment_type = str(schedule.get("payment_type") or "other").strip()
+        if payment_type == "loan":
+            loan_amount = max(loan_amount, amount)
+            continue
+        schedules.append(
+            ExtractedSchedule(
+                label=str(schedule.get("label", "")),
+                due_date=_parse_date(schedule.get("due_date")),
+                amount=amount,
+                payment_type=payment_type,
+                sequence=max(0, int(schedule.get("sequence") or 0)),
+                evidence_text=str(schedule.get("evidence_text", "")),
+            )
+        )
+    return schedules, loan_amount
+
+
+def _option_type_from_payload(item: dict[str, Any]) -> str:
+    raw_type = str(item.get("option_type") or "").strip().casefold()
+    normalized = OPTION_TYPE_ALIASES.get(raw_type, raw_type)
+    if normalized in ALLOWED_OPTION_TYPES:
+        return normalized
+
+    text = " ".join(str(item.get(key) or "") for key in ("floor_group", "source_text"))
+    if "사전청약" in text or "계약금(5%)" in text or "계약금 5%" in text:
+        return "pre_subscription"
+    if "본청약" in text or "일반공급" in text or "특별공급" in text or "계약금(10%)" in text or "계약금 10%" in text:
+        return "general_supply"
+    if "마이너스" in text:
+        return "minus"
+    return "basic"
 
 
 def _exclusive_area_from_payload(item: dict[str, Any], unit_type: str, notice: HousingNotice | None) -> float:

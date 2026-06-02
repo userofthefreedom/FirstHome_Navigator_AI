@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import re
+import threading
 from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
+from django.db import close_old_connections
 from django.utils import timezone
 
 from apps.notice_docs.models import (
@@ -16,7 +18,12 @@ from apps.notice_docs.models import (
     PaymentSchedule,
 )
 from apps.notice_docs.services.discovery_lh import discover_documents_for_notice
-from apps.notice_docs.services.extractors import ExtractedUnitOption, extract_checklist_items, extract_unit_options_from_pages
+from apps.notice_docs.services.extractors import (
+    ExtractedUnitOption,
+    extract_checklist_items,
+    extract_required_documents_from_pages,
+    extract_unit_options_from_pages,
+)
 from apps.notice_docs.services.llm_extractors import extract_notice_document_with_llm
 from apps.notice_docs.services.pdf_parser import (
     PdfParserUnavailable,
@@ -32,11 +39,16 @@ from apps.notices.models import HousingNotice
 
 def analyze_notice_document(notice: HousingNotice, *, pdf_path: str | Path | None = None) -> dict[str, Any]:
     previous_result = _latest_analyzed_result(notice)
+    fixture_result = _fixture_analysis_result(notice)
+    if fixture_result:
+        return fixture_result
     documents = discover_documents_for_notice(notice)
     document = _select_document(notice, documents)
     document.status = "pending"
     document.error_message = ""
     document.save(update_fields=["status", "error_message", "updated_at"])
+    notice.official_document_status = "pending"
+    notice.save(update_fields=["official_document_status", "updated_at"])
 
     local_pdf_path = Path(pdf_path) if pdf_path else _local_pdf_for_document(document)
     if local_pdf_path:
@@ -47,6 +59,7 @@ def analyze_notice_document(notice: HousingNotice, *, pdf_path: str | Path | Non
 
         extracted_options = validate_unit_options(extract_unit_options_from_pages(parsed_pages))
         checklist_items = extract_checklist_items(parsed_pages)
+        required_documents = extract_required_documents_from_pages(parsed_pages)
         source_meta: dict[str, Any] = {"source": "rules"}
         if not extracted_options or any(option.validation_warnings for option in extracted_options):
             llm_options, llm_checklists, llm_meta = extract_notice_document_with_llm(
@@ -57,6 +70,10 @@ def analyze_notice_document(notice: HousingNotice, *, pdf_path: str | Path | Non
             if llm_options:
                 extracted_options = validate_unit_options(llm_options)
                 checklist_items = llm_checklists or checklist_items
+                required_documents = _merge_required_documents(
+                    required_documents,
+                    llm_meta.get("required_documents", []) if isinstance(llm_meta, dict) else [],
+                )
                 source_meta = llm_meta
         if extracted_options:
             return _save_extraction_result(
@@ -65,11 +82,50 @@ def analyze_notice_document(notice: HousingNotice, *, pdf_path: str | Path | Non
                 extracted_options,
                 checklist_items,
                 local_pdf_path,
+                required_documents=required_documents,
                 source_meta=source_meta,
             )
 
     failure_reason = document.error_message or "분석 가능한 로컬 PDF가 없거나 주택형 표를 찾지 못했습니다."
     return _analysis_failed_with_preserved_result(notice, document, failure_reason, previous_result)
+
+
+def start_notice_document_analysis(notice: HousingNotice) -> dict[str, Any]:
+    pending_document = notice.documents.filter(status="pending").order_by("-updated_at", "-id").first()
+    already_pending = pending_document is not None
+    if pending_document is None:
+        documents = discover_documents_for_notice(notice)
+        pending_document = _select_document(notice, documents)
+        pending_document.status = "pending"
+        pending_document.error_message = ""
+        pending_document.save(update_fields=["status", "error_message", "updated_at"])
+    notice.official_document_status = "pending"
+    notice.save(update_fields=["official_document_status", "updated_at"])
+
+    if not already_pending:
+        thread = threading.Thread(target=_run_analysis_thread, args=(notice.id,), daemon=True)
+        thread.start()
+    return {"document": pending_document, "analysis_summary": notice_analysis_summary(notice), "already_pending": already_pending}
+
+
+def _run_analysis_thread(notice_id: int) -> None:
+    close_old_connections()
+    try:
+        notice = HousingNotice.objects.get(id=notice_id)
+        analyze_notice_document(notice)
+    except HousingNotice.DoesNotExist:
+        return
+    finally:
+        close_old_connections()
+
+
+def _fixture_analysis_result(notice: HousingNotice) -> dict[str, Any] | None:
+    source_meta = notice.source_meta or {}
+    if not isinstance(source_meta, dict) or not source_meta.get("fixture_id"):
+        return None
+    from apps.fixture_store import seed_fixture_notice_analysis
+
+    return seed_fixture_notice_analysis(notice) or None
 
 
 def analyze_notice_with_mock_data(notice: HousingNotice) -> dict[str, Any]:
@@ -99,6 +155,7 @@ def _save_extraction_result(
     checklist_items: list[dict[str, Any]],
     pdf_path: Path,
     *,
+    required_documents: list[str] | None = None,
     source_meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     status = extraction_status(extracted_options)
@@ -114,6 +171,7 @@ def _save_extraction_result(
             **source_meta,
             "pdf_path": str(pdf_path),
             "option_count": len(extracted_options),
+            "required_documents": required_documents or [],
             "status": status,
             "warnings": {
                 option.unit_type: option.validation_warnings
@@ -133,8 +191,28 @@ def _save_extraction_result(
     document.save(update_fields=["status", "analyzed_at", "error_message", "updated_at"])
 
     notice.official_document_status = "analyzed" if document.status == "analyzed" else "failed"
-    notice.save(update_fields=["official_document_status", "updated_at"])
+    update_fields = ["official_document_status", "updated_at"]
+    merged_documents = _merge_required_documents(required_documents or [], notice.required_documents)
+    if merged_documents:
+        notice.required_documents = merged_documents
+        update_fields.append("required_documents")
+    notice.save(update_fields=update_fields)
     return {"document": document, "extraction": extraction, "unit_options": options}
+
+
+def _merge_required_documents(primary: list[str], fallback: list[str], *, limit: int = 18) -> list[str]:
+    merged: list[str] = []
+    seen: set[str] = set()
+    for value in [*primary, *fallback]:
+        label = str(value or "").strip()
+        key = re.sub(r"\s+", "", label).casefold()
+        if not label or key in seen:
+            continue
+        seen.add(key)
+        merged.append(label)
+        if len(merged) >= limit:
+            break
+    return merged
 
 
 def _save_unit_option(

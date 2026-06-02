@@ -146,7 +146,7 @@ onMounted(async () => {
         </div>
       </header>
 
-      <section class="mx-auto w-full max-w-7xl flex-1 p-4 pb-24 sm:p-6 lg:pb-6">
+      <section class="mx-auto w-full max-w-[1680px] flex-1 p-4 pb-24 sm:p-6 lg:pb-6">
         <RouterView />
       </section>
     </main>

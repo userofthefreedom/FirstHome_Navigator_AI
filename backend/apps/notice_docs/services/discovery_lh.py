@@ -9,11 +9,10 @@ import requests
 
 from apps.notice_docs.models import NoticeDocument
 from apps.notices.models import HousingNotice
+from apps.rules.document_discovery import document_candidate_priority
 
 
 LH_DOWNLOAD_PATH = "/lhapply/lhFile.do"
-PREFERRED_NAME_KEYWORDS = ("입주자모집", "모집공고", "공고문")
-LOW_PRIORITY_NAME_KEYWORDS = ("팸플릿", "브로슈어", "위임장", "동의서", "견본주택", "안내문", "cad", "dwg")
 
 
 @dataclass(frozen=True)
@@ -54,7 +53,7 @@ def parse_lh_document_candidates(source_html: str, source_url: str = "") -> list
                 file_name=file_name,
                 document_url=document_url,
                 source_url=source_url,
-                priority=_candidate_priority(file_name),
+                priority=document_candidate_priority(file_name),
             )
         )
 
@@ -114,20 +113,6 @@ def _mark_discovery_failed(notice: HousingNotice, message: str) -> NoticeDocumen
     document.error_message = message[:240]
     document.save(update_fields=["status", "error_message", "updated_at"])
     return document
-
-
-def _candidate_priority(file_name: str) -> int:
-    lower_name = file_name.lower()
-    score = 0
-    if lower_name.endswith(".pdf"):
-        score += 50
-    if lower_name.endswith(".hwp") or lower_name.endswith(".hwpx"):
-        score += 15
-    if any(keyword in file_name for keyword in PREFERRED_NAME_KEYWORDS):
-        score += 40
-    if any(keyword in lower_name for keyword in LOW_PRIORITY_NAME_KEYWORDS):
-        score -= 30
-    return score
 
 
 def _clean_file_name(value: str) -> str:

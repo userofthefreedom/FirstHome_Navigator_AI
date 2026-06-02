@@ -75,6 +75,12 @@ async function toggleFavorite() {
         savingFavorite.value = false;
     }
 }
+
+function isFixtureNotice(notice) {
+    const source = String(notice?.data_source || '').toLowerCase();
+    return source.includes('fixture') || Boolean(notice?.source_meta?.fixture_id);
+}
+
 watch(noticeId, loadCoach);
 onMounted(loadCoach);
 </script>
@@ -158,8 +164,14 @@ onMounted(loadCoach);
           주의
         </p>
         <p class="mt-2">{{ aiCoach.warning }}</p>
+        <span
+          v-if="isFixtureNotice(selectedNotice)"
+          class="mt-3 inline-flex items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900"
+        >
+          Fixture
+        </span>
         <a
-          v-if="selectedNotice.source_url"
+          v-else-if="selectedNotice.source_url"
           :href="selectedNotice.source_url"
           target="_blank"
           rel="noreferrer"

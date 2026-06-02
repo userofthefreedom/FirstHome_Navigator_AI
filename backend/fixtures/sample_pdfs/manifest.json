@@ -59,6 +59,60 @@
     "purpose": "Verify private-participation public-sale extraction when rows start with detailed area codes before the unit type."
   },
   {
+    "file_name": "newlywed_public_sale_namyangju_jinjeop2_a3_20251230.pdf",
+    "kind": "include",
+    "ownership_type": "newlywed_public_sale",
+    "source": "LH official notice PDF, fileid 65033986",
+    "source_url": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=65033986",
+    "official_page": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?aisTpCd=39&ccrCnntSysDsCd=02&mi=1027&panId=0000061028&uppAisTpCd=39",
+    "purpose": "Verify a directly downloaded public LH newlywed public-sale notice from a live official detail page."
+  },
+  {
+    "file_name": "public_sale_cheongju_jibuk_b1_remaining_20260430.pdf",
+    "kind": "include",
+    "ownership_type": "public_sale",
+    "source": "LH official notice PDF, fileid 66662881",
+    "source_url": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=66662881",
+    "official_page": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?aisTpCd=05&ccrCnntSysDsCd=02&mi=1027&panId=0000061079&uppAisTpCd=05",
+    "purpose": "Verify remaining-unit public-sale notices where payment schedules may omit middle payments."
+  },
+  {
+    "file_name": "newlywed_private_public_sale_wirye_xi_resupply_20240118.pdf",
+    "kind": "include",
+    "ownership_type": "newlywed_public_sale",
+    "source": "LH official notice PDF, fileid 57854139",
+    "source_url": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=57854139",
+    "official_page": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?panId=0000060671&ccrCnntSysDsCd=02&uppAisTpCd=39&aisTpCd=39&mi=1027",
+    "purpose": "Verify a private-participation newlywed public-sale resupply notice."
+  },
+  {
+    "file_name": "public_sale_ulsan_down2_a10_20251230.pdf",
+    "kind": "include",
+    "ownership_type": "public_sale",
+    "source": "LH official notice PDF, fileid 65027993",
+    "source_url": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=65027993",
+    "official_page": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?panId=0000061039&ccrCnntSysDsCd=02&uppAisTpCd=05&aisTpCd=05&mi=1027",
+    "purpose": "Verify loan and minus-option extraction on a standard public-sale notice."
+  },
+  {
+    "file_name": "public_sale_incheon_yeongjong_a24_remaining_20260330.pdf",
+    "kind": "include",
+    "ownership_type": "public_sale",
+    "source": "LH official notice PDF, fileid 66224483",
+    "source_url": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=66224483",
+    "official_page": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?aisTpCd=05&ccrCnntSysDsCd=02&mi=1027&panId=0000061064&uppAisTpCd=05",
+    "purpose": "Verify remaining-unit public-sale notices with multiple middle-payment rounds and loan columns."
+  },
+  {
+    "file_name": "public_sale_daejeon_daedong2_1_remaining_20260403.pdf",
+    "kind": "include",
+    "ownership_type": "public_sale",
+    "source": "LH official notice PDF, fileid 66303571",
+    "source_url": "https://apply.lh.or.kr/lhapply/lhFile.do?fileid=66303571",
+    "official_page": "https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancInfo.do?aisTpCd=05&ccrCnntSysDsCd=02&mi=1027&panId=0000061069&uppAisTpCd=05",
+    "purpose": "Verify large residual-sale tables with basic and general-supply option groups."
+  },
+  {
     "file_name": "rent_notice_506.pdf",
     "kind": "exclude",
     "ownership_type": "excluded",

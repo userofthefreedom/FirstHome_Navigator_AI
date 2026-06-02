@@ -1,13 +1,21 @@
 from __future__ import annotations
 
 from apps.notice_docs.services.extractors import ExtractedUnitOption
+from apps.rules.confidence import aggregate_extraction_confidence, option_confidence_from_quality
 
 
 def validate_unit_options(options: list[ExtractedUnitOption]) -> list[ExtractedUnitOption]:
     for option in options:
         option.validation_warnings = _warnings_for_option(option)
-        if option.validation_warnings:
-            option.confidence = min(option.confidence, 0.49)
+        option.confidence = option_confidence_from_quality(
+            base_confidence=option.confidence,
+            has_price=option.base_price > 0,
+            has_schedule=bool(option.payment_schedules),
+            has_source=bool(option.source_text),
+            has_required_schedule_types=_has_required_schedule_types(option),
+            has_loan_signal=option.loan_amount > 0,
+            validation_warnings=option.validation_warnings,
+        )
     return options
 
 
@@ -20,9 +28,7 @@ def extraction_status(options: list[ExtractedUnitOption]) -> str:
 
 
 def extraction_confidence(options: list[ExtractedUnitOption]) -> float:
-    if not options:
-        return 0
-    return round(sum(option.confidence for option in options) / len(options), 2)
+    return aggregate_extraction_confidence(options)
 
 
 def _warnings_for_option(option: ExtractedUnitOption) -> list[str]:
@@ -46,3 +52,8 @@ def _warnings_for_option(option: ExtractedUnitOption) -> list[str]:
             warnings.append("계약금·중도금·잔금 합계와 분양가 차이가 큽니다.")
 
     return warnings
+
+
+def _has_required_schedule_types(option: ExtractedUnitOption) -> bool:
+    schedule_types = {schedule.payment_type for schedule in option.payment_schedules}
+    return {"down_payment", "final_payment"}.issubset(schedule_types)

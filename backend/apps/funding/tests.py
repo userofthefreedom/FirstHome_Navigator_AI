@@ -28,7 +28,7 @@ class OptionFundingPlanTests(TestCase):
             notice=self.notice,
             unit_type="59A",
             exclusive_area_m2=59.72,
-            floor_group="5층~최상층",
+            floor_group="5층 최상층",
             option_type="basic",
             base_price=526340000,
             loan_amount=55000000,
@@ -75,6 +75,9 @@ class OptionFundingPlanTests(TestCase):
         self.assertEqual(plan["timeline"][-1]["payment_type"], "loan")
         self.assertEqual(plan["timeline"][-1]["amount"], 55000000)
         self.assertEqual(plan["timeline"][-1]["date"], "잔금 이후 상환")
+        self.assertTrue(plan["timeline_summary"]["has_post_balance_loan"])
+        self.assertEqual(plan["timeline_summary"]["post_balance_amount"], 55000000)
+        self.assertEqual(plan["post_balance_items"][0]["payment_type"], "loan")
 
     def test_funding_api_accepts_option_id_query_param(self):
         response = self.client.get(f"/api/recommendations/funding/{self.notice.id}?option_id={self.option.id}")

@@ -18,7 +18,10 @@ NOTICE_DOCUMENT_EXTRACTION_SCHEMA = {
                         "unit_type": {"type": "string"},
                         "exclusive_area_m2": {"type": "number"},
                         "floor_group": {"type": "string"},
-                        "option_type": {"type": "string", "enum": ["basic", "minus", "other"]},
+                        "option_type": {
+                            "type": "string",
+                            "enum": ["basic", "general_supply", "pre_subscription", "minus", "other"],
+                        },
                         "base_price": {"type": "integer"},
                         "loan_amount": {"type": "integer"},
                         "balcony_extension_price": {"type": "integer"},
@@ -44,7 +47,6 @@ NOTICE_DOCUMENT_EXTRACTION_SCHEMA = {
                                             "final_payment",
                                             "installment_payment",
                                             "move_in_balance",
-                                            "loan",
                                             "other",
                                         ],
                                     },
@@ -95,21 +97,26 @@ NOTICE_DOCUMENT_EXTRACTION_SCHEMA = {
                         "title": {"type": "string"},
                         "condition_text": {"type": "string"},
                         "evidence_text": {"type": "string"},
+                        "page_no": {"type": "integer"},
                         "confidence": {"type": "number"},
                     },
-                    "required": ["category", "title", "condition_text", "evidence_text", "confidence"],
+                    "required": ["category", "title", "condition_text", "evidence_text", "page_no", "confidence"],
                 },
+            },
+            "required_documents": {
+                "type": "array",
+                "items": {"type": "string"},
             },
             "warnings": {"type": "array", "items": {"type": "string"}},
         },
-        "required": ["unit_options", "eligibility_checklists", "warnings"],
+        "required": ["unit_options", "eligibility_checklists", "required_documents", "warnings"],
     },
 }
 
 
 COACH_CHAT_SCHEMA = {
     "name": "firsthome_coach_chat",
-    "description": "사용자의 공공분양 준비 질문에 참고용 답변과 실행 항목을 제공한다.",
+    "description": "사용자의 공공분양 준비 질문에 참고 답변과 실행 항목을 제공한다.",
     "strict": True,
     "schema": {
         "type": "object",

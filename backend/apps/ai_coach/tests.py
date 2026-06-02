@@ -128,7 +128,7 @@ class AiCoachChatApiTests(TestCase):
             schema_version="rules-v1",
             status="valid",
             confidence=0.9,
-            raw_json={"source": "rules"},
+            raw_json={"source": "rules", "required_documents": ["주민등록표등본"]},
         )
         option = HousingUnitOption.objects.create(
             notice=notice,
@@ -179,6 +179,7 @@ class AiCoachChatApiTests(TestCase):
         self.assertIn("payment_schedule", ref_types)
         self.assertIn("checklist", ref_types)
         self.assertIn("evidence", ref_types)
+        self.assertIn("required_document", ref_types)
         self.assertEqual(AiChatLog.objects.latest("id").option_id, option.id)
 
     def test_template_provider_does_not_call_external_llm(self):
@@ -198,6 +199,20 @@ class AiCoachChatApiTests(TestCase):
         self.assertEqual(report["source"], "template_fallback")
         self.assertGreater(report["context_ref_count"], 0)
         self.assertGreater(report["log_id"], 0)
+
+    def test_ai_chat_smoke_command_runs_safety_suite(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            json_path = f"{temp_dir}/ai_chat_suite.json"
+
+            call_command("check_ai_chat_smoke", "--suite", f"--report-json={json_path}")
+
+            with open(json_path, encoding="utf-8") as report_file:
+                report = json.load(report_file)
+
+        self.assertTrue(report["ok"])
+        self.assertGreaterEqual(len(report["rows"]), 5)
+        self.assertTrue(all(row["ok"] for row in report["rows"]))
+        self.assertFalse(any(row["blocked_phrases"] for row in report["rows"]))
 
     @override_settings(
         AI_SETTINGS={

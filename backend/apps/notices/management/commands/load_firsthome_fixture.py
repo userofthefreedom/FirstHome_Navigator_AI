@@ -3,11 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 
 from django.core.management.base import BaseCommand
-from django.conf import settings
-from django.test import override_settings
 
-from apps.fixture_store import load_fixture
-from apps.notice_docs.services.analysis import analyze_notice_document
+from apps.fixture_store import load_fixture, seed_fixture_notice_analysis
 from apps.notices.models import HousingNotice
 from apps.notices.services.classifier import classify_notice_payload
 from apps.policies.models import YouthPolicy
@@ -27,7 +24,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--with-demo-analysis",
             action="store_true",
-            help="Analyze the representative fixture notice with the bundled sample PDF.",
+            help="Kept for compatibility. Fixture notices are seeded with analysis data by default.",
         )
 
     def handle(self, *args, **options):
@@ -39,9 +36,9 @@ class Command(BaseCommand):
 
         for notice in data["notices"]:
             classification = classify_notice_payload(notice)
-            HousingNotice.objects.create(
+            instance = HousingNotice.objects.create(
                 id=notice["id"],
-                source_id=str(notice["id"]),
+                source_id=f"fixture-{notice['id']}",
                 title=notice["title"],
                 provider=notice["provider"],
                 region=notice["region"],
@@ -56,16 +53,17 @@ class Command(BaseCommand):
                 contract_date=parse_date(notice.get("contract_date")),
                 move_in=notice.get("move_in", ""),
                 competition=notice.get("competition", ""),
-                source_url=notice.get("source_url", ""),
+                source_url="",
                 tags=notice.get("tags", []),
                 required_documents=notice.get("required_documents", []),
                 cautions=notice.get("cautions", []),
-                source_meta={"fixture_id": notice["id"]},
+                source_meta={"fixture_id": notice["id"], "fixture_notice": True},
                 ownership_type=notice.get("ownership_type") or classification.ownership_type,
                 is_service_target=notice.get("is_service_target", classification.is_service_target),
                 exclude_reason=notice.get("exclude_reason", classification.exclude_reason),
-                official_document_status=notice.get("official_document_status", classification.official_document_status),
+                official_document_status="analyzed",
             )
+            seed_fixture_notice_analysis(instance, notice)
 
         for product in data["products"]:
             FinancialProduct.objects.create(
@@ -98,28 +96,10 @@ class Command(BaseCommand):
                 reasons=policy.get("reasons", []),
             )
 
-        demo_message = ""
-        if options["with_demo_analysis"]:
-            demo_message = self._load_demo_analysis()
-
         self.stdout.write(
             self.style.SUCCESS(
                 "Loaded FirstHome fixture: "
                 f"{len(data['notices'])} notices, {len(data['products'])} products, {len(data['policies'])} policies."
-                f"{demo_message}"
+                " Fixture analysis data loaded for every notice."
             )
         )
-
-    def _load_demo_analysis(self) -> str:
-        sample_pdf = settings.BASE_DIR / "fixtures" / "sample_pdfs" / "public_sale_notice_611.pdf"
-        if not sample_pdf.exists():
-            return " Demo analysis skipped: sample PDF is missing."
-        try:
-            notice = HousingNotice.objects.get(id=101)
-        except HousingNotice.DoesNotExist:
-            return " Demo analysis skipped: notice #101 is missing."
-        ai_settings = getattr(settings, "AI_SETTINGS", {}).copy()
-        ai_settings["ENABLE_LLM_EXTRACTION"] = False
-        with override_settings(AI_SETTINGS=ai_settings):
-            result = analyze_notice_document(notice, pdf_path=sample_pdf)
-        return f" Demo analysis loaded for notice #101 with {len(result.get('unit_options', []))} option(s)."

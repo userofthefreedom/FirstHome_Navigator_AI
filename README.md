@@ -2,12 +2,14 @@
 
 첫 주택 마련을 준비하는 사용자가 실제 LH 청약 공고와 공식 PDF 공고문을 바탕으로 추천 청약, 주택형 옵션, 분양가, 계약금/중도금/잔금 일정, 자금 부족분, 공식 근거, AI 코치 답변을 확인할 수 있는 서비스입니다.
 
-이 README는 `docs/FirstHome_Navigator_AI_Run_Guide_v7.0.pdf`의 실행 기준을 바탕으로 정리했습니다. 팀 터미널 기본값은 bash이므로 모든 명령은 bash 기준입니다.
+이 README는 현재 코드와 `docs/FirstHome_Navigator_AI_개발공유용_확장기획서_v8.0.docx` 기준의 운영 흐름을 바탕으로 정리했습니다. 팀 터미널 기본값은 bash이므로 모든 명령은 bash 기준입니다.
 
 현재 프로젝트는 다음 방향으로 동작합니다.
 
 - 실제 LH 공고/API 데이터를 우선 사용합니다.
-- fixture는 실제 소유형 공공분양 공고가 너무 적거나 시연 중 외부 API가 불안정할 때만 보조 데이터로 사용합니다.
+- 금융상품, 청년정책, 청약 공고는 외부 API 또는 DB 데이터를 먼저 사용하고, fixture는 부족한 부분을 보충하는 안전망으로만 사용합니다.
+- 청약 fixture는 17개 광역시·도별 활성 소유형 공고가 5개 미만일 때 부족분만 뒤에 보충합니다.
+- fixture 공고는 공식 원문 링크 대신 `Fixture`로 표시되며, 추천 점수도 실제 공고보다 낮게 보정됩니다.
 - AI는 기본값으로 외부 LLM을 호출하지 않는 `template` 모드입니다.
 - 공식 PDF 분석 결과가 있으면 주택형별 납부 일정이 우선 사용됩니다.
 - 중도금은 0회, 1회, 여러 회차, 10회 이상 모두 가능한 반복 일정으로 처리합니다.
@@ -65,6 +67,7 @@ backend/
     notice_docs/       공식 PDF 분석, 주택형 옵션, 납부 일정
     recommendations/   추천 점수와 추천 API
     funding/           option_id 기반 자금 계획 계산
+    rules/             분류, 점수, 자금, 신뢰도, 문서 추출 규칙
     products/          금융상품
     policies/          청년정책
     ai_coach/          AI 코치
@@ -111,7 +114,7 @@ FINLIFE_API_KEY=
 YOUTH_POLICY_API_KEY=
 
 FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true
-FIRSTHOME_MIN_SERVICE_NOTICES=3
+FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5
 
 AI_PROVIDER=template
 AI_MODEL=gpt-4o-mini
@@ -182,22 +185,37 @@ http://localhost:8000/api/recommendations/housing
 
 ---
 
-## 6. Fixture와 실제 데이터 우선 운영
+## 6. 실제 데이터와 Fixture 운영
 
-이 프로젝트는 fixture만으로 고정 실행하는 구조가 아니라 실제 LH DB 데이터를 우선 사용합니다. fixture는 DB가 비었거나 실제 소유형 공고가 `FIRSTHOME_MIN_SERVICE_NOTICES`보다 적을 때 뒤에서 보충되는 안전망입니다.
+이 프로젝트는 실제 데이터를 먼저 쓰고, 실제 데이터가 부족할 때만 fixture를 보충합니다. fixture는 발표 화면을 비우지 않기 위한 보조 데이터이며 실제 공고처럼 외부 원문 링크를 제공하지 않습니다.
+
+데이터 사용 우선순위:
+
+1. DB에 저장된 실제 LH 청약 공고, 금융상품, 청년정책을 먼저 사용합니다.
+2. 활성 소유형 청약이 대한민국 17개 광역시·도별로 5개 미만이면 해당 지역에만 fixture 공고를 보충합니다.
+3. fixture 공고는 `source_meta.fixture_id`를 갖고, 화면에서는 공식 원문/공식 출처 버튼 대신 `Fixture` 표시가 나옵니다.
+4. fixture 공고는 추천 점수가 실제 공고보다 낮게 보정되어 같은 조건이면 실제 데이터가 먼저 보입니다.
 
 | 상황 | 동작 |
 |---|---|
-| DB가 비어 있음 | fixture 공고/상품/정책을 사용해 핵심 화면이 비지 않게 함 |
-| 실제 소유형 공고가 적음 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true`이면 fixture를 뒤에 보충 |
+| 실제 금융상품/정책이 DB에 있음 | 실제 DB 데이터를 추천에 사용 |
+| 실제 금융상품/정책이 DB에 없음 | fixture 금융상품/정책을 사용해 화면이 비지 않게 함 |
+| 특정 광역시·도 활성 소유형 공고가 5개 미만 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true`이면 부족분만 fixture로 DB에 보충 |
 | 실제 DB만 확인하고 싶음 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=false` 설정 후 Django 서버 재시작 |
-| 발표용 샘플 분석이 필요함 | `load_firsthome_fixture --with-demo-analysis`로 demo analysis 고정 로드 |
+| 발표용 fixture를 DB에 직접 넣고 싶음 | `load_firsthome_fixture`로 85개 fixture 공고와 분석 결과를 로드 |
 
-시연용 고정 데이터를 DB에 직접 넣고 싶을 때만 사용합니다.
+fixture 보충 기준은 `backend/.env`에서 조정합니다.
+
+```env
+FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true
+FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5
+```
+
+시연용 고정 데이터를 DB에 직접 넣고 싶을 때만 아래 명령을 사용합니다. 이 명령은 기존 공고/상품/정책을 지운 뒤 fixture를 로드하므로, 실제 수집 데이터를 보존해야 하는 상황에서는 실행하지 않습니다.
 
 ```bash
 cd backend
-python manage.py load_firsthome_fixture --with-demo-analysis
+python manage.py load_firsthome_fixture
 ```
 
 실제 DB 데이터만 확인하고 싶으면 `backend/.env`에서 아래처럼 바꾼 뒤 Django 서버를 재시작합니다.
@@ -255,22 +273,61 @@ npm run dev
 
 ---
 
-## 9. 실제 데이터 수집
+## 9. 실제 데이터 수집 순서
 
-외부 API를 사용하려면 `backend/.env`에 API 키를 넣어야 합니다.
+외부 API를 사용하려면 먼저 `backend/.env`에 API 키를 넣어야 합니다.
 
-### LH 청약 공고 수집
+```env
+DATA_GO_KR_SERVICE_KEY=공공데이터포털_LH_API_KEY
+FINLIFE_API_KEY=금융감독원_금융상품_API_KEY
+YOUTH_POLICY_API_KEY=온통청년_정책_API_KEY
+```
+
+권장 순서:
+
+1. 금융상품을 수집합니다.
+2. 청년정책을 수집합니다.
+3. LH 청약 공고를 수집합니다.
+4. 실제 공고의 공식 PDF 분석을 실행합니다.
+5. 서버를 실행하고 추천/상세 화면에서 실제 데이터와 fixture 보충 결과를 확인합니다.
+
+### 9.1 금융상품 수집
+
+금융감독원 금융상품 API에서 예금/적금 상품을 가져옵니다. 실제 DB에 저장하기 전에 `--dry-run`으로 API 키와 응답을 먼저 확인합니다.
 
 ```bash
 cd backend
+python manage.py import_finlife --dry-run
+python manage.py import_finlife --clear
+```
 
+`--clear`는 기존 금융상품을 지우고 새로 저장합니다.
+
+### 9.2 청년정책 수집
+
+온통청년 정책 API에서 정책 후보를 가져옵니다. 정책 API는 검색어 필터가 기대와 다르게 동작할 수 있으므로 넓게 수집한 뒤 서비스 내부 matcher가 나이, 지역, 소득, 무주택 여부, 정책 카테고리 기준으로 정렬합니다.
+
+```bash
+python manage.py import_youthcenter --dry-run --display 20
+python manage.py import_youthcenter --clear --page 1 --display 50
+python manage.py import_youthcenter --page 2 --display 50
+```
+
+### 9.3 LH 청약 공고 수집
+
+공공데이터포털 LH API에서 청약 공고를 가져옵니다. 현재 서비스는 소유형 청약을 대상으로 하므로 `--service-target-only`를 권장합니다.
+
+```bash
 # DB 변경 없이 수집 가능 여부 확인
 python manage.py import_lh --dry-run --service-target-only --page-size 100 --max-pages 5 --with-supply-info --supply-limit 30
 
 # 실제 DB 저장
 python manage.py import_lh --service-target-only --page-size 100 --max-pages 5 --with-supply-info --supply-limit 30
+```
 
-# 기존 공고를 지우고 다시 수집
+기존 공고를 지우고 다시 수집해야 할 때만 `--clear`를 사용합니다.
+
+```bash
 python manage.py import_lh --clear --service-target-only --page-size 100 --max-pages 5 --with-supply-info --supply-limit 30
 ```
 
@@ -278,37 +335,45 @@ python manage.py import_lh --clear --service-target-only --page-size 100 --max-p
 
 | 옵션 | 설명 |
 |---|---|
-| `--service-target-only` | 공공분양/신혼희망타운/민간참여/잔여세대 공공분양 등 서비스 대상만 저장합니다. |
+| `--service-target-only` | 공공분양/신혼희망타운/민간참여/잔여세대 공공분양 등 소유형 서비스 대상만 저장합니다. |
 | `--page-size` | 한 페이지에서 가져올 공고 수입니다. |
-| `--max-pages` | 가져올 최대 페이지 수입니다. |
+| `--max-pages` | 가져올 최대 페이지 수입니다. `0`이면 가능한 모든 페이지를 조회합니다. |
 | `--with-supply-info` | LH 공급정보 상세 API까지 조회해 주택형, 면적, 일부 분양가를 보강합니다. |
-| `--supply-limit` | 공급정보 상세 조회 개수를 제한합니다. |
-| `--clear` | 기존 공고를 지우고 새로 저장합니다. 발표용 데이터가 필요하면 신중히 사용합니다. |
+| `--supply-limit` | 공급정보 상세 조회 개수를 제한합니다. `0`이면 모든 수집 공고를 대상으로 조회합니다. |
+| `--clear` | 기존 공고를 지우고 새로 저장합니다. 실제 수집 데이터를 보존해야 하면 사용하지 않습니다. |
 
-### 공식 PDF 분석
+### 9.4 공식 PDF 분석
 
-```bash
-python manage.py analyze_notice_documents --provider=LH --limit 20 --report-json=reports/lh_actual_readiness.json --report-md=reports/lh_actual_readiness.md
-```
-
-현재 PDF 파서는 pypdf와 pdfplumber를 사용하며, 표 기반 추출을 우선합니다. 중도금 0회/1회/다회차/10회 이상, `installment_payment`, `move_in_balance` 같은 납부 타입을 구분합니다.
-
-### 금융상품 수집
+LH 공고 수집 후 공식 PDF 분석을 실행하면 상세 화면과 자금 로드맵에서 PDF 기반 주택형 옵션, 계약금, 중도금, 잔금, 융자금 일정이 우선 사용됩니다.
 
 ```bash
-python manage.py import_finlife --dry-run
-python manage.py import_finlife --clear
+python manage.py analyze_notice_documents --provider=LH --exclude-fixture --limit 20 --report-json=reports/lh_actual_readiness.json --report-md=reports/lh_actual_readiness.md
 ```
 
-### 청년정책 수집
+이미 분석된 공고까지 다시 분석하려면 `--force`를 추가합니다.
 
 ```bash
-python manage.py import_youthcenter --dry-run --display 20
-python manage.py import_youthcenter --page 1 --display 50
-python manage.py import_youthcenter --page 2 --display 50
+python manage.py analyze_notice_documents --provider=LH --exclude-fixture --force --limit 20
 ```
 
-청년정책 검색어 옵션은 API 응답 정책에 따라 기대처럼 필터링되지 않을 수 있습니다. 넓게 수집한 뒤 서비스 내부 matcher에서 나이, 지역, 소득, 무주택 여부, 정책 카테고리 기준으로 정렬하는 방식을 사용합니다.
+fixture 공고는 실제 PDF URL이 없으므로 외부 문서를 내려받지 않습니다. fixture의 분석 버튼은 미리 준비된 fixture 분석 결과를 같은 형식으로 반영합니다.
+
+### 9.5 Fixture 보충 확인
+
+실제 수집이 끝난 뒤 Django 서버를 실행하면 추천/상세 API 호출 시 부족한 지역의 fixture가 자동 보충됩니다. 기준은 `FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5`입니다.
+
+```bash
+python manage.py runserver localhost:8000
+```
+
+확인할 API:
+
+```text
+http://localhost:8000/api/notices?active=1
+http://localhost:8000/api/recommendations/housing
+```
+
+fixture 공고는 화면에 `Fixture`로 표시되고, 공식 원문/공식 출처 버튼이 나타나지 않습니다.
 
 ---
 
@@ -341,9 +406,9 @@ npm run build
 2. 조건 입력 화면에서 대표 사용자 조건 확인 또는 일부 값 수정
 3. 조건 저장 후 추천 결과로 이동
 4. 추천 카드에서 총점 100점 기준 정렬과 Top-N 주택형 옵션 확인
-5. 공고 상세에서 공식 문서 분석 상태, 체크리스트, 근거 문장 확인
-6. 필요 시 공식 공고문 분석 실행
-7. 자금 로드맵에서 선택 `option_id` 기준 계약금, 중도금, 입주잔금, 할부금, 부족액 확인
+5. 공고 상세에서 공식 문서 분석 상태, 체크리스트, 출처 페이지, 주택형 옵션 확인
+6. 필요 시 공식 공고문 분석 실행. fixture 공고는 외부 원문 버튼 대신 `Fixture` 표시가 나오는지 확인
+7. 자금 로드맵에서 선택 `option_id` 기준 계약금, 중도금, 입주잔금, 융자금, 부족액 확인
 8. 관심 공고 또는 관심 주택형 옵션 저장
 9. AI 코치 추천 질문 버튼으로 공식 확인 포인트와 이번 주 할 일 확인
 10. 관심목록에서 공고/옵션/상품/정책 저장 항목 확인 및 삭제
@@ -440,7 +505,7 @@ pip install -r backend/requirements.txt
 
 ### 실제 LH 공고가 너무 적게 보임
 
-소유형 공공분양 공고 자체가 시점에 따라 적을 수 있습니다. 기본 설정은 실제 DB 공고를 먼저 보여주고, 서비스 대상 공고가 `FIRSTHOME_MIN_SERVICE_NOTICES`보다 적으면 fixture를 보조로 붙입니다.
+소유형 공공분양 공고 자체가 시점에 따라 적을 수 있습니다. 기본 설정은 실제 DB 공고를 먼저 보여주고, 17개 광역시·도별 활성 서비스 대상 공고가 `FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION`보다 적으면 해당 지역에만 fixture를 보조로 붙입니다.
 
 대시보드와 추천 후보는 접수 마감일이 오늘 이후인 공고만 사용합니다. 마감 지난 공고까지 포함해 목록을 확인하려면 `/api/notices`를, 현재 검토 가능 공고만 확인하려면 `/api/notices?active=1`을 사용합니다.
 

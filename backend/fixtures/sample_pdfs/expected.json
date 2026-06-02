@@ -73,6 +73,84 @@
       }
     },
     {
+      "file_name": "newlywed_public_sale_namyangju_jinjeop2_a3_20251230.pdf",
+      "kind": "include",
+      "ownership_type": "newlywed_public_sale",
+      "case_type": "lh_newlywed_public_sale_downloaded_public_page",
+      "expected": {
+        "min_unit_options": 2,
+        "min_payment_schedules_per_option": 3,
+        "required_schedule_types": ["down_payment", "middle_payment", "final_payment"],
+        "required_option_types": ["basic", "minus"],
+        "required_keywords": ["신혼희망타운", "공공분양", "계약금", "중도금", "잔금"]
+      }
+    },
+    {
+      "file_name": "public_sale_cheongju_jibuk_b1_remaining_20260430.pdf",
+      "kind": "include",
+      "ownership_type": "public_sale",
+      "case_type": "lh_public_sale_remaining_first_come_first_served",
+      "expected": {
+        "min_unit_options": 1,
+        "min_payment_schedules_per_option": 2,
+        "required_schedule_types": ["down_payment", "final_payment"],
+        "required_option_types": ["basic"],
+        "required_keywords": ["공공분양", "잔여세대", "계약금", "잔금"]
+      }
+    },
+    {
+      "file_name": "newlywed_private_public_sale_wirye_xi_resupply_20240118.pdf",
+      "kind": "include",
+      "ownership_type": "newlywed_public_sale",
+      "case_type": "lh_newlywed_private_participation_resupply",
+      "expected": {
+        "min_unit_options": 3,
+        "min_payment_schedules_per_option": 2,
+        "required_schedule_types": ["down_payment", "final_payment"],
+        "required_option_types": ["basic"],
+        "required_keywords": ["신혼희망타운", "민간참여공공주택", "계약금", "잔금"]
+      }
+    },
+    {
+      "file_name": "public_sale_ulsan_down2_a10_20251230.pdf",
+      "kind": "include",
+      "ownership_type": "public_sale",
+      "case_type": "lh_public_sale_loan_and_minus",
+      "expected": {
+        "min_unit_options": 10,
+        "min_payment_schedules_per_option": 2,
+        "required_schedule_types": ["down_payment", "final_payment"],
+        "required_option_types": ["basic", "minus"],
+        "required_keywords": ["공공분양", "계약금", "잔금", "융자금"]
+      }
+    },
+    {
+      "file_name": "public_sale_incheon_yeongjong_a24_remaining_20260330.pdf",
+      "kind": "include",
+      "ownership_type": "public_sale",
+      "case_type": "lh_public_sale_remaining_multi_middle_with_loan",
+      "expected": {
+        "min_unit_options": 2,
+        "min_payment_schedules_per_option": 4,
+        "required_schedule_types": ["down_payment", "middle_payment", "final_payment"],
+        "required_option_types": ["basic"],
+        "required_keywords": ["공공분양", "잔여세대", "계약금", "중도금", "잔금", "융자금"]
+      }
+    },
+    {
+      "file_name": "public_sale_daejeon_daedong2_1_remaining_20260403.pdf",
+      "kind": "include",
+      "ownership_type": "public_sale",
+      "case_type": "lh_public_sale_residual_large_table",
+      "expected": {
+        "min_unit_options": 10,
+        "min_payment_schedules_per_option": 4,
+        "required_schedule_types": ["down_payment", "middle_payment", "final_payment"],
+        "required_option_types": ["basic", "general_supply"],
+        "required_keywords": ["공공분양", "계약금", "중도금", "잔금", "융자금"]
+      }
+    },
+    {
       "file_name": "rent_notice_506.pdf",
       "kind": "exclude",
       "ownership_type": "excluded",

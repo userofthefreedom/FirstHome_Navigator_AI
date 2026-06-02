@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from apps.notice_docs.models import HousingUnitOption
 from apps.notice_docs.serializers import serialize_checklist, serialize_document, serialize_extraction, serialize_unit_option
 from apps.notice_docs.services import analyze_notice_document as run_notice_document_analysis, document_status
+from apps.notice_docs.services.analysis import start_notice_document_analysis
 from apps.notices.models import HousingNotice
 
 
@@ -36,6 +37,21 @@ def analyze_notice_document(request, notice_id):
         return Response({"detail": "notice not found"}, status=404)
     if not notice.is_service_target:
         return Response({"detail": "service target notice is required"}, status=400)
+
+    async_requested = request.query_params.get("async") == "1" or bool(request.data.get("async"))
+    if async_requested:
+        result = start_notice_document_analysis(notice)
+        return Response(
+            {
+                "notice_id": notice.id,
+                "official_document_status": notice.official_document_status,
+                "document": serialize_document(result["document"]),
+                "analysis_summary": result["analysis_summary"],
+                "already_pending": result["already_pending"],
+                "message": "공식 문서 분석을 백그라운드 작업으로 시작했습니다. documents/status API로 진행 상태를 확인하세요.",
+            },
+            status=202,
+        )
 
     result = run_notice_document_analysis(notice)
     return Response(

@@ -15,6 +15,7 @@ export function analysisSummary(summary, fallbackStatus) {
             document_count: 0,
             unit_option_count: 0,
             latest_error: '',
+            review_issues: [],
         };
     }
     return {
@@ -30,6 +31,7 @@ export function analysisSummary(summary, fallbackStatus) {
         document_count: 0,
         unit_option_count: 0,
         latest_error: '',
+        review_issues: [],
     };
 }
 export function analysisBadgeClass(summary) {

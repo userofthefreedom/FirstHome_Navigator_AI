@@ -81,6 +81,10 @@ function paymentAmount(favorite, paymentType) {
 function sourceUrl(favorite) {
     return String(favorite.item?.source_url ?? '');
 }
+function isFixtureFavorite(favorite) {
+    const source = String(favorite.item?.data_source || '').toLowerCase();
+    return source.includes('fixture') || Boolean(favorite.item?.source_meta?.fixture_id);
+}
 async function loadFavorites() {
     loading.value = true;
     error.value = '';
@@ -254,8 +258,14 @@ onMounted(loadFavorites);
               <WalletCards class="h-4 w-4" />
               저장 옵션 자금 보기
             </RouterLink>
+            <span
+              v-if="isFixtureFavorite(favorite)"
+              class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600"
+            >
+              Fixture
+            </span>
             <a
-              v-if="sourceUrl(favorite)"
+              v-else-if="sourceUrl(favorite)"
               :href="sourceUrl(favorite)"
               target="_blank"
               rel="noreferrer"

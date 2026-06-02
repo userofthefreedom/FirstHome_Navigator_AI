@@ -237,16 +237,22 @@ def _chat_context(
     )
     evidence = "\n".join(official_context["evidence_lines"][:6]) or "- 공식 근거 문장은 아직 연결되지 않았습니다."
     checklists = "\n".join(official_context["checklist_lines"][:5]) or "- 공식 체크리스트는 아직 연결되지 않았습니다."
+    analysis = "\n".join(official_context["analysis_lines"][:5]) or "- 공식 분석 상태 정보가 아직 연결되지 않았습니다."
     return (
         f"공고: {notice['title']}\n"
         f"지역/공급유형: {notice['region']} {notice['district']} / {notice['supply_type']}\n"
         f"선택 옵션: {plan.get('unit_type', '공고 대표값')} {plan.get('floor_group', '')}\n"
+        f"옵션 유형: {plan.get('option_type', '')}\n"
         f"분양가: {plan.get('price', 0):,}원\n"
         f"계약금: {plan.get('down_payment', 0):,}원\n"
+        f"중도금: {plan.get('middle_payment', 0):,}원\n"
+        f"잔금: {plan.get('final_payment', 0):,}원\n"
+        f"융자금: {plan.get('loan_amount', 0):,}원\n"
         f"부족액: {plan.get('shortfall', 0):,}원\n"
         f"월 준비 목표: {plan.get('monthly_target', 0):,}원\n"
         f"사용자 자산: {int(profile.get('asset') or 0):,}원\n"
         f"월 저축 가능액: {int(profile.get('monthly_saving') or 0):,}원\n"
+        f"분석 상태:\n{analysis}\n"
         f"타임라인:\n{timeline}\n"
         f"공식 근거 후보:\n{evidence}\n"
         f"공식 확인 체크리스트:\n{checklists}"
@@ -260,8 +266,18 @@ def _official_context(notice_id: int, option_id: int | None) -> dict[str, Any]:
     ]
     evidence_lines: list[str] = []
     checklist_lines: list[str] = []
+    analysis_lines: list[str] = []
     try:
-        from apps.notice_docs.models import EligibilityChecklist, ExtractionEvidence, HousingUnitOption
+        from apps.notice_docs.models import EligibilityChecklist, ExtractionEvidence, HousingUnitOption, NoticeExtraction
+        from apps.notice_docs.services.status import notice_analysis_summary
+        from apps.notices.models import HousingNotice
+
+        notice_obj = HousingNotice.objects.filter(id=notice_id).first()
+        if notice_obj is not None:
+            summary = notice_analysis_summary(notice_obj)
+            analysis_lines.append(f"- 공식 분석: {summary.get('label')} / 단계 {summary.get('stage')}")
+            for issue in summary.get("review_issues", [])[:3]:
+                analysis_lines.append(f"- 검토 이슈: {issue.get('title')} - {issue.get('message')}")
 
         option = None
         if option_id:
@@ -279,6 +295,9 @@ def _official_context(notice_id: int, option_id: int | None) -> dict[str, Any]:
             )
         if option is not None:
             refs.append({"type": "unit_option", "id": str(option.id), "label": f"{option.unit_type} {option.floor_group}".strip()})
+            analysis_lines.append(
+                f"- 선택 옵션 신뢰도: {round(float(option.confidence or 0) * 100)}%, 융자금 {int(option.loan_amount or 0):,}원"
+            )
             if option.source_text:
                 evidence_lines.append(_source_line("주택형/분양가", option.source_page, option.source_text))
             for schedule in option.payment_schedules.all()[:6]:
@@ -288,16 +307,23 @@ def _official_context(notice_id: int, option_id: int | None) -> dict[str, Any]:
 
         for item in EligibilityChecklist.objects.filter(notice_id=notice_id).order_by("category", "id")[:5]:
             refs.append({"type": "checklist", "id": str(item.id), "label": item.title})
-            checklist_lines.append(f"- {item.title}: {item.condition_text}")
+            page = f"{item.page_no}쪽" if item.page_no else "페이지 확인 필요"
+            checklist_lines.append(f"- {item.title}: {page}, 신뢰도 {round(float(item.confidence or 0) * 100)}%")
             if item.evidence_text:
                 evidence_lines.append(_source_line(item.title, None, item.evidence_text))
+
+        latest_extraction = NoticeExtraction.objects.filter(notice_id=notice_id).order_by("-created_at", "-id").first()
+        raw_json = latest_extraction.raw_json if latest_extraction and isinstance(latest_extraction.raw_json, dict) else {}
+        for document in raw_json.get("required_documents", [])[:8] if isinstance(raw_json, dict) else []:
+            refs.append({"type": "required_document", "id": str(document), "label": str(document)})
+            checklist_lines.append(f"- 필수서류: {document}")
 
         for evidence in ExtractionEvidence.objects.filter(extraction__notice_id=notice_id).order_by("id")[:5]:
             refs.append({"type": "evidence", "id": str(evidence.id), "label": evidence.field_path})
             evidence_lines.append(_source_line(evidence.field_path, evidence.page_no, evidence.source_text))
     except Exception:
-        return {"refs": refs, "evidence_lines": evidence_lines, "checklist_lines": checklist_lines}
-    return {"refs": refs, "evidence_lines": evidence_lines, "checklist_lines": checklist_lines}
+        return {"refs": refs, "evidence_lines": evidence_lines, "checklist_lines": checklist_lines, "analysis_lines": analysis_lines}
+    return {"refs": refs, "evidence_lines": evidence_lines, "checklist_lines": checklist_lines, "analysis_lines": analysis_lines}
 
 
 def _source_line(label: str, page_no: int | None, text: str) -> str:

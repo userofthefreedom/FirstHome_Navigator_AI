@@ -24,12 +24,12 @@ def calculate_funding_plan(notice: dict[str, Any], profile: dict[str, Any]) -> d
         middle_payment_rate=float(notice.get("middle_payment_rate", DEFAULT_MIDDLE_PAYMENT_RATE)),
     )
     down_payment = payment_amounts["down_payment"]
+    middle_payment = payment_amounts["middle_payment"]
+    final_payment = payment_amounts["final_payment"]
     cash = available_cash(profile)
     shortfall = max(0, down_payment - cash)
     months = max(int(profile.get("target_months", 1)), 1)
     monthly_target = ceil_divide(shortfall, months)
-    middle_payment = payment_amounts["middle_payment"]
-    final_payment = payment_amounts["final_payment"]
 
     return {
         "notice_id": notice["id"],
@@ -41,16 +41,25 @@ def calculate_funding_plan(notice: dict[str, Any], profile: dict[str, Any]) -> d
         "months_until_contract": months,
         "monthly_target": monthly_target,
         "timeline": [
-            {"label": "청약 접수 마감", "date": notice["application_deadline"], "amount": 0},
-            {"label": "당첨자 발표", "date": notice["winner_date"], "amount": 0},
-            {"label": "계약금 납부", "date": notice["contract_date"], "amount": down_payment},
-            {"label": "중도금 계획 확인", "date": notice["contract_date"], "amount": middle_payment},
-            {"label": "잔금 계획 확인", "date": notice["move_in"], "amount": final_payment},
+            {"label": "청약 접수 마감", "date": notice["application_deadline"], "amount": 0, "payment_type": "application"},
+            {"label": "당첨자 발표", "date": notice["winner_date"], "amount": 0, "payment_type": "winner"},
+            {"label": "계약금 납부", "date": notice["contract_date"], "amount": down_payment, "payment_type": "down_payment"},
+            {"label": "중도금 계획 확인", "date": notice["contract_date"], "amount": middle_payment, "payment_type": "middle_payment"},
+            {"label": "잔금 계획 확인", "date": notice["move_in"], "amount": final_payment, "payment_type": "final_payment"},
         ],
+        "timeline_summary": _timeline_summary(
+            down_payment=down_payment,
+            middle_payment=middle_payment,
+            final_payment=final_payment,
+            installment_payment=0,
+            loan_amount=0,
+        ),
+        "post_balance_items": [],
+        "loan_repayment_note": "",
         "notice": (
-            "자금 로드맵은 참고용이며 실제 납부 조건은 공식 공고문과 계약 안내문에서 다시 확인해야 합니다."
+            "자금 로드맵은 참고 계산입니다. 실제 납부 조건은 공식 공고문과 계약 안내문에서 다시 확인해야 합니다."
             if price_confirmed
-            else "분양가 또는 보증금 정보가 목록에 없어 자금 계산이 제한됩니다. 공식 공고문에서 금액을 확인해야 합니다."
+            else "분양가 정보가 없어 자금 계산이 제한됩니다. 공식 공고문에서 금액을 확인해야 합니다."
         ),
     }
 
@@ -62,22 +71,13 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
     middle_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "middle_payment")
     final_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "final_payment")
     installment_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "installment_payment")
+    loan_amount = int(getattr(option, "loan_amount", 0) or 0)
     price = int(option.base_price or 0)
     cash = available_cash(profile)
     shortfall = max(0, down_payment - cash)
     months = _months_until_down_payment(schedules, profile)
     monthly_target = ceil_divide(shortfall, months)
-    loan_amount = int(getattr(option, "loan_amount", 0) or 0)
-    timeline = [
-        {
-            "label": schedule.label,
-            "date": schedule.due_date.isoformat() if schedule.due_date else "공식 확인 필요",
-            "amount": schedule.amount,
-            "payment_type": schedule.payment_type,
-            "evidence_text": schedule.evidence_text,
-        }
-        for schedule in schedules
-    ]
+    timeline = [_timeline_item_from_schedule(schedule) for schedule in schedules]
     if loan_amount > 0:
         timeline.append(
             {
@@ -85,7 +85,8 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
                 "date": "잔금 이후 상환",
                 "amount": loan_amount,
                 "payment_type": "loan",
-                "evidence_text": "분양가에 포함된 융자금으로, 잔금 이후 기관 대출 조건에 따라 상환해야 합니다.",
+                "evidence_text": "분양가에 포함된 융자금입니다. 잔금 이후 기금 대출 조건에 따라 상환 계획을 확인해야 합니다.",
+                "phase": "post_balance",
             }
         )
 
@@ -109,9 +110,22 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
         "months_until_contract": months,
         "monthly_target": monthly_target,
         "timeline": timeline,
+        "timeline_summary": _timeline_summary(
+            down_payment=down_payment,
+            middle_payment=middle_payment,
+            final_payment=final_payment,
+            installment_payment=installment_payment,
+            loan_amount=loan_amount,
+        ),
+        "post_balance_items": [item for item in timeline if item.get("phase") == "post_balance"],
+        "loan_repayment_note": (
+            "융자금은 잔금처럼 입주 전 전액 납부하는 돈이 아니라, 잔금 이후 대출 조건에 따라 상환할 금액입니다."
+            if loan_amount > 0
+            else ""
+        ),
         "notice": (
             "공식 공고문에서 추출한 주택형별 납부 일정 기준의 참고 계산입니다. "
-            "실제 계약과 납부 조건은 기관 안내와 공고문 원문을 확인해야 합니다."
+            "실제 계약과 납부 조건은 기금 안내와 공고문 원문을 확인해야 합니다."
         ),
     }
 
@@ -157,6 +171,25 @@ def _option_funding_plan(option_id: int | None, notice_id: int, profile: dict[st
     return calculate_option_funding_plan(option, profile)
 
 
+def _timeline_item_from_schedule(schedule: Any) -> dict[str, Any]:
+    return {
+        "label": schedule.label,
+        "date": schedule.due_date.isoformat() if schedule.due_date else "공식 확인 필요",
+        "amount": schedule.amount,
+        "payment_type": schedule.payment_type,
+        "evidence_text": schedule.evidence_text,
+        "phase": _payment_phase(schedule.payment_type),
+    }
+
+
+def _payment_phase(payment_type: str) -> str:
+    if payment_type in {"loan", "installment_payment"}:
+        return "post_balance" if payment_type == "loan" else "before_move_in"
+    if payment_type in {"down_payment", "middle_payment", "final_payment", "move_in_balance"}:
+        return "before_move_in"
+    return "milestone"
+
+
 def _months_until_down_payment(schedules: list[Any], profile: dict[str, Any]) -> int:
     down_payment_dates = [
         schedule.due_date
@@ -172,3 +205,24 @@ def _months_until_down_payment(schedules: list[Any], profile: dict[str, Any]) ->
     if target_date.day > today.day:
         month_delta += 1
     return max(month_delta, 1)
+
+
+def _timeline_summary(
+    *,
+    down_payment: int,
+    middle_payment: int,
+    final_payment: int,
+    installment_payment: int,
+    loan_amount: int,
+) -> dict[str, Any]:
+    due_before_move_in = down_payment + middle_payment + final_payment + installment_payment
+    return {
+        "due_before_move_in": due_before_move_in,
+        "down_payment": down_payment,
+        "middle_payment": middle_payment,
+        "final_payment": final_payment,
+        "installment_payment": installment_payment,
+        "loan_amount": loan_amount,
+        "post_balance_amount": loan_amount,
+        "has_post_balance_loan": loan_amount > 0,
+    }

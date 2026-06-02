@@ -93,6 +93,7 @@ function contextLabel(ref) {
         payment_schedule: '납부일정',
         checklist: '체크리스트',
         evidence: '근거문장',
+        required_document: '필수서류',
     };
     const type = String(ref.type ?? '');
     const label = String(ref.label ?? ref.id ?? '');

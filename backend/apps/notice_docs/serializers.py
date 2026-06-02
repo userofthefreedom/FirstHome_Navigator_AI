@@ -8,6 +8,7 @@ from apps.notice_docs.models import (
     NoticeExtraction,
     PaymentSchedule,
 )
+from apps.rules.confidence import option_confidence_explanation
 
 
 def serialize_document(document: NoticeDocument) -> dict:
@@ -92,6 +93,7 @@ def serialize_unit_option(option: HousingUnitOption) -> dict:
         "loan_amount": option.loan_amount,
         "balcony_extension_price": option.balcony_extension_price,
         "confidence": option.confidence,
+        "confidence_reasons": option_confidence_explanation(option),
         "source_page": option.source_page,
         "source_text": option.source_text,
         "payment_schedules": [

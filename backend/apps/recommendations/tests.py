@@ -11,8 +11,11 @@ from apps.policies.services.matcher import match_policies
 from apps.products.models import FinancialProduct
 from apps.products.services.matcher import match_products
 from apps.recommendations.services.ranking import ranked_recommendations
+from apps.rules.confidence import option_confidence_from_quality
 from apps.rules.funding import ceil_divide, default_payment_amounts
-from apps.rules.scoring import option_fit_score, option_type_priority
+from apps.rules.document_discovery import document_candidate_priority
+from apps.rules.retrieval import query_terms, rank_document_chunk
+from apps.rules.scoring import location_score, option_fit_score, option_funding_insights, option_type_priority
 
 
 class SharedRuleTests(SimpleTestCase):
@@ -42,35 +45,140 @@ class SharedRuleTests(SimpleTestCase):
         self.assertGreater(option_fit_score(option, profile), 80)
         self.assertGreater(option_type_priority("general_supply"), option_type_priority("pre_subscription"))
 
+    def test_option_scoring_uses_payment_schedule_span(self):
+        profile = {
+            "desired_area_min_m2": 50,
+            "desired_area_max_m2": 60,
+            "desired_price_max": 600_000_000,
+            "max_down_payment": 60_000_000,
+            "monthly_payment_capacity": 6_000_000,
+        }
+        common_option = {
+            "exclusive_area_m2": 59,
+            "base_price": 500_000_000,
+            "down_payment": 50_000_000,
+        }
+        compressed_option = {
+            **common_option,
+            "payment_schedules": [
+                {"payment_type": "middle_payment", "amount": 60_000_000, "due_date": "2027-01-01"},
+                {"payment_type": "middle_payment", "amount": 60_000_000, "due_date": "2027-02-01"},
+            ],
+        }
+        spread_option = {
+            **common_option,
+            "payment_schedules": [
+                {"payment_type": "middle_payment", "amount": 60_000_000, "due_date": "2027-01-01"},
+                {"payment_type": "middle_payment", "amount": 60_000_000, "due_date": "2028-12-01"},
+            ],
+        }
+
+        self.assertLess(option_fit_score(compressed_option, profile), option_fit_score(spread_option, profile))
+
+    def test_option_funding_insights_explain_down_payment_and_loan(self):
+        option = {
+            "exclusive_area_m2": 59,
+            "base_price": 500_000_000,
+            "loan_amount": 55_000_000,
+            "payment_schedules": [
+                {"payment_type": "down_payment", "amount": 50_000_000, "due_date": "2026-07-01"},
+                {"payment_type": "middle_payment", "amount": 120_000_000, "due_date": "2027-01-01"},
+                {"payment_type": "middle_payment", "amount": 120_000_000, "due_date": "2027-07-01"},
+                {"payment_type": "final_payment", "amount": 205_000_000, "due_date": ""},
+            ],
+        }
+        profile = {
+            "asset": 8_000_000,
+            "max_down_payment": 40_000_000,
+            "monthly_payment_capacity": 8_000_000,
+            "target_months": 10,
+        }
+
+        insights = option_funding_insights(option, profile)
+
+        self.assertEqual(insights["down_payment_shortfall"], 10_000_000)
+        self.assertEqual(insights["down_payment_monthly_target"], 1_000_000)
+        self.assertTrue(insights["has_post_balance_loan"])
+        self.assertTrue(insights["can_handle_post_balance_loan"])
+        self.assertGreater(insights["monthly_schedule_need"], 0)
+        self.assertGreater(insights["move_in_cash_gap"], 0)
+
+    def test_document_discovery_rules_prefer_notice_pdf(self):
+        notice_score = document_candidate_priority("시흥하중 A1블록 입주자모집공고문.pdf")
+        brochure_score = document_candidate_priority("단지 팸플릿.pdf")
+
+        self.assertGreater(notice_score, brochure_score)
+
+    def test_retrieval_rules_prioritize_money_tables(self):
+        terms = query_terms("계약금 중도금 잔금", ["주택가격"])
+        table_score, matched = rank_document_chunk("주택형 주택가격 계약금 중도금 잔금 59A 500,000,000", "table", terms)
+        paragraph_score, _matched = rank_document_chunk("공고 일반 안내입니다.", "paragraph", terms)
+
+        self.assertGreater(table_score, paragraph_score)
+        self.assertIn("계약금", matched)
+
+    def test_confidence_rules_cap_options_with_validation_warnings(self):
+        confidence = option_confidence_from_quality(
+            base_confidence=0.88,
+            has_price=True,
+            has_schedule=False,
+            has_source=True,
+            has_required_schedule_types=False,
+            validation_warnings=["납부 일정이 없습니다."],
+        )
+
+        self.assertLessEqual(confidence, 0.49)
+
 
 @override_settings(ROOT_URLCONF="config.urls")
 class RecommendationServiceTests(TestCase):
     def test_representative_funding_uses_asset_as_available_cash(self):
         plan = funding_plan(101, default_profile())
 
-        self.assertEqual(plan["price"], 320000000)
-        self.assertEqual(plan["down_payment"], 32000000)
+        self.assertEqual(plan["price"], 520000000)
+        self.assertEqual(plan["down_payment"], 52000000)
         self.assertEqual(plan["available_cash"], 8000000)
-        self.assertEqual(plan["shortfall"], 24000000)
-        self.assertEqual(plan["monthly_target"], 1333334)
+        self.assertEqual(plan["shortfall"], 44000000)
+        self.assertEqual(plan["monthly_target"], 2444445)
 
     def test_fixture_has_enough_demo_data(self):
-        self.assertGreaterEqual(len(notices(include_excluded=True)), 10)
-        self.assertGreaterEqual(len(notices()), 3)
+        presentation_date = date(2026, 6, 26)
+        self.assertGreaterEqual(len(notices(include_excluded=True)), 85)
+        self.assertGreaterEqual(len(notices()), 85)
         self.assertTrue(all(notice["is_service_target"] for notice in notices()))
+        self.assertTrue(all(date.fromisoformat(notice["application_deadline"]) > presentation_date for notice in notices()))
+        regions = {notice["region"] for notice in notices()}
+        self.assertGreaterEqual(len(regions), 17)
+        for region in regions:
+            self.assertGreaterEqual(sum(1 for notice in notices() if notice["region"] == region), 5)
         self.assertGreaterEqual(len(match_products(default_profile(), limit=20)), 8)
         self.assertGreaterEqual(len(match_policies(default_profile(), limit=20)), 8)
+
+    def test_gyeonggi_split_preferences_include_gyeonggi_fixture_notices(self):
+        profile = {
+            **default_profile(),
+            "preferred_regions": ["경기 남부", "경기 북부"],
+        }
+
+        recommendations = ranked_recommendations(profile, limit=20)
+
+        self.assertTrue(recommendations)
+        self.assertTrue(any(item["region"] == "경기" for item in recommendations))
+        self.assertTrue(all("경기" in f"{item['region']} {item['district']} {item['title']}" for item in recommendations))
 
     def test_top_recommendation_has_score_breakdown_and_reasons(self):
         top = ranked_recommendations(default_profile(), limit=3)[0]
 
-        self.assertEqual(top["notice_id"], 101)
         self.assertEqual(top["notice_id"], find_notice(top["notice_id"])["id"])
         self.assertEqual(set(top["score_detail"]), {"eligibility", "funding", "location", "schedule"})
         self.assertEqual(top["total_score"], sum(top["score_detail"].values()))
         self.assertEqual(top["score_max"], 100)
+        if top["data_source"] == "fixture":
+            self.assertLessEqual(top["total_score"], 70)
         self.assertIn("analysis_summary", top)
         self.assertGreaterEqual(len(top["reasons"]), 3)
+        self.assertGreaterEqual(len(top["explanations"]), 1)
+        self.assertTrue(top["selection_summary"])
 
     def test_expired_notices_are_excluded_from_current_candidates(self):
         yesterday = date.today() - timedelta(days=1)
@@ -280,6 +388,34 @@ class RecommendationServiceTests(TestCase):
         self.assertNotIn(983, south_ids)
         self.assertIn(983, north_ids)
 
+    def test_location_score_matches_region_alias_and_partial_supply_type(self):
+        notice = {
+            "region": "울산광역시",
+            "district": "울산광역시",
+            "supply_type": "신혼희망타운 공공분양",
+            "housing_type": "공공분양주택",
+        }
+        profile = {
+            "preferred_regions": ["울산"],
+            "preferred_supply_types": ["공공분양", "신혼희망타운", "민간참여형 공공분양"],
+        }
+
+        self.assertEqual(location_score(notice, profile), 30)
+
+    def test_location_score_gives_full_region_points_without_region_repeated_in_district(self):
+        notice = {
+            "region": "인천",
+            "district": "서구 검단 AA21BL",
+            "supply_type": "민간참여형 공공분양",
+            "housing_type": "공공분양주택",
+        }
+        profile = {
+            "preferred_regions": ["서울", "인천"],
+            "preferred_supply_types": ["공공분양", "뉴홈", "신혼희망타운", "민간참여형 공공분양"],
+        }
+
+        self.assertEqual(location_score(notice, profile), 30)
+
     def test_product_and_policy_matchers_change_by_profile(self):
         representative = default_profile()
         incheon_profile = {
@@ -441,8 +577,8 @@ class RecommendationServiceTests(TestCase):
         self.assertEqual(recommendation["best_option"]["option_id"], general_option.id)
         self.assertEqual(recommendation["best_option"]["option_type"], "general_supply")
 
-    @override_settings(FIRSTHOME_FIXTURE_FALLBACK={"ENABLE_SUPPLEMENT": True, "MIN_SERVICE_NOTICES": 3})
-    def test_fixture_supplements_when_real_service_notices_are_too_few(self):
+    @override_settings(FIRSTHOME_FIXTURE_FALLBACK={"ENABLE_SUPPLEMENT": True, "MIN_ACTIVE_SERVICE_NOTICES_PER_REGION": 5})
+    def test_fixture_supplements_when_real_region_service_notices_are_too_few(self):
         HousingNotice.objects.create(
             id=998,
             source_id="LH-REAL-ONE",
@@ -469,12 +605,14 @@ class RecommendationServiceTests(TestCase):
         )
 
         service_notices = notices()
+        gyeonggi_notices = [notice for notice in service_notices if "경기" in f"{notice['region']} {notice['district']}"]
 
         self.assertEqual(service_notices[0]["id"], 998)
-        self.assertGreaterEqual(len(service_notices), 3)
-        self.assertTrue(any(notice["data_source"] == "fixture fallback" for notice in service_notices[1:]))
+        self.assertGreaterEqual(len(gyeonggi_notices), 5)
+        self.assertTrue(any(notice["data_source"] == "fixture" for notice in gyeonggi_notices[1:]))
+        self.assertTrue(all(notice["source_url"] == "" for notice in service_notices if notice["data_source"] == "fixture"))
 
-    @override_settings(FIRSTHOME_FIXTURE_FALLBACK={"ENABLE_SUPPLEMENT": False, "MIN_SERVICE_NOTICES": 3})
+    @override_settings(FIRSTHOME_FIXTURE_FALLBACK={"ENABLE_SUPPLEMENT": False, "MIN_ACTIVE_SERVICE_NOTICES_PER_REGION": 5})
     def test_fixture_supplement_can_be_disabled(self):
         HousingNotice.objects.create(
             id=997,

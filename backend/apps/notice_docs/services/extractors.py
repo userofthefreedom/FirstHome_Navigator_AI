@@ -24,6 +24,10 @@ AREA_PREFIX_ROW_PATTERN = re.compile(
     r"(?P<amounts>\d{1,3}(?:,\d{3})+(?:\s+\d{1,3}(?:,\d{3})+){3,})"
 )
 DATE_PATTERN = re.compile(r"(?P<year>\d{2,4})[.년/-]\s*(?P<month>\d{1,2})[.월/-]\s*(?P<day>\d{1,2})")
+PDF_TEXT_GLITCHES = {
+    "Уў": "층",
+    "痢?": "층",
+}
 
 
 @dataclass
@@ -117,7 +121,7 @@ def _table_blocks(text: str) -> list[list[str]]:
     current: list[str] = []
     in_table = False
     for raw_line in text.splitlines():
-        line = re.sub(r"\s+", " ", raw_line).strip()
+        line = re.sub(r"\s+", " ", _normalize_pdf_text_glitches(raw_line)).strip()
         if not line:
             continue
         if TABLE_MARKER_PATTERN.match(line):
@@ -173,6 +177,8 @@ def _parse_payment_table_row(
     header_text: str,
     active_unit: str,
 ) -> tuple[ExtractedUnitOption, str] | None:
+    row = _normalize_pdf_text_glitches(row)
+    header_text = _normalize_pdf_text_glitches(header_text)
     amounts = _row_money_values(row)
     if len(amounts) < 3:
         return None
@@ -244,16 +250,19 @@ def _schedules_from_table_amounts(
     if not payment_amounts:
         return [], base_price, loan_amount, 0
 
+    has_loan_column = extraction_rules.has_loan_keyword(header_text)
     middle_count = len(re.findall(r"\d+차", header_text))
     if middle_count == 0:
         middle_count = len(re.findall(r"\d+회차", header_text))
+    if middle_count == 0 and has_loan_column and "중도금" in header_text and len(payment_amounts) >= 4:
+        middle_count = len(payment_amounts) - 3
     if middle_count == 0 and "중도금" in header_text and len(payment_amounts) >= 3:
         middle_count = len(payment_amounts) - 2
     if middle_count == 0 and "중도금" in header_text and len(payment_amounts) >= 2:
         middle_count = 1
 
     expected_payment_count = 1 + middle_count + (1 if "잔금" in header_text else 0)
-    if extraction_rules.has_loan_keyword(header_text) and len(payment_amounts) > expected_payment_count:
+    if has_loan_column and len(payment_amounts) > expected_payment_count:
         loan_amount = payment_amounts[-1]
         payment_amounts = payment_amounts[:-1]
 
@@ -292,7 +301,7 @@ def _schedules_from_table_amounts(
                 evidence_text=row,
             )
         )
-    if loan_amount == 0 and extraction_rules.has_loan_keyword(header_text):
+    if loan_amount == 0 and has_loan_column:
         remainder = base_price - sum(schedule.amount for schedule in schedules)
         if 0 < remainder < base_price:
             loan_amount = remainder
@@ -319,6 +328,7 @@ def _row_money_values(row: str) -> list[int]:
 
 
 def _row_unit_type(row: str) -> str:
+    row = _normalize_pdf_text_glitches(row)
     display_units = [
         value
         for value in re.findall(r"\b\d{2,3}[A-Z]{1,2}\b", row)
@@ -340,7 +350,7 @@ def _options_from_area_prefix_rows(page: PdfPageText, due_dates: list[date]) -> 
     options: list[ExtractedUnitOption] = []
     active_block = ""
     for raw_line in page.text.splitlines():
-        line = re.sub(r"\s+", " ", raw_line).strip()
+        line = re.sub(r"\s+", " ", _normalize_pdf_text_glitches(raw_line)).strip()
         block_match = re.search(r"B\d블록", line)
         if block_match:
             active_block = block_match.group(0)
@@ -388,9 +398,13 @@ def extract_checklist_items(pages: list[PdfPageText]) -> list[dict[str, Any]]:
     return extraction_rules.extract_checklist_items_from_pages(pages)
 
 
+def extract_required_documents_from_pages(pages: list[PdfPageText]) -> list[str]:
+    return extraction_rules.extract_required_documents_from_pages(pages)
+
+
 def _option_from_match(page: PdfPageText, match: re.Match[str], due_dates: list[date]) -> ExtractedUnitOption:
     unit_type = _normalize_unit_type(match.group("unit"))
-    meta = match.group("meta")
+    meta = _normalize_pdf_text_glitches(match.group("meta"))
     amounts = [_money_to_won(value) for value in re.findall(r"\d{1,3},\d{3}", match.group("amounts"))]
     base_price, payment_amounts, loan_amount = _split_price_amounts(amounts, page.text)
     schedules = _payment_schedules(payment_amounts, due_dates, page)
@@ -518,8 +532,15 @@ def _is_valid_base_price(value: int) -> bool:
 
 
 def _floor_group(meta: str) -> str:
-    floor = re.search(r"(최상층|\d{1,2}층|전체)", meta or "")
+    floor = re.search(r"(최상층|\d{1,2}층|전체)", _normalize_pdf_text_glitches(meta or ""))
     return floor.group(1) if floor else "전체"
+
+
+def _normalize_pdf_text_glitches(text: str) -> str:
+    normalized = text or ""
+    for broken, fixed in PDF_TEXT_GLITCHES.items():
+        normalized = normalized.replace(broken, fixed)
+    return normalized
 
 
 def _is_price_section(text: str) -> bool:

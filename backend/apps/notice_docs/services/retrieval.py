@@ -2,18 +2,9 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Iterable
 
 from apps.notice_docs.services.pdf_parser import PdfPageText
-
-
-MONEY_TERMS = ("주택가격", "공급금액", "분양가격", "계약금", "중도금", "잔금", "융자금", "납부")
-ELIGIBILITY_TERMS = ("무주택", "소득", "자산", "청약통장", "거주", "우선공급", "특별공급", "제출서류")
-PURPOSE_QUERIES = {
-    "unit_options": ("주택형 전용면적 주택가격 공급금액 계약금 중도금 잔금 융자금", MONEY_TERMS),
-    "payment_schedule": ("계약금 중도금 잔금 납부 납부일정 회차", MONEY_TERMS),
-    "eligibility": ("무주택 소득 자산 청약통장 거주 우선공급 특별공급 제출서류", ELIGIBILITY_TERMS),
-}
+from apps.rules.retrieval import PURPOSE_QUERIES, query_terms, rank_document_chunk
 
 
 @dataclass(frozen=True)
@@ -60,12 +51,12 @@ def search_document_chunks(
     pages: list[PdfPageText],
     query: str,
     *,
-    keywords: Iterable[str] = (),
+    keywords=(),
     limit: int = 8,
 ) -> list[RankedChunk]:
     chunks = build_document_chunks(pages)
-    query_terms = tuple(dict.fromkeys([*_terms(query), *[term for term in keywords if term]]))
-    ranked = [_rank_chunk(chunk, query_terms) for chunk in chunks]
+    terms = query_terms(query, keywords)
+    ranked = [_rank_chunk(chunk, terms) for chunk in chunks]
     ranked = [item for item in ranked if item.score > 0]
     ranked.sort(key=lambda item: (item.score, item.chunk.block_type == "table", -item.chunk.page_no), reverse=True)
     return ranked[:limit]
@@ -91,26 +82,8 @@ def candidate_chunks_for_notice_document(
 
 
 def _rank_chunk(chunk: DocumentChunk, query_terms: tuple[str, ...]) -> RankedChunk:
-    normalized_text = _normalize(chunk.text)
-    matched_terms: list[str] = []
-    score = 0.0
-    for term in query_terms:
-        normalized_term = _normalize(term)
-        if not normalized_term:
-            continue
-        count = normalized_text.count(normalized_term)
-        if count <= 0:
-            continue
-        matched_terms.append(term)
-        score += 1 + min(count, 5) * 0.5
-
-    if chunk.block_type == "table" and any(term in matched_terms for term in MONEY_TERMS):
-        score += 2.0
-    if re.search(r"\d{2,3}[A-Z]", chunk.text):
-        score += 1.0
-    if re.search(r"\d{1,3},\d{3}", chunk.text):
-        score += 1.0
-    return RankedChunk(chunk=chunk, score=round(score, 3), matched_terms=tuple(matched_terms))
+    score, matched_terms = rank_document_chunk(chunk.text, chunk.block_type, query_terms)
+    return RankedChunk(chunk=chunk, score=score, matched_terms=matched_terms)
 
 
 def _extract_table_blocks(text: str) -> tuple[list[str], str]:

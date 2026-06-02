@@ -206,6 +206,12 @@ class FirstHomeFixtureLoaderTests(TestCase):
 
         self.assertTrue(notice.is_service_target)
         self.assertIn(notice.ownership_type, {"public_sale", "newlywed_public_sale", "private_participation_public_sale"})
+        self.assertEqual(notice.source_url, "")
+        self.assertEqual(notice.source_meta["fixture_id"], 101)
+        self.assertEqual(notice.official_document_status, "analyzed")
+        self.assertGreaterEqual(HousingUnitOption.objects.filter(notice=notice).count(), 5)
+        self.assertGreaterEqual(notice.documents.count(), 1)
+        self.assertGreaterEqual(notice.extractions.count(), 1)
 
 
 class ImportLhSupplyOptionTests(TestCase):
