@@ -36,6 +36,7 @@ EXTERNAL_API_KEYS = {
     "DATA_GO_KR_SERVICE_KEY": os.getenv("DATA_GO_KR_SERVICE_KEY", ""),
     "FINLIFE_API_KEY": os.getenv("FINLIFE_API_KEY", ""),
     "YOUTH_POLICY_API_KEY": os.getenv("YOUTH_POLICY_API_KEY", ""),
+    "KAKAO_REST_API_KEY": os.getenv("KAKAO_REST_API_KEY", ""),
 }
 
 AI_SETTINGS = {
@@ -139,6 +140,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 20,
+        },
     }
 }
 

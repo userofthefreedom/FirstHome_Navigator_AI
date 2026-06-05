@@ -2,7 +2,7 @@ from django.test import Client, TestCase
 
 from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
 from apps.notices.models import HousingNotice
-from apps.profiles.models import Favorite, UserProfile
+from apps.profiles.models import Favorite, UserAccountState, UserProfile
 
 
 CLIENT_ID = "test-client"
@@ -236,3 +236,80 @@ class FavoriteApiTests(TestCase):
         self.assertEqual(len(favorites), 1)
         self.assertEqual(favorites[0]["favorite_type"], "notice")
         self.assertEqual(favorites[0]["object_id"], 101)
+
+    def test_existing_profile_is_not_overwritten_by_anonymous_session_on_login(self):
+        self.client.post(
+            "/api/auth/register",
+            {"username": "stable", "password": "strongpass123"},
+            content_type="application/json",
+        )
+        self.client.put(
+            "/api/profile",
+            {"name": "저장된조건", "birth_year": 1991, "asset": 88000000, "preferred_regions": ["서울"]},
+            content_type="application/json",
+        )
+        self.client.post("/api/auth/logout")
+
+        self.client.put(
+            "/api/profile",
+            {"name": "익명조건", "birth_year": 2002, "asset": 1000, "preferred_regions": ["제주"]},
+            content_type="application/json",
+        )
+        response = self.client.post(
+            "/api/auth/login",
+            {"username": "stable", "password": "strongpass123"},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["profile"]["name"], "저장된조건")
+        self.assertEqual(response.json()["profile"]["birth_year"], 1991)
+        self.assertEqual(response.json()["profile"]["asset"], 88000000)
+        self.assertEqual(response.json()["profile"]["preferred_regions"], ["서울"])
+
+    def test_account_state_persists_selected_notice_and_option_for_user(self):
+        self.client.post(
+            "/api/auth/register",
+            {"username": "state-user", "password": "strongpass123"},
+            content_type="application/json",
+        )
+        response = self.client.put(
+            "/api/account-state",
+            {"current_notice_id": 309, "current_option_id": 5523},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["current_notice_id"], 309)
+        self.assertEqual(response.json()["current_option_id"], 5523)
+
+        self.client.post("/api/auth/logout")
+        self.client.post(
+            "/api/auth/login",
+            {"username": "state-user", "password": "strongpass123"},
+            content_type="application/json",
+        )
+        response = self.client.get("/api/account-state")
+
+        self.assertEqual(response.json()["current_notice_id"], 309)
+        self.assertEqual(response.json()["current_option_id"], 5523)
+        self.assertEqual(UserAccountState.objects.get(user__username="state-user").current_notice_id, 309)
+
+    def test_recommendation_snapshot_is_saved_without_overwriting_current_selection(self):
+        self.client.post(
+            "/api/auth/register",
+            {"username": "snapshot-user", "password": "strongpass123"},
+            content_type="application/json",
+        )
+        self.client.put(
+            "/api/account-state",
+            {"current_notice_id": 309, "current_option_id": 5523},
+            content_type="application/json",
+        )
+
+        response = self.client.get("/api/recommendations/housing")
+
+        self.assertEqual(response.status_code, 200)
+        state = UserAccountState.objects.get(user__username="snapshot-user")
+        self.assertEqual(state.current_notice_id, 309)
+        self.assertEqual(state.current_option_id, 5523)
+        self.assertTrue(state.last_recommendations)

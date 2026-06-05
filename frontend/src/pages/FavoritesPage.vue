@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { Bookmark, ExternalLink, Trash2, WalletCards } from 'lucide-vue-next';
 import { fetchFavorites, removeFavorite } from '../api/firsthome';
 import { formatMoney } from '../utils/format';
+import { saveCurrentSelection } from '../utils/selectionState';
 const favorites = ref([]);
 const loading = ref(true);
 const error = ref('');
@@ -199,6 +200,7 @@ onMounted(loadFavorites);
                     v-if="row.noticeId"
                     :to="{ path: `/funding/${row.noticeId}`, query: { option_id: row.favorite.object_id } }"
                     class="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-3 text-xs font-bold text-white"
+                    @click="saveCurrentSelection(row.noticeId, row.favorite.object_id)"
                   >
                     자금 보기
                   </RouterLink>
@@ -237,15 +239,17 @@ onMounted(loadFavorites);
           <div class="mt-4 flex flex-wrap gap-2">
             <RouterLink
               v-if="favorite.favorite_type === 'notice'"
-              :to="`/notices/${favorite.object_id}`"
+              :to="{ path: `/notices/${favorite.object_id}` }"
               class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white"
+              @click="saveCurrentSelection(favorite.object_id, null)"
             >
               공고 상세
             </RouterLink>
             <RouterLink
               v-if="favorite.favorite_type === 'notice'"
-              :to="`/funding/${favorite.object_id}`"
+              :to="{ path: `/funding/${favorite.object_id}` }"
               class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700"
+              @click="saveCurrentSelection(favorite.object_id, null)"
             >
               <WalletCards class="h-4 w-4" />
               공고 자금 보기
@@ -254,6 +258,7 @@ onMounted(loadFavorites);
               v-if="favorite.favorite_type === 'option' && favorite.item?.notice_id"
               :to="{ path: `/funding/${favorite.item.notice_id}`, query: { option_id: favorite.object_id } }"
               class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white"
+              @click="saveCurrentSelection(favorite.item.notice_id, favorite.object_id)"
             >
               <WalletCards class="h-4 w-4" />
               저장 옵션 자금 보기

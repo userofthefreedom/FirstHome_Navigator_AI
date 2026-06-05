@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 
 from apps.fixture_store import load_fixture, seed_fixture_notice_analysis
 from apps.notices.models import HousingNotice
 from apps.notices.services.classifier import classify_notice_payload
+from apps.notices.services.map_locations import resolve_notice_location
 from apps.policies.models import YouthPolicy
 from apps.products.models import FinancialProduct
 
@@ -36,6 +38,7 @@ class Command(BaseCommand):
 
         for notice in data["notices"]:
             classification = classify_notice_payload(notice)
+            location = resolve_notice_location(notice)
             instance = HousingNotice.objects.create(
                 id=notice["id"],
                 source_id=f"fixture-{notice['id']}",
@@ -54,6 +57,10 @@ class Command(BaseCommand):
                 move_in=notice.get("move_in", ""),
                 competition=notice.get("competition", ""),
                 source_url="",
+                location_label=notice.get("location_label") or location["label"],
+                latitude=Decimal(str(notice.get("latitude") or location["lat"])),
+                longitude=Decimal(str(notice.get("longitude") or location["lng"])),
+                geocode_quality=notice.get("geocode_quality") or location["quality"],
                 tags=notice.get("tags", []),
                 required_documents=notice.get("required_documents", []),
                 cautions=notice.get("cautions", []),

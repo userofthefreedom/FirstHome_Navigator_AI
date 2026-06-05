@@ -40,12 +40,24 @@ export async function fetchProfile() {
     const response = await api.get('/profile');
     return response.data;
 }
+export async function fetchAccountState() {
+    const response = await api.get('/account-state');
+    return response.data;
+}
+export async function saveAccountStateToApi(accountState) {
+    const response = await api.put('/account-state', accountState);
+    return response.data;
+}
 export async function fetchDashboard() {
     const response = await api.get('/dashboard');
     return response.data;
 }
 export async function fetchNotices(params) {
     const response = await api.get('/notices', { params });
+    return response.data;
+}
+export async function fetchMapNotices(params) {
+    const response = await api.get('/notices/map', { params });
     return response.data;
 }
 export async function fetchNotice(noticeId) {
@@ -86,12 +98,12 @@ export async function fetchPolicies() {
     const response = await api.get('/recommendations/policies');
     return response.data;
 }
-export async function fetchCoachSummary(noticeId, profile) {
-    const response = await api.post('/ai/coach-summary', { notice_id: noticeId, profile });
+export async function fetchCoachSummary(noticeId, profile, optionId) {
+    const response = await api.post('/ai/coach-summary', { notice_id: noticeId, option_id: optionId, profile }, { timeout: 90000 });
     return response.data;
 }
-export async function askCoachChat(noticeId, message, profile, optionId) {
-    const response = await api.post('/ai/chat', { notice_id: noticeId, option_id: optionId, message, profile });
+export async function askCoachChat(noticeId, message, profile, optionId, pageContext = {}) {
+    const response = await api.post('/ai/chat', { notice_id: noticeId, option_id: optionId, message, profile, page_context: pageContext });
     return response.data;
 }
 export async function fetchFavorites() {

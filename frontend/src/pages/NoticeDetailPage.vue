@@ -1,14 +1,23 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft, Bookmark, Bot, CalendarDays, CheckCircle2, ExternalLink, FileCheck2, ShieldAlert, WalletCards } from 'lucide-vue-next';
 import { addFavorite, analyzeNoticeDocument, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeDocumentStatus, fetchNoticeEligibilityChecklists, fetchNoticeUnitOptions, removeFavorite } from '../api/firsthome';
 import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
 import { formatMoney } from '../utils/format';
+import { readCurrentSelection, saveCurrentSelection } from '../utils/selectionState';
 
 const route = useRoute();
+const router = useRouter();
 const noticeId = computed(() => Number(route.params.noticeId ?? 0));
-const selectedOptionId = computed(() => Number(route.query.option_id ?? 0) || null);
+const selectedOptionId = computed(() => {
+    const routeOptionId = Number(route.query.option_id ?? 0) || null;
+    if (routeOptionId)
+        return routeOptionId;
+    const stored = readCurrentSelection();
+    const currentNoticeId = noticeId.value || stored.noticeId;
+    return stored.noticeId === currentNoticeId ? stored.optionId : null;
+});
 const selectedNotice = ref(null);
 const recommendation = ref(null);
 const fundingPlan = ref(null);
@@ -190,6 +199,9 @@ const officialChecklist = computed(() => {
 async function resolveNoticeId() {
     if (noticeId.value)
         return noticeId.value;
+    const stored = readCurrentSelection();
+    if (stored.noticeId)
+        return stored.noticeId;
     const recommendations = await fetchHousingRecommendations();
     return recommendations[0]?.notice_id ?? 101;
 }
@@ -273,6 +285,7 @@ async function refreshFundingPlan(targetNoticeId) {
     catch {
         fundingPlan.value = await fetchFundingPlan(targetNoticeId);
     }
+    saveCurrentSelection(targetNoticeId, fundingPlan.value?.option_id || optionId);
 }
 
 async function selectOptionType(optionType) {
@@ -287,6 +300,8 @@ async function selectUnitOption(option) {
         return;
     activeOptionType.value = option.option_type || 'basic';
     fundingPlan.value = await fetchFundingPlan(selectedNotice.value.id, option.id);
+    saveCurrentSelection(selectedNotice.value.id, option.id);
+    await router.replace({ path: `/notices/${selectedNotice.value.id}`, query: { option_id: option.id } });
 }
 
 function isSelectedUnitOption(option) {
@@ -380,7 +395,11 @@ onMounted(loadDetail);
               <Bookmark class="h-4 w-4" :class="isFavorite ? 'fill-blue-600 text-blue-600' : ''" />
               {{ isFavorite ? '공고 저장됨' : '공고 저장' }}
             </button>
-            <RouterLink :to="{ path: `/funding/${selectedNotice.id}`, query: fundingPlan.option_id ? { option_id: fundingPlan.option_id } : {} }" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">
+            <RouterLink
+              :to="{ path: `/funding/${selectedNotice.id}`, query: fundingPlan.option_id ? { option_id: fundingPlan.option_id } : {} }"
+              class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white"
+              @click="saveCurrentSelection(selectedNotice.id, fundingPlan.option_id)"
+            >
               <WalletCards class="h-4 w-4" />
               옵션 자금 보기
             </RouterLink>
@@ -600,6 +619,7 @@ onMounted(loadDetail);
               <RouterLink
                 :to="{ path: `/funding/${selectedNotice.id}`, query: { option_id: option.id } }"
                 class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
+                @click="saveCurrentSelection(selectedNotice.id, option.id)"
               >
                 자금 보기
                 <WalletCards class="h-4 w-4" />

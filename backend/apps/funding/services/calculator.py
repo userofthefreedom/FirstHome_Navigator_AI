@@ -72,6 +72,7 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
     final_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "final_payment")
     installment_payment = sum(schedule.amount for schedule in schedules if schedule.payment_type == "installment_payment")
     loan_amount = int(getattr(option, "loan_amount", 0) or 0)
+    balcony_extension_price = int(getattr(option, "balcony_extension_price", 0) or 0)
     price = int(option.base_price or 0)
     cash = available_cash(profile)
     shortfall = max(0, down_payment - cash)
@@ -105,6 +106,7 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
         "final_payment": final_payment,
         "installment_payment": installment_payment,
         "loan_amount": loan_amount,
+        "balcony_extension_price": balcony_extension_price,
         "available_cash": cash,
         "shortfall": shortfall,
         "months_until_contract": months,

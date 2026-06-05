@@ -141,3 +141,47 @@ COACH_CHAT_SCHEMA = {
         "required": ["reply", "suggested_actions", "context_refs"],
     },
 }
+
+
+COACH_SUMMARY_SCHEMA = {
+    "name": "firsthome_coach_summary",
+    "description": "사용자의 공공분양 준비 상태를 다음 행동과 선택 판단 기준으로 구조화한다.",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "summary": {"type": "string"},
+            "todo_this_week": {"type": "array", "items": {"type": "string"}},
+            "official_checklist": {"type": "array", "items": {"type": "string"}},
+            "deep_review_items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "title": {"type": "string"},
+                        "body": {"type": "string"},
+                        "why_it_matters": {"type": "string"},
+                    },
+                    "required": ["title", "body", "why_it_matters"],
+                },
+            },
+            "decision_points": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "title": {"type": "string"},
+                        "body": {"type": "string"},
+                        "cta": {"type": "string"},
+                    },
+                    "required": ["title", "body", "cta"],
+                },
+            },
+            "warning": {"type": "string"},
+        },
+        "required": ["summary", "todo_this_week", "official_checklist", "deep_review_items", "decision_points", "warning"],
+    },
+}

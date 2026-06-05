@@ -1,29 +1,71 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { Loader2, MessageCircle, Send, Sparkles, X } from 'lucide-vue-next';
 import { askCoachChat, fetchDashboard } from '../api/firsthome';
+import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
+import { readCurrentSelection } from '../utils/selectionState';
 const route = useRoute();
+const authStore = useAuthStore();
 const profileStore = useProfileStore();
 const isOpen = ref(false);
 const pending = ref(false);
 const draft = ref('');
 const activeNoticeId = ref(null);
+const messageListRef = ref(null);
+const initialMessage = {
+    role: 'assistant',
+    content: '어느 화면에서든 청약 조건, 자금 흐름, 화면 이용 방법을 물어보세요. 선택한 공고와 옵션이 있으면 그 기준으로 답변할게요.',
+};
 const messages = ref([
     {
-        role: 'assistant',
-        content: '선택한 공고와 주택형 옵션을 기준으로 계약금 부족액, 납부 일정, 공식 확인 포인트를 정리해드릴게요.',
+        ...initialMessage,
     },
 ]);
-const quickPrompts = [
-    '이 옵션에서 내가 가장 먼저 확인할 조건은?',
-    '선택한 옵션의 계약금 부담은 어느 정도야?',
-    '59A와 74A 중 지금 자금으로 더 현실적인 옵션은?',
-    '공식 공고문에서 확인해야 할 근거는 어디야?',
-    '이번 주에 해야 할 일을 3개로 정리해줘.',
-];
 const canSend = computed(() => draft.value.trim().length > 0 && !pending.value);
+const pageType = computed(() => {
+    const name = String(route.name || '');
+    if (name === 'notice-detail')
+        return 'notice_detail';
+    if (name === 'ai-coach')
+        return 'ai_coach';
+    return name || 'unknown';
+});
+const quickPrompts = computed(() => {
+    const byPage = {
+        home: ['이 화면은 어떻게 쓰면 돼?', '처음이면 무엇부터 하면 돼?', '추천 후보를 고르는 흐름을 알려줘.'],
+        profile: ['조건 입력은 어떤 값이 중요해?', '희망 지역은 어떻게 선택해야 해?', '저장하면 어디에 반영돼?'],
+        recommendations: ['추천 점수는 어떻게 봐야 해?', '어떤 공고부터 열어보면 돼?', 'Fixture와 실제 공고는 뭐가 달라?'],
+        notice_detail: ['이 공고에서 먼저 볼 항목은?', '필수 서류는 어디에서 확인해?', '옵션을 바꾸면 뭐가 달라져?'],
+        funding: ['계약금 부족액을 어떻게 봐야 해?', '다른 옵션과 비교하는 방법은?', 'AI 코칭 받기는 언제 눌러?'],
+        ai_coach: ['바로 처리할 일을 요약해줘.', '공식 확인 항목은 어떻게 봐?', '이 후보를 계속 볼지 판단 기준은?'],
+        map: ['지도 화면은 어떻게 써?', '지역 공고를 선택하면 다음은?', '관심 지역을 비교하는 방법은?'],
+        favorites: ['관심목록은 어떻게 활용해?', '저장한 옵션 자금은 어디서 봐?', '관심 공고를 다시 비교하려면?'],
+    };
+    return byPage[pageType.value] ?? ['이 화면은 어떻게 쓰면 돼?', '청약 추천 흐름을 알려줘.', '내가 다음에 할 일은?'];
+});
+function resetChat() {
+    messages.value = [{ ...initialMessage }];
+    draft.value = '';
+    pending.value = false;
+    activeNoticeId.value = null;
+    isOpen.value = false;
+}
+async function scrollToLatestMessage() {
+    await nextTick();
+    if (!messageListRef.value)
+        return;
+    messageListRef.value.scrollTop = messageListRef.value.scrollHeight;
+}
+watch(() => authStore.user.is_authenticated, () => {
+    resetChat();
+});
+watch([messages, pending, isOpen], () => {
+    if (isOpen.value) {
+        void scrollToLatestMessage();
+    }
+}, { deep: true });
 function routeNoticeId() {
     const raw = route.params.noticeId;
     const value = Array.isArray(raw) ? raw[0] : raw;
@@ -36,11 +78,26 @@ function routeOptionId() {
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
+function selectedNoticeId() {
+    return routeNoticeId() || readCurrentSelection().noticeId || null;
+}
+function selectedOptionId() {
+    return routeOptionId() || readCurrentSelection().optionId || null;
+}
+function pageContext(noticeId) {
+    return {
+        path: route.fullPath,
+        page_type: pageType.value,
+        notice_id: noticeId || selectedNoticeId(),
+        option_id: selectedOptionId(),
+        is_authenticated: Boolean(authStore.user.is_authenticated),
+    };
+}
 async function resolveNoticeId() {
-    const fromRoute = routeNoticeId();
-    if (fromRoute) {
-        activeNoticeId.value = fromRoute;
-        return fromRoute;
+    const selected = selectedNoticeId();
+    if (selected) {
+        activeNoticeId.value = selected;
+        return selected;
     }
     if (activeNoticeId.value)
         return activeNoticeId.value;
@@ -60,7 +117,7 @@ async function sendMessage(nextMessage = draft.value) {
             await profileStore.hydrateProfile();
         }
         const noticeId = await resolveNoticeId();
-        const response = await askCoachChat(noticeId, content, profileStore.profile, routeOptionId());
+        const response = await askCoachChat(noticeId, content, profileStore.profile, selectedOptionId(), pageContext(noticeId));
         messages.value.push({
             role: 'assistant',
             content: response.reply,
@@ -94,6 +151,7 @@ function contextLabel(ref) {
         checklist: '체크리스트',
         evidence: '근거문장',
         required_document: '필수서류',
+        fixture: 'Fixture',
     };
     const type = String(ref.type ?? '');
     const label = String(ref.label ?? ref.id ?? '');
@@ -114,10 +172,10 @@ function contextLabel(ref) {
           </span>
           <div>
             <p class="flex items-center gap-1 text-sm font-bold text-white">
-              주택형 자금 코치
+              FirstHome 챗봇
               <Sparkles class="h-3.5 w-3.5 text-amber-300" />
             </p>
-            <p class="text-xs text-slate-300">옵션별 계약금, 일정, 공식 근거</p>
+            <p class="text-xs text-slate-300">화면 설명, 청약 질문, 이용 방법</p>
           </div>
         </div>
         <button
@@ -130,7 +188,7 @@ function contextLabel(ref) {
         </button>
       </div>
 
-      <div class="max-h-[380px] space-y-3 overflow-y-auto p-4">
+      <div ref="messageListRef" class="max-h-[380px] space-y-3 overflow-y-auto p-4">
         <div
           v-for="(message, index) in messages"
           :key="`${message.role}-${index}`"
@@ -149,7 +207,7 @@ function contextLabel(ref) {
               </li>
             </ul>
             <p v-if="message.source" class="mt-2 border-t border-slate-200 pt-2 text-[11px] font-bold uppercase text-slate-400">
-              source: {{ message.source }}
+              {{ message.source === 'llm' ? 'OpenAI LLM' : message.source === 'template_fallback' ? '기본 답변' : message.source }}
             </p>
             <div
               v-if="message.contextRefs?.length"
@@ -210,7 +268,7 @@ function contextLabel(ref) {
       v-else
       type="button"
       class="relative flex h-16 w-16 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700"
-      title="주택형 자금 코치 열기"
+      title="FirstHome 챗봇 열기"
       @click="isOpen = true"
     >
       <span class="text-sm font-black leading-none">AI</span>

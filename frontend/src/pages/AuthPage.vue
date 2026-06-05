@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { LogIn, LogOut, UserPlus } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
+import { clearCurrentSelection, syncCurrentSelectionWithAccount } from '../utils/selectionState';
 const router = useRouter();
 const authStore = useAuthStore();
 const profileStore = useProfileStore();
@@ -30,6 +31,7 @@ async function submit() {
             profileStore.loaded = false;
             await profileStore.hydrateProfile();
         }
+        await syncCurrentSelectionWithAccount(session.account_state);
         await router.push('/profile');
     }
     catch (exc) {
@@ -43,8 +45,8 @@ async function logout() {
     loading.value = true;
     try {
         await authStore.logout();
-        profileStore.loaded = false;
-        await profileStore.hydrateProfile();
+        profileStore.resetProfile();
+        clearCurrentSelection();
         await router.push('/');
     }
     finally {

@@ -1,12 +1,14 @@
 <script setup>
 import { computed, onMounted } from 'vue';
-import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import { Bell, Bookmark, Bot, Building2, Home, LogOut, MapPinned, Search, UserRound, WalletCards } from 'lucide-vue-next';
 import FloatingCoachChat from '../components/FloatingCoachChat.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
 import { formatMoney } from '../utils/format';
+import { clearCurrentSelection, currentSelectionRoute, syncCurrentSelectionWithAccount } from '../utils/selectionState';
 const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const profileStore = useProfileStore();
 const displayName = computed(() => {
@@ -22,10 +24,17 @@ const menus = [
     { label: '조건 입력', shortLabel: '조건', path: '/profile', icon: UserRound },
     { label: '추천 청약', shortLabel: '추천', path: '/recommendations', icon: Building2 },
     { label: '청약 지도', shortLabel: '지도', path: '/map', icon: MapPinned },
-    { label: '자금 로드맵', shortLabel: '자금', path: '/funding', icon: WalletCards },
-    { label: 'AI 코치', shortLabel: '코치', path: '/ai-coach', icon: Bot },
+    { label: '자금 로드맵', shortLabel: '자금', path: '/funding', to: currentSelectionRoute('/funding'), icon: WalletCards },
+    { label: 'AI 코치', shortLabel: '코치', path: '/ai-coach', to: currentSelectionRoute('/ai-coach'), icon: Bot },
     { label: '관심목록', shortLabel: '관심', path: '/favorites', icon: Bookmark },
 ];
+function menuTo(menu) {
+    if (menu.path === '/funding')
+        return currentSelectionRoute('/funding');
+    if (menu.path === '/ai-coach')
+        return currentSelectionRoute('/ai-coach');
+    return menu.path;
+}
 function isActive(path) {
     if (path === '/')
         return route.path === '/';
@@ -33,21 +42,23 @@ function isActive(path) {
 }
 async function handleLogout() {
     await authStore.logout();
-    profileStore.loaded = false;
-    await profileStore.hydrateProfile();
+    profileStore.resetProfile();
+    clearCurrentSelection();
+    await router.push('/');
 }
 onMounted(async () => {
+    let session = null;
     if (!authStore.loaded) {
-        const session = await authStore.hydrateAuth();
+        session = await authStore.hydrateAuth();
         if (session?.profile) {
             profileStore.setLocalProfile(session.profile);
             profileStore.loaded = true;
-            return;
         }
     }
     if (!profileStore.loaded) {
         await profileStore.hydrateProfile();
     }
+    await syncCurrentSelectionWithAccount(session?.account_state);
 });
 </script>
 
@@ -71,7 +82,7 @@ onMounted(async () => {
           <RouterLink
             v-for="menu in menus"
             :key="menu.path"
-            :to="menu.path"
+            :to="menuTo(menu)"
             class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
             :class="isActive(menu.path) ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-300 hover:bg-white/10 hover:text-white'"
           >
@@ -151,13 +162,13 @@ onMounted(async () => {
       </section>
     </main>
 
-    <FloatingCoachChat v-if="route.path === '/'" />
+    <FloatingCoachChat />
 
     <nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-slate-200 bg-white lg:hidden">
       <RouterLink
         v-for="menu in menus"
         :key="menu.path"
-        :to="menu.path"
+        :to="menuTo(menu)"
         class="flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-medium transition"
         :class="isActive(menu.path) ? 'text-blue-700' : 'text-slate-500'"
       >

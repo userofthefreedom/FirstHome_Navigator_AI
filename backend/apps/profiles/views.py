@@ -11,9 +11,13 @@ from apps.profiles.models import Favorite, UserProfile
 from apps.profiles.serializers import UserProfileSerializer
 from apps.profiles.services import (
     PROFILE_FIELDS,
+    account_state_payload as _account_state_payload,
     django_user as _django_user,
+    profile_is_default_like as _profile_is_default_like,
     profile_defaults as _profile_defaults,
     profile_payload as _profile_payload,
+    update_account_state_from_payload as _update_account_state_from_payload,
+    user_account_state as _state_for_user,
     user_profile as _profile_for_user,
 )
 
@@ -44,10 +48,26 @@ def _merge_session_profile(request, user) -> None:
     if not session_profile:
         return
     profile = _profile_for_user(user)
+    if not _profile_is_default_like(_profile_payload(profile)):
+        return
     for field in PROFILE_FIELDS:
         if field in session_profile:
             setattr(profile, field, session_profile[field])
     profile.save()
+
+
+def _session_account_state(request) -> dict:
+    return _account_state_payload(request.session.get("account_state", {}))
+
+
+def _merge_session_account_state(request, user) -> None:
+    session_state = _session_account_state(request)
+    if not session_state.get("current_notice_id"):
+        return
+    state = _state_for_user(user)
+    if state.current_notice_id:
+        return
+    _update_account_state_from_payload(state, session_state)
 
 
 def _merge_client_favorites(request, user) -> None:
@@ -169,6 +189,9 @@ def auth_me_view(request):
     payload = {"user": _serialize_user(user)}
     if user.is_authenticated:
         payload["profile"] = _profile_payload(_profile_for_user(user))
+        payload["account_state"] = _account_state_payload(_state_for_user(user))
+    else:
+        payload["account_state"] = _session_account_state(request)
     return Response(payload)
 
 
@@ -190,8 +213,16 @@ def register_view(request):
     _profile_for_user(user)
     login(request._request, user)
     _merge_session_profile(request, user)
+    _merge_session_account_state(request, user)
     _merge_client_favorites(request, user)
-    return Response({"user": _serialize_user(user), "profile": _profile_payload(_profile_for_user(user))}, status=201)
+    return Response(
+        {
+            "user": _serialize_user(user),
+            "profile": _profile_payload(_profile_for_user(user)),
+            "account_state": _account_state_payload(_state_for_user(user)),
+        },
+        status=201,
+    )
 
 
 @api_view(["POST"])
@@ -204,11 +235,34 @@ def login_view(request):
 
     login(request._request, user)
     _merge_session_profile(request, user)
+    _merge_session_account_state(request, user)
     _merge_client_favorites(request, user)
-    return Response({"user": _serialize_user(user), "profile": _profile_payload(_profile_for_user(user))})
+    return Response(
+        {
+            "user": _serialize_user(user),
+            "profile": _profile_payload(_profile_for_user(user)),
+            "account_state": _account_state_payload(_state_for_user(user)),
+        }
+    )
 
 
 @api_view(["POST"])
 def logout_view(request):
     logout(request._request)
     return Response({"user": {"is_authenticated": False}})
+
+
+@api_view(["GET", "PUT"])
+def account_state_view(request):
+    user = _django_user(request)
+    if user.is_authenticated:
+        state = _state_for_user(user)
+        if request.method == "PUT":
+            _update_account_state_from_payload(state, request.data)
+        return Response(_account_state_payload(state))
+
+    session_state = _session_account_state(request)
+    if request.method == "PUT":
+        session_state.update(_account_state_payload(request.data))
+        request.session["account_state"] = session_state
+    return Response(session_state)

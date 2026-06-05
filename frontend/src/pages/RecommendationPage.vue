@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUpDown, Bookmark, CalendarDays, ChevronRight, Clock3, E
 import { addFavorite, fetchFavorites, fetchHousingRecommendations, removeFavorite } from '../api/firsthome';
 import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
 import { formatMoney } from '../utils/format';
+import { saveCurrentSelection } from '../utils/selectionState';
 import { useProfileStore } from '../stores/profileStore';
 
 const profileStore = useProfileStore();
@@ -65,7 +66,8 @@ function representativePrice(item) {
 }
 
 function detailRoute(item) {
-    return { path: `/notices/${item.notice_id}` };
+    const option = defaultRecommendationOption(item);
+    return { path: `/notices/${item.notice_id}`, query: option?.option_id ? { option_id: option.option_id } : {} };
 }
 
 function scorePercent(item) {
@@ -260,6 +262,7 @@ onMounted(loadRecommendations);
                   v-for="option in recommendationOptions(item)"
                   :key="option.option_id"
                   :to="{ path: `/funding/${item.notice_id}`, query: { option_id: option.option_id } }"
+                  @click="saveCurrentSelection(item.notice_id, option.option_id)"
                   class="block min-w-0 rounded-lg bg-white p-3 text-sm ring-1 ring-blue-100 transition hover:bg-blue-100"
                 >
                   <div class="flex items-start justify-between gap-3">
@@ -321,6 +324,7 @@ onMounted(loadRecommendations);
             <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(representativePrice(item)) }}</p>
             <RouterLink
               :to="detailRoute(item)"
+              @click="saveCurrentSelection(item.notice_id, defaultRecommendationOption(item)?.option_id)"
               class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700"
             >
               공식 근거 보기

@@ -65,8 +65,19 @@ export const useProfileStore = defineStore('profile', () => {
             preferred_supply_types: [...nextProfile.preferred_supply_types],
         };
     }
+    function resetProfile() {
+        profile.value = {
+            ...emptyProfile,
+            special_conditions: [],
+            preferred_regions: [],
+            preferred_supply_types: [],
+        };
+        loaded.value = true;
+        error.value = '';
+        localStorage.removeItem(STORAGE_KEY);
+    }
     watch(profile, (value) => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
     }, { deep: true });
-    return { profile, loaded, error, hydrateProfile, saveProfile, setLocalProfile };
+    return { profile, loaded, error, hydrateProfile, saveProfile, setLocalProfile, resetProfile };
 });

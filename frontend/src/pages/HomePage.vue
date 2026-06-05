@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 import { CalendarDays, ClipboardList, FileCheck2, MapPin, ShieldAlert, Sparkles, Trophy } from 'lucide-vue-next';
 import { fetchDashboard, fetchFundingPlan, fetchNotices } from '../api/firsthome';
 import { formatMoney } from '../utils/format';
+import { saveCurrentSelection } from '../utils/selectionState';
 import { useProfileStore } from '../stores/profileStore';
 const profileStore = useProfileStore();
 const loading = ref(true);
@@ -346,10 +347,18 @@ onMounted(loadDashboard);
             </div>
           </div>
           <div class="mt-5 flex flex-wrap gap-2">
-            <RouterLink :to="`/notices/${selected.id}`" class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-950">
+            <RouterLink
+              :to="{ path: `/notices/${selected.id}`, query: selectedRecommendation.best_option?.option_id ? { option_id: selectedRecommendation.best_option.option_id } : {} }"
+              class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-950"
+              @click="saveCurrentSelection(selected.id, selectedRecommendation.best_option?.option_id)"
+            >
               공고문 근거
             </RouterLink>
-            <RouterLink :to="{ path: `/funding/${selected.id}`, query: selectedRecommendation.best_option?.option_id ? { option_id: selectedRecommendation.best_option.option_id } : {} }" class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white">
+            <RouterLink
+              :to="{ path: `/funding/${selected.id}`, query: selectedRecommendation.best_option?.option_id ? { option_id: selectedRecommendation.best_option.option_id } : {} }"
+              class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white"
+              @click="saveCurrentSelection(selected.id, selectedRecommendation.best_option?.option_id)"
+            >
               옵션 자금
             </RouterLink>
           </div>
@@ -495,7 +504,13 @@ onMounted(loadDashboard);
               <h2 class="text-lg font-bold text-slate-950">선택 후보 상세 요약</h2>
               <p class="mt-1 text-sm text-slate-500">{{ selected.title }} 기준</p>
             </div>
-            <RouterLink :to="`/notices/${selected.id}`" class="text-sm font-bold text-blue-700 hover:text-blue-800">상세 보기</RouterLink>
+            <RouterLink
+              :to="{ path: `/notices/${selected.id}`, query: selectedRecommendation.best_option?.option_id ? { option_id: selectedRecommendation.best_option.option_id } : {} }"
+              class="text-sm font-bold text-blue-700 hover:text-blue-800"
+              @click="saveCurrentSelection(selected.id, selectedRecommendation.best_option?.option_id)"
+            >
+              상세 보기
+            </RouterLink>
           </div>
 
           <div class="grid gap-3 sm:grid-cols-2">

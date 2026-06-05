@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from apps.policies.services.matcher import match_policies
-from apps.profiles.services import profile_from_request
+from apps.profiles.services import profile_from_request, save_last_recommendations
 from apps.products.services.matcher import match_products
 from apps.recommendations.services.ranking import recommendation_candidate_notices, ranked_recommendations
 
@@ -14,6 +14,7 @@ RECOMMENDATION_LIMIT = 6
 def dashboard(request):
     profile = profile_from_request(request)
     recommendations = ranked_recommendations(profile, limit=RECOMMENDATION_LIMIT)
+    save_last_recommendations(request, recommendations)
     return Response(
         {
             "profile": profile,
@@ -27,7 +28,9 @@ def dashboard(request):
 @api_view(["GET"])
 def housing_recommendations(request):
     profile = profile_from_request(request)
-    return Response(ranked_recommendations(profile, limit=RECOMMENDATION_LIMIT))
+    recommendations = ranked_recommendations(profile, limit=RECOMMENDATION_LIMIT)
+    save_last_recommendations(request, recommendations)
+    return Response(recommendations)
 
 
 @api_view(["GET"])

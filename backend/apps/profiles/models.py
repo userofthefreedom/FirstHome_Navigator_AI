@@ -59,3 +59,16 @@ class Favorite(models.Model):
 
     def __str__(self) -> str:
         return f"{self.favorite_type}:{self.object_id}"
+
+
+class UserAccountState(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="firsthome_state")
+    current_notice_id = models.PositiveIntegerField(null=True, blank=True)
+    current_option_id = models.PositiveIntegerField(null=True, blank=True)
+    last_recommendations = models.JSONField(default=list, blank=True)
+    last_funding_plan = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"state:{self.user_id}:{self.current_notice_id or 'none'}:{self.current_option_id or 'none'}"

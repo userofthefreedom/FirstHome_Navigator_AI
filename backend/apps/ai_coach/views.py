@@ -8,9 +8,23 @@ from apps.profiles.services import profile_from_request
 @api_view(["POST"])
 def coach_summary_view(request):
     notice_id = int(request.data.get("notice_id", 101))
+    option_id = request.data.get("option_id")
+    force_refresh = bool(request.data.get("force_refresh", False))
     profile = profile_from_request(request)
     profile.update(request.data.get("profile", {}))
-    summary = coach_summary(notice_id, profile)
+    try:
+        parsed_option_id = int(option_id) if option_id else None
+    except ValueError:
+        return Response({"detail": "option_id must be an integer"}, status=400)
+    is_authenticated = bool(getattr(request.user, "is_authenticated", False))
+    summary = coach_summary(
+        notice_id,
+        profile,
+        option_id=parsed_option_id,
+        user=request.user if is_authenticated else None,
+        allow_llm=is_authenticated,
+        force_refresh=force_refresh,
+    )
     if summary is None:
         return Response({"detail": "notice not found"}, status=404)
     return Response(summary)
@@ -24,6 +38,9 @@ def coach_chat_view(request):
         return Response({"detail": "notice_id must be an integer"}, status=400)
     option_id = request.data.get("option_id")
     message = str(request.data.get("message", "")).strip()
+    page_context = request.data.get("page_context", {})
+    if not isinstance(page_context, dict):
+        page_context = {}
     profile = profile_from_request(request)
     profile.update(request.data.get("profile", {}))
     try:
@@ -35,6 +52,7 @@ def coach_chat_view(request):
         message,
         profile,
         option_id=parsed_option_id,
+        page_context=page_context,
     )
     if response is None:
         return Response({"detail": "notice not found"}, status=404)

@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from django.test import SimpleTestCase, TestCase, override_settings
 
-from apps.fixture_store import current_notices, default_profile, find_notice, notices
+from apps.fixture_store import current_notices, default_profile, find_notice, load_fixture, notices, seed_fixture_notice_analysis
 from apps.funding.services.calculator import funding_plan
 from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
 from apps.notices.models import HousingNotice
@@ -153,6 +153,20 @@ class RecommendationServiceTests(TestCase):
             self.assertGreaterEqual(sum(1 for notice in notices() if notice["region"] == region), 5)
         self.assertGreaterEqual(len(match_products(default_profile(), limit=20)), 8)
         self.assertGreaterEqual(len(match_policies(default_profile(), limit=20)), 8)
+
+    def test_fixture_analysis_seed_is_idempotent(self):
+        fixture_notice = load_fixture()["notices"][0]
+        current_notices(include_excluded=True)
+        notice = HousingNotice.objects.get(id=int(fixture_notice["id"]))
+
+        seed_fixture_notice_analysis(notice, fixture_notice)
+        first_option_count = HousingUnitOption.objects.filter(notice=notice).count()
+        first_schedule_count = PaymentSchedule.objects.filter(unit_option__notice=notice).count()
+
+        seed_fixture_notice_analysis(notice, fixture_notice)
+
+        self.assertEqual(HousingUnitOption.objects.filter(notice=notice).count(), first_option_count)
+        self.assertEqual(PaymentSchedule.objects.filter(unit_option__notice=notice).count(), first_schedule_count)
 
     def test_gyeonggi_split_preferences_include_gyeonggi_fixture_notices(self):
         profile = {

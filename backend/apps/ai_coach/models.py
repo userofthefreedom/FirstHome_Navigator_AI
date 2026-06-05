@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
@@ -108,3 +109,30 @@ class AiChatLog(models.Model):
 
     def __str__(self) -> str:
         return f"chat:{self.notice_id or 'none'}:{self.provider}"
+
+
+class AiCoachPlan(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ai_coach_plans")
+    notice_id = models.PositiveIntegerField(db_index=True)
+    option_id = models.PositiveIntegerField(default=0, db_index=True)
+    input_hash = models.CharField(max_length=64, db_index=True)
+    payload = models.JSONField(default=dict, blank=True)
+    provider = models.CharField(max_length=40, default="template")
+    model_name = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-id"]
+        indexes = [
+            models.Index(fields=["user", "notice_id", "option_id", "input_hash"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "notice_id", "option_id", "input_hash"],
+                name="unique_ai_coach_plan_input",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"coach-plan:{self.user_id}:{self.notice_id}:{self.option_id}"

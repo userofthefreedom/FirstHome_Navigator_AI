@@ -3,6 +3,7 @@ from datetime import date
 from django.test import SimpleTestCase
 from django.core.management import call_command
 from django.test import TestCase
+from rest_framework.test import APIClient
 
 from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
 from apps.notices.management.commands.import_lh import Command as ImportLhCommand
@@ -209,9 +210,27 @@ class FirstHomeFixtureLoaderTests(TestCase):
         self.assertEqual(notice.source_url, "")
         self.assertEqual(notice.source_meta["fixture_id"], 101)
         self.assertEqual(notice.official_document_status, "analyzed")
+        self.assertIsNotNone(notice.latitude)
+        self.assertIsNotNone(notice.longitude)
+        self.assertTrue(notice.location_label)
         self.assertGreaterEqual(HousingUnitOption.objects.filter(notice=notice).count(), 5)
         self.assertGreaterEqual(notice.documents.count(), 1)
         self.assertGreaterEqual(notice.extractions.count(), 1)
+
+    def test_map_endpoint_returns_notice_locations_and_scores(self):
+        call_command("load_firsthome_fixture", verbosity=0)
+
+        response = APIClient().get("/api/notices/map", {"ownership_type": "public_sale"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertGreater(payload["count"], 0)
+        first = payload["items"][0]
+        self.assertIn("location", first)
+        self.assertIn("lat", first["location"])
+        self.assertIn("lng", first["location"])
+        self.assertIn("map_region", first)
+        self.assertIn("total_score", first)
 
 
 class ImportLhSupplyOptionTests(TestCase):

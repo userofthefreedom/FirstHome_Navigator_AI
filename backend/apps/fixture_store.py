@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import json
+import threading
 from datetime import date, datetime
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from django.conf import settings
-from django.db import OperationalError, ProgrammingError
+from django.db import OperationalError, ProgrammingError, transaction
 
 from apps.notices.services.classifier import classify_notice_payload
+from apps.notices.services.map_locations import resolve_notice_location
 from apps.notice_docs.services.status import fixture_analysis_summary, notice_analysis_summary
 
 
@@ -33,6 +36,7 @@ METROPOLITAN_REGIONS = (
     "경남",
     "제주",
 )
+_FIXTURE_MATERIALIZE_LOCK = threading.RLock()
 
 
 @lru_cache(maxsize=1)
@@ -112,6 +116,7 @@ def _db_notices() -> list[dict[str, Any]]:
 
 def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
     classification = classify_notice_payload(notice)
+    location = resolve_notice_location(notice)
     payload = {
         **notice.copy(),
         "source_id": str(notice.get("id", "")),
@@ -124,6 +129,10 @@ def _fixture_notice(notice: dict[str, Any]) -> dict[str, Any]:
         "official_document_status": notice.get("official_document_status", classification.official_document_status),
         "document_count": int(notice.get("document_count", 0) or 0),
         "unit_option_count": int(notice.get("unit_option_count", 0) or 0),
+        "location_label": notice.get("location_label") or location["label"],
+        "latitude": notice.get("latitude") or location["lat"],
+        "longitude": notice.get("longitude") or location["lng"],
+        "geocode_quality": notice.get("geocode_quality") or location["quality"],
     }
     return {**payload, "analysis_summary": fixture_analysis_summary(payload)}
 
@@ -146,10 +155,12 @@ def _notices_with_fixture_supplement(
     if min_per_region <= 0:
         return db_notices or fixture_notices
 
-    if _materialize_fixture_supplements(db_notices, fixture_notices, min_per_region=min_per_region):
-        return _db_notices()
+    with _FIXTURE_MATERIALIZE_LOCK:
+        latest_db_notices = _db_notices()
+        if _materialize_fixture_supplements(latest_db_notices, fixture_notices, min_per_region=min_per_region):
+            return _db_notices()
 
-    return db_notices or fixture_notices
+    return latest_db_notices or db_notices or fixture_notices
 
 
 def _materialize_fixture_supplements(
@@ -212,6 +223,7 @@ def _sync_existing_fixture_notices(fixture_notices: list[dict[str, Any]]) -> boo
 
 def _fixture_notice_is_stale(existing: Any, notice: dict[str, Any]) -> bool:
     fixture_id = int(notice["id"])
+    location = resolve_notice_location(notice)
     expected_fields = {
         "source_id": f"fixture-{fixture_id}",
         "title": notice["title"],
@@ -226,6 +238,10 @@ def _fixture_notice_is_stale(existing: Any, notice: dict[str, Any]) -> bool:
         "contract_date": _parse_iso_date(notice.get("contract_date")),
         "move_in": notice.get("move_in", ""),
         "source_url": "",
+        "location_label": notice.get("location_label") or location["label"],
+        "latitude": Decimal(str(notice.get("latitude") or location["lat"])),
+        "longitude": Decimal(str(notice.get("longitude") or location["lng"])),
+        "geocode_quality": notice.get("geocode_quality") or location["quality"],
     }
     return any(getattr(existing, key) != value for key, value in expected_fields.items())
 
@@ -238,8 +254,11 @@ def _materialize_fixture_notice(notice: dict[str, Any]) -> bool:
     existing = HousingNotice.objects.filter(source_meta__fixture_id=fixture_id).first()
     if existing is None:
         existing = HousingNotice.objects.filter(source_id=source_id).first()
+    if existing is not None and not _fixture_notice_is_stale(existing, notice) and _fixture_analysis_is_seeded(existing, notice):
+        return False
 
     classification = classify_notice_payload(notice)
+    location = resolve_notice_location(notice)
     defaults = {
         "source_id": source_id,
         "title": notice["title"],
@@ -257,6 +276,10 @@ def _materialize_fixture_notice(notice: dict[str, Any]) -> bool:
         "move_in": notice.get("move_in", ""),
         "competition": notice.get("competition", ""),
         "source_url": "",
+        "location_label": notice.get("location_label") or location["label"],
+        "latitude": Decimal(str(notice.get("latitude") or location["lat"])),
+        "longitude": Decimal(str(notice.get("longitude") or location["lng"])),
+        "geocode_quality": notice.get("geocode_quality") or location["quality"],
         "tags": notice.get("tags", []),
         "required_documents": notice.get("required_documents", []),
         "cautions": notice.get("cautions", []),
@@ -282,6 +305,27 @@ def _materialize_fixture_notice(notice: dict[str, Any]) -> bool:
     return created
 
 
+def _fixture_analysis_is_seeded(existing: Any, notice: dict[str, Any]) -> bool:
+    try:
+        from apps.notice_docs.models import NoticeDocument
+    except (OperationalError, ProgrammingError):
+        return False
+
+    fixture_id = int(notice["id"])
+    expected_option_count = len(notice.get("unit_options", []))
+    document_exists = NoticeDocument.objects.filter(
+        notice=existing,
+        file_id=f"fixture-{fixture_id}",
+        status="analyzed",
+    ).exists()
+    if not document_exists:
+        return False
+    try:
+        return existing.unit_options.count() >= expected_option_count
+    except (OperationalError, ProgrammingError, AttributeError):
+        return False
+
+
 def seed_fixture_notice_analysis(notice: Any, fixture_notice: dict[str, Any] | None = None) -> dict[str, Any]:
     from django.utils import timezone
 
@@ -298,77 +342,90 @@ def seed_fixture_notice_analysis(notice: Any, fixture_notice: dict[str, Any] | N
     if not fixture_notice:
         return {}
 
-    document, _created = NoticeDocument.objects.update_or_create(
-        notice=notice,
-        file_id=f"fixture-{fixture_notice['id']}",
-        defaults={
-            "provider": notice.provider,
-            "file_name": f"{fixture_notice['title']}_fixture.pdf"[:220],
-            "document_url": "",
-            "source_url": "",
-            "status": "analyzed",
-            "error_message": "",
-            "analyzed_at": timezone.now(),
-        },
-    )
-    NoticeExtraction.objects.filter(notice=notice).delete()
-    extraction = NoticeExtraction.objects.create(
-        notice=notice,
-        document=document,
-        schema_version="rules-v1",
-        status="valid",
-        confidence=0.86,
-        raw_json={
+    with transaction.atomic():
+        document = NoticeDocument.objects.filter(notice=notice, file_id=f"fixture-{fixture_notice['id']}").first()
+        if document is None:
+            document = NoticeDocument(notice=notice, file_id=f"fixture-{fixture_notice['id']}")
+        document.provider = notice.provider
+        document.file_name = f"{fixture_notice['title']}_fixture.pdf"[:220]
+        document.document_url = ""
+        document.source_url = ""
+        document.status = "analyzed"
+        document.error_message = ""
+        document.analyzed_at = timezone.now()
+        document.save()
+
+        extraction = (
+            NoticeExtraction.objects.filter(
+                notice=notice,
+                document=document,
+                schema_version="rules-v1",
+                raw_json__fixture_id=fixture_notice["id"],
+            )
+            .order_by("-id")
+            .first()
+        )
+        if extraction is None:
+            extraction = NoticeExtraction(notice=notice, document=document, schema_version="rules-v1")
+        extraction.status = "valid"
+        extraction.confidence = 0.86
+        extraction.raw_json = {
             "source": "fixture_rules",
             "fixture_id": fixture_notice["id"],
             "option_count": len(fixture_notice.get("unit_options", [])),
             "required_documents": fixture_notice.get("required_documents", []),
             "status": "valid",
-        },
-    )
+        }
+        extraction.save()
 
-    HousingUnitOption.objects.filter(notice=notice).delete()
-    for option_payload in fixture_notice.get("unit_options", []):
-        option = HousingUnitOption.objects.create(
-            notice=notice,
-            document=document,
-            extraction=extraction,
-            unit_type=option_payload["unit_type"],
-            exclusive_area_m2=float(option_payload.get("exclusive_area_m2", 0) or 0),
-            floor_group=option_payload.get("floor_group", "전체"),
-            option_type=option_payload.get("option_type", "general_supply"),
-            base_price=int(option_payload.get("base_price", 0) or 0),
-            loan_amount=int(option_payload.get("loan_amount", 0) or 0),
-            balcony_extension_price=int(option_payload.get("balcony_extension_price", 0) or 0),
-            confidence=float(option_payload.get("confidence", 0.86) or 0.86),
-            source_page=int(option_payload.get("source_page", 4) or 4),
-            source_text=option_payload.get("source_text", "fixture: 발표용 보강 공고의 주택형별 공급금액 표"),
-        )
-        for schedule_payload in option_payload.get("payment_schedules", []):
-            PaymentSchedule.objects.create(
-                unit_option=option,
-                label=schedule_payload["label"],
-                due_date=_parse_iso_date(schedule_payload.get("due_date")),
-                amount=int(schedule_payload.get("amount", 0) or 0),
-                payment_type=schedule_payload.get("payment_type", "other"),
-                sequence=int(schedule_payload.get("sequence", 0) or 0),
-                evidence_text=schedule_payload.get("evidence_text", "fixture: 공급금액 및 납부일정 표"),
+        ExtractionEvidence.objects.filter(extraction=extraction).delete()
+        kept_option_ids = []
+        for option_payload in fixture_notice.get("unit_options", []):
+            option, _created = HousingUnitOption.objects.update_or_create(
+                notice=notice,
+                unit_type=option_payload["unit_type"],
+                floor_group=option_payload.get("floor_group", "전체"),
+                option_type=option_payload.get("option_type", "general_supply"),
+                defaults={
+                    "document": document,
+                    "extraction": extraction,
+                    "exclusive_area_m2": float(option_payload.get("exclusive_area_m2", 0) or 0),
+                    "base_price": int(option_payload.get("base_price", 0) or 0),
+                    "loan_amount": int(option_payload.get("loan_amount", 0) or 0),
+                    "balcony_extension_price": int(option_payload.get("balcony_extension_price", 0) or 0),
+                    "confidence": float(option_payload.get("confidence", 0.86) or 0.86),
+                    "source_page": int(option_payload.get("source_page", 4) or 4),
+                    "source_text": option_payload.get("source_text", "fixture: 발표용 보강 공고의 주택형별 공급금액 표"),
+                },
             )
-        ExtractionEvidence.objects.create(
-            extraction=extraction,
-            field_path=f"unit_options.{option.unit_type}.base_price",
-            page_no=option.source_page,
-            source_text=option.source_text,
-            confidence=option.confidence,
-        )
+            kept_option_ids.append(option.id)
+            option.payment_schedules.all().delete()
+            for schedule_payload in option_payload.get("payment_schedules", []):
+                PaymentSchedule.objects.create(
+                    unit_option=option,
+                    label=schedule_payload["label"],
+                    due_date=_parse_iso_date(schedule_payload.get("due_date")),
+                    amount=int(schedule_payload.get("amount", 0) or 0),
+                    payment_type=schedule_payload.get("payment_type", "other"),
+                    sequence=int(schedule_payload.get("sequence", 0) or 0),
+                    evidence_text=schedule_payload.get("evidence_text", "fixture: 공급금액 및 납부일정 표"),
+                )
+            ExtractionEvidence.objects.create(
+                extraction=extraction,
+                field_path=f"unit_options.{option.unit_type}.base_price",
+                page_no=option.source_page,
+                source_text=option.source_text,
+                confidence=option.confidence,
+            )
 
-    EligibilityChecklist.objects.filter(notice=notice).delete()
-    for row in _fixture_checklist_rows(fixture_notice):
-        EligibilityChecklist.objects.create(notice=notice, document=document, **row)
+        HousingUnitOption.objects.filter(notice=notice).exclude(id__in=kept_option_ids).delete()
+        EligibilityChecklist.objects.filter(notice=notice).delete()
+        for row in _fixture_checklist_rows(fixture_notice):
+            EligibilityChecklist.objects.create(notice=notice, document=document, **row)
 
-    notice.official_document_status = "analyzed"
-    notice.required_documents = fixture_notice.get("required_documents", notice.required_documents)
-    notice.save(update_fields=["official_document_status", "required_documents", "updated_at"])
+        notice.official_document_status = "analyzed"
+        notice.required_documents = fixture_notice.get("required_documents", notice.required_documents)
+        notice.save(update_fields=["official_document_status", "required_documents", "updated_at"])
     return {"document": document, "extraction": extraction, "unit_options": list(notice.unit_options.all())}
 
 
@@ -494,6 +551,10 @@ def _serialize_notice(notice: Any) -> dict[str, Any]:
         "move_in": notice.move_in,
         "competition": notice.competition,
         "source_url": notice.source_url,
+        "location_label": getattr(notice, "location_label", ""),
+        "latitude": float(notice.latitude) if getattr(notice, "latitude", None) is not None else None,
+        "longitude": float(notice.longitude) if getattr(notice, "longitude", None) is not None else None,
+        "geocode_quality": getattr(notice, "geocode_quality", ""),
         "tags": notice.tags,
         "required_documents": notice.required_documents,
         "cautions": notice.cautions,
