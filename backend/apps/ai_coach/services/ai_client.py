@@ -94,11 +94,6 @@ def _endpoint_for_provider(provider: str) -> str:
         base_url = str(settings.AI_SETTINGS.get("OPENAI_BASE_URL", "https://api.openai.com/v1")).rstrip("/") + "/"
         path = str(settings.AI_SETTINGS.get("OPENAI_CHAT_PATH", "/chat/completions")).lstrip("/")
         return urljoin(base_url, path)
-    if provider == "local":
-        endpoint = str(settings.AI_SETTINGS.get("LOCAL_LLM_ENDPOINT", ""))
-        if not endpoint:
-            raise AiProviderUnavailable("LOCAL_LLM_ENDPOINT is missing.")
-        return endpoint
     raise AiProviderUnavailable(f"Unsupported AI_PROVIDER={provider}")
 
 

@@ -1,4 +1,4 @@
-import tempfile
+﻿import tempfile
 import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, patch
@@ -34,7 +34,6 @@ from apps.notices.models import HousingNotice
         "OPENAI_API_KEY": "",
         "OPENAI_BASE_URL": "https://api.openai.com/v1",
         "OPENAI_CHAT_PATH": "/chat/completions",
-        "LOCAL_LLM_ENDPOINT": "",
         "REQUEST_TIMEOUT": 30,
         "ENABLE_LLM_EXTRACTION": False,
         "ENABLE_LLM_CHAT": False,

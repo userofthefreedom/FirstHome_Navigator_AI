@@ -1,4 +1,4 @@
-import json
+﻿import json
 import tempfile
 from unittest.mock import Mock, patch
 
@@ -75,7 +75,6 @@ class AiExtractionResultTests(TestCase):
         "OPENAI_API_KEY": "",
         "OPENAI_BASE_URL": "https://api.openai.com/v1",
         "OPENAI_CHAT_PATH": "/chat/completions",
-        "LOCAL_LLM_ENDPOINT": "",
         "REQUEST_TIMEOUT": 30,
         "ENABLE_LLM_EXTRACTION": False,
         "ENABLE_LLM_CHAT": False,
@@ -245,7 +244,6 @@ class AiCoachChatApiTests(TestCase):
             "OPENAI_API_KEY": "test-key",
             "OPENAI_BASE_URL": "https://api.openai.com/v1",
             "OPENAI_CHAT_PATH": "/chat/completions",
-            "LOCAL_LLM_ENDPOINT": "",
             "REQUEST_TIMEOUT": 30,
             "ENABLE_LLM_EXTRACTION": False,
             "ENABLE_LLM_CHAT": True,
@@ -294,7 +292,6 @@ class AiCoachChatApiTests(TestCase):
             "OPENAI_API_KEY": "test-key",
             "OPENAI_BASE_URL": "https://api.openai.com/v1",
             "OPENAI_CHAT_PATH": "/chat/completions",
-            "LOCAL_LLM_ENDPOINT": "",
             "REQUEST_TIMEOUT": 30,
             "ENABLE_LLM_EXTRACTION": False,
             "ENABLE_LLM_CHAT": True,
@@ -389,7 +386,6 @@ class AiCoachChatApiTests(TestCase):
             "OPENAI_API_KEY": "test-key",
             "OPENAI_BASE_URL": "https://api.openai.com/v1",
             "OPENAI_CHAT_PATH": "/chat/completions",
-            "LOCAL_LLM_ENDPOINT": "",
             "REQUEST_TIMEOUT": 30,
             "ENABLE_LLM_EXTRACTION": False,
             "ENABLE_LLM_CHAT": True,
@@ -418,7 +414,6 @@ class AiCoachChatApiTests(TestCase):
             "OPENAI_API_KEY": "test-key",
             "OPENAI_BASE_URL": "https://api.openai.com/v1",
             "OPENAI_CHAT_PATH": "/chat/completions",
-            "LOCAL_LLM_ENDPOINT": "",
             "REQUEST_TIMEOUT": 30,
             "ENABLE_LLM_EXTRACTION": False,
             "ENABLE_LLM_CHAT": True,

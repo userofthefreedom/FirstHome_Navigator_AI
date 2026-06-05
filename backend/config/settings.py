@@ -40,15 +40,14 @@ EXTERNAL_API_KEYS = {
 }
 
 AI_SETTINGS = {
-    "PROVIDER": os.getenv("AI_PROVIDER", "template"),
+    "PROVIDER": os.getenv("AI_PROVIDER", "openai"),
     "MODEL": os.getenv("AI_MODEL", "gpt-4o-mini"),
     "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
     "OPENAI_BASE_URL": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
     "OPENAI_CHAT_PATH": os.getenv("OPENAI_CHAT_PATH", "/chat/completions"),
-    "LOCAL_LLM_ENDPOINT": os.getenv("LOCAL_LLM_ENDPOINT", ""),
     "REQUEST_TIMEOUT": int(os.getenv("AI_REQUEST_TIMEOUT", "30")),
-    "ENABLE_LLM_EXTRACTION": os.getenv("AI_ENABLE_LLM_EXTRACTION", "false").lower() == "true",
-    "ENABLE_LLM_CHAT": os.getenv("AI_ENABLE_LLM_CHAT", "false").lower() == "true",
+    "ENABLE_LLM_EXTRACTION": os.getenv("AI_ENABLE_LLM_EXTRACTION", "true").lower() == "true",
+    "ENABLE_LLM_CHAT": os.getenv("AI_ENABLE_LLM_CHAT", "true").lower() == "true",
 }
 
 FIRSTHOME_FIXTURE_FALLBACK = {

@@ -2,7 +2,7 @@
 
 첫 주택 마련을 준비하는 사용자가 실제 LH 청약 공고와 공식 PDF 공고문을 바탕으로 추천 청약, 주택형 옵션, 분양가, 계약금/중도금/잔금 일정, 자금 부족분, 공식 근거, AI 코치 답변을 확인할 수 있는 서비스입니다.
 
-이 README는 현재 코드와 `docs/FirstHome_Navigator_AI_개발공유용_확장기획서_v8.0.docx` 기준의 운영 흐름을 바탕으로 정리했습니다. 팀 터미널 기본값은 bash이므로 모든 명령은 bash 기준입니다.
+팀 터미널 기본값은 bash이므로 모든 명령은 bash 기준입니다.
 
 현재 프로젝트는 다음 방향으로 동작합니다.
 
@@ -10,10 +10,12 @@
 - 금융상품, 청년정책, 청약 공고는 외부 API 또는 DB 데이터를 먼저 사용하고, fixture는 부족한 부분을 보충하는 안전망으로만 사용합니다.
 - 청약 fixture는 17개 광역시·도별 활성 소유형 공고가 5개 미만일 때 부족분만 뒤에 보충합니다.
 - fixture 공고는 공식 원문 링크 대신 `Fixture`로 표시되며, 추천 점수도 실제 공고보다 낮게 보정됩니다.
-- AI는 기본값으로 외부 LLM을 호출하지 않는 `template` 모드입니다.
+- AI 기본값은 `openai`입니다. AI 코치, 전역 챗봇, LLM 보조 PDF 분석을 사용하려면 `OPENAI_API_KEY`를 넣어야 합니다.
+- HuggingFace/local model serving은 현재 단계의 PDF 해석 핵심 방식에서 제외했습니다. 현재 전략은 rule-first, 공식 PDF 구조 파싱, 필요 시 GPT 보조, template fallback입니다.
 - 공식 PDF 분석 결과가 있으면 주택형별 납부 일정이 우선 사용됩니다.
 - 중도금은 0회, 1회, 여러 회차, 10회 이상 모두 가능한 반복 일정으로 처리합니다.
 - 추천 점수는 정책/상품을 제외하고 자격 35점, 자금 25점, 지역 30점, 일정 10점의 100점 만점으로 계산합니다.
+- 청약 지도는 Kakao Map JavaScript SDK로 화면을 렌더링하고, Kakao Local REST API는 백엔드에서 위치 좌표 보강에 사용합니다.
 
 ---
 
@@ -112,22 +114,24 @@ DJANGO_DEBUG=true
 DATA_GO_KR_SERVICE_KEY=
 FINLIFE_API_KEY=
 YOUTH_POLICY_API_KEY=
+KAKAO_REST_API_KEY=
 
 FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true
 FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5
 
-AI_PROVIDER=template
+AI_PROVIDER=openai
 AI_MODEL=gpt-4o-mini
-AI_ENABLE_LLM_EXTRACTION=false
-AI_ENABLE_LLM_CHAT=false
+AI_ENABLE_LLM_EXTRACTION=true
+AI_ENABLE_LLM_CHAT=true
 AI_REQUEST_TIMEOUT=30
 OPENAI_API_KEY=
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_CHAT_PATH=/chat/completions
-LOCAL_LLM_ENDPOINT=
 ```
 
 API Key는 개인 정보이므로 Git, ZIP, 팀 채팅방, 문서에 공유하지 않습니다.
+
+`KAKAO_REST_API_KEY`는 지도 화면을 직접 띄우는 키가 아니라 백엔드에서 공고 위치를 좌표로 보강할 때 사용하는 REST API 키입니다. Kakao Developers에서 REST API 키의 호출 허용 IP를 제한하는 경우 `http://localhost:5173` 같은 URL은 넣을 수 없습니다. 로컬 개발 중에는 IP 제한을 비워두거나 현재 PC의 외부 IPv4 주소를 등록합니다.
 
 ### Frontend
 
@@ -140,9 +144,21 @@ cp .env.example .env
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
+VITE_KAKAO_MAP_JS_KEY=
 ```
 
 Vite에서는 브라우저 코드에서 사용할 환경 변수 이름이 `VITE_`로 시작해야 합니다.
+
+`VITE_KAKAO_MAP_JS_KEY`는 Kakao Map JavaScript SDK용 키입니다. Kakao Developers의 JavaScript 키 설정에는 프론트 접속 도메인을 등록합니다.
+
+개발 환경에서 주로 쓰는 도메인:
+
+```text
+http://localhost:5173
+http://127.0.0.1:5173
+```
+
+도메인이나 키를 바꾼 뒤에는 프론트 서버를 재시작해야 합니다.
 
 ---
 
@@ -178,10 +194,11 @@ python manage.py runserver localhost:8000
 http://localhost:8000/api/dashboard
 http://localhost:8000/api/notices
 http://localhost:8000/api/notices?active=1
+http://localhost:8000/api/notices/map
 http://localhost:8000/api/recommendations/housing
 ```
 
-`/api/notices`는 전체 공고 목록이고, `/api/notices?active=1`은 접수 마감일이 오늘 이후인 현재 검토 가능 공고만 반환합니다. 대시보드와 추천 후보는 마감 지난 공고를 기본 후보에서 제외합니다.
+`/api/notices`는 전체 공고 목록이고, `/api/notices?active=1`은 접수 마감일이 오늘 이후인 현재 검토 가능 공고만 반환합니다. `/api/notices/map`은 지도 표시용 공고 목록입니다. 대시보드와 추천 후보는 마감 지난 공고를 기본 후보에서 제외합니다.
 
 ---
 
@@ -289,7 +306,8 @@ YOUTH_POLICY_API_KEY=온통청년_정책_API_KEY
 2. 청년정책을 수집합니다.
 3. LH 청약 공고를 수집합니다.
 4. 실제 공고의 공식 PDF 분석을 실행합니다.
-5. 서버를 실행하고 추천/상세 화면에서 실제 데이터와 fixture 보충 결과를 확인합니다.
+5. Kakao Local REST API로 지도 위치 좌표를 보강합니다.
+6. 서버를 실행하고 추천/상세/지도 화면에서 실제 데이터와 fixture 보충 결과를 확인합니다.
 
 ### 9.1 금융상품 수집
 
@@ -358,7 +376,36 @@ python manage.py analyze_notice_documents --provider=LH --exclude-fixture --forc
 
 fixture 공고는 실제 PDF URL이 없으므로 외부 문서를 내려받지 않습니다. fixture의 분석 버튼은 미리 준비된 fixture 분석 결과를 같은 형식으로 반영합니다.
 
-### 9.5 Fixture 보충 확인
+### 9.5 지도 위치 좌표 보강
+
+청약 지도는 저장된 좌표가 있으면 그 좌표를 사용하고, 없으면 지역 기준 fallback 좌표를 사용합니다. 실제 단지 위치에 가깝게 표시하려면 `backend/.env`에 `KAKAO_REST_API_KEY`를 넣고 좌표 보강 명령을 실행합니다.
+
+먼저 DB 변경 없이 결과를 확인합니다.
+
+```bash
+python manage.py geocode_notice_locations --dry-run --limit 30
+```
+
+문제가 없으면 실제 좌표를 저장합니다.
+
+```bash
+python manage.py geocode_notice_locations --limit 30
+```
+
+이미 좌표가 있는 공고까지 다시 보정해야 할 때만 `--overwrite`를 사용합니다.
+
+```bash
+python manage.py geocode_notice_locations --overwrite --limit 30
+```
+
+주의할 점:
+
+- Kakao REST API 키는 백엔드에서만 사용합니다.
+- REST API 키의 호출 허용 IP는 URL이 아니라 IP 주소 기준입니다.
+- LH 공고의 지구명만으로는 정확한 주소를 찾지 못할 수 있습니다. 이 경우 지도는 지역 fallback 좌표를 사용하고, 화면에는 위치 정확도 안내가 표시됩니다.
+- fixture 공고는 실제 공식 주소가 없으므로 fixture에 들어 있는 보조 좌표를 사용합니다.
+
+### 9.6 Fixture 보충 확인
 
 실제 수집이 끝난 뒤 Django 서버를 실행하면 추천/상세 API 호출 시 부족한 지역의 fixture가 자동 보충됩니다. 기준은 `FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5`입니다.
 
@@ -370,6 +417,7 @@ python manage.py runserver localhost:8000
 
 ```text
 http://localhost:8000/api/notices?active=1
+http://localhost:8000/api/notices/map
 http://localhost:8000/api/recommendations/housing
 ```
 
@@ -406,13 +454,16 @@ npm run build
 2. 조건 입력 화면에서 대표 사용자 조건 확인 또는 일부 값 수정
 3. 조건 저장 후 추천 결과로 이동
 4. 추천 카드에서 총점 100점 기준 정렬과 Top-N 주택형 옵션 확인
-5. 공고 상세에서 공식 문서 분석 상태, 체크리스트, 출처 페이지, 주택형 옵션 확인
-6. 필요 시 공식 공고문 분석 실행. fixture 공고는 외부 원문 버튼 대신 `Fixture` 표시가 나오는지 확인
-7. 자금 로드맵에서 선택 `option_id` 기준 계약금, 중도금, 입주잔금, 융자금, 부족액 확인
-8. 관심 공고 또는 관심 주택형 옵션 저장
-9. AI 코치 추천 질문 버튼으로 공식 확인 포인트와 이번 주 할 일 확인
-10. 관심목록에서 공고/옵션/상품/정책 저장 항목 확인 및 삭제
-11. 새로고침 후 프로필과 관심목록 유지 확인
+5. 청약 지도에서 실제/fixture 공고 위치, 지역 필터, 공급유형 필터, 지도 공고 목록 확인
+6. 공고 상세에서 공식 문서 분석 상태, 체크리스트, 출처 페이지, 주택형 옵션 확인
+7. 필요 시 공식 공고문 분석 실행. fixture 공고는 외부 원문 버튼 대신 `Fixture` 표시가 나오는지 확인
+8. 자금 로드맵에서 선택 `option_id` 기준 계약금, 중도금, 입주잔금, 융자금, 부족액 확인
+9. 자금 로드맵 또는 공고 상세에서 AI 코치로 이동해 선택 공고와 선택 옵션 기준의 다음 행동 확인
+10. 전역 챗봇에서 현재 화면 이용 방법 또는 청약 관련 질문을 입력해 답변 확인
+11. 관심 공고 또는 관심 주택형 옵션 저장
+12. 관심목록에서 공고/옵션/상품/정책 저장 항목 확인 및 삭제
+13. 로그인 사용자는 새로고침 후 프로필, 선택 공고/옵션, 관심목록이 유지되는지 확인
+14. 로그아웃 후 조건과 선택 상태가 초기화되는지 확인
 
 대표 사용자 조건:
 
@@ -438,30 +489,55 @@ npm run build
 | Method | Endpoint | 설명 |
 |---|---|---|
 | GET | `/api/dashboard` | 대시보드 |
+| GET | `/api/auth/me` | 현재 로그인 세션 |
 | GET/PUT | `/api/profile` | 사용자 조건 조회/저장 |
+| GET/PUT | `/api/account-state` | 로그인 사용자의 선택 공고, 선택 옵션, 추천 결과 상태 |
 | POST | `/api/auth/register` | 회원가입 및 세션 로그인 |
 | POST | `/api/auth/login` | 로그인 |
 | POST | `/api/auth/logout` | 로그아웃 |
 | GET/POST/DELETE | `/api/favorites` | 관심목록 |
 | GET | `/api/notices` | 전체 공고 목록 |
 | GET | `/api/notices?active=1` | 접수 마감일이 오늘 이후인 현재 검토 가능 공고 목록 |
+| GET | `/api/notices/map` | 지도 표시용 공고 목록 |
 | GET | `/api/notices/{noticeId}` | 공고 상세 |
 | GET | `/api/notices/{noticeId}/documents/status` | 공식 문서 분석 상태 |
 | POST | `/api/notices/{noticeId}/documents/analyze` | 공식 문서 분석 실행 |
+| POST | `/api/notices/{noticeId}/documents/analyze?async=1` | 공식 문서 분석을 pending 상태로 시작 |
 | GET | `/api/notices/{noticeId}/unit-options` | 주택형 옵션 |
 | GET | `/api/notices/{noticeId}/eligibility-checklists` | 자격 체크리스트 |
 | GET | `/api/recommendations/housing` | 추천 청약 |
 | GET | `/api/recommendations/funding/{noticeId}?option_id={optionId}` | 선택 주택형 옵션 기준 자금 계획 |
 | GET | `/api/recommendations/products` | 금융상품 추천 |
 | GET | `/api/recommendations/policies` | 정책 추천 |
-| POST | `/api/ai/coach-summary` | AI 코치 요약 |
-| POST | `/api/ai/chat` | AI 코치 채팅 |
+| POST | `/api/ai/coach-summary` | 선택 공고/옵션 기준 AI 코치 플랜 |
+| POST | `/api/ai/chat` | 전역 챗봇 답변 |
 
 ---
 
 ## 13. AI 설정
 
-기본값은 외부 LLM을 호출하지 않는 `template` 모드입니다. 발표/개발 안정성을 위해 기본 실행은 `template` 모드를 권장합니다.
+기본값은 OpenAI-compatible Chat Completions API를 호출하는 `openai` 모드입니다. `backend/.env`에 `OPENAI_API_KEY`가 없으면 AI 코치와 전역 챗봇은 template fallback 또는 오류 안내로 내려갈 수 있습니다.
+
+현재 AI 기능은 두 갈래입니다.
+
+| 기능 | 역할 | LLM 사용 |
+|---|---|---|
+| 전역 챗봇 | 모든 화면에서 서비스 이용 방법, 현재 화면, 청약 관련 질문에 답변 | `AI_PROVIDER=openai`, `AI_ENABLE_LLM_CHAT=true`일 때 LLM 사용 |
+| AI 코치 | 사용자가 선택한 공고와 주택형 옵션 기준으로 이번 주 할 일, 공식 확인 포인트, 선택 기준 정리 | `AI_PROVIDER=openai`, `AI_ENABLE_LLM_CHAT=true`일 때 LLM 사용, 로그인 사용자는 같은 입력에 대해 캐시 재사용 |
+| PDF 구조 분석 | 공식 공고문에서 주택형, 금액, 일정, 융자금, 서류 근거 추출 | rule-first가 기본이며 `AI_ENABLE_LLM_EXTRACTION=true`일 때만 LLM 보조 |
+
+```env
+AI_PROVIDER=openai
+AI_MODEL=gpt-4o-mini
+AI_ENABLE_LLM_EXTRACTION=true
+AI_ENABLE_LLM_CHAT=true
+AI_REQUEST_TIMEOUT=30
+OPENAI_API_KEY=본인_API_KEY
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_CHAT_PATH=/chat/completions
+```
+
+외부 LLM 호출 없이 rule/template fallback만 확인하고 싶을 때는 아래처럼 바꾼 뒤 Django 서버를 재시작합니다.
 
 ```env
 AI_PROVIDER=template
@@ -469,16 +545,7 @@ AI_ENABLE_LLM_EXTRACTION=false
 AI_ENABLE_LLM_CHAT=false
 ```
 
-OpenAI-compatible provider를 사용하려면 아래처럼 설정하고 Django 서버를 재시작합니다.
-
-```env
-AI_PROVIDER=openai
-OPENAI_API_KEY=본인_API_KEY
-AI_ENABLE_LLM_CHAT=true
-AI_ENABLE_LLM_EXTRACTION=true
-```
-
-로컬 LLM 서버를 사용할 때는 `AI_PROVIDER=local`과 `LOCAL_LLM_ENDPOINT`를 사용합니다. AI 답변은 참고 정보이며 청약 당첨, 신청 가능 여부, 대출 승인, 정책 수급을 확정하지 않습니다.
+HuggingFace/local model serving은 현재 단계에서 사용하지 않습니다. AI 답변은 참고 정보이며 청약 당첨, 신청 가능 여부, 대출 승인, 정책 수급을 확정하지 않습니다.
 
 ---
 
@@ -503,6 +570,25 @@ pip install -r backend/requirements.txt
 - `backend/config/settings.py`의 `CORS_ALLOWED_ORIGINS`에 접속 주소가 포함되어 있는지
 - Django 서버를 CORS 설정 변경 후 재시작했는지
 
+### 청약 지도 화면이 비어 있거나 Kakao 지도가 뜨지 않음
+
+확인할 것:
+
+- `frontend/.env`에 `VITE_KAKAO_MAP_JS_KEY`가 있는지
+- Kakao Developers의 JavaScript 키 설정에 `http://localhost:5173` 또는 실제 접속 도메인이 등록되어 있는지
+- 프론트 서버를 `.env` 수정 후 재시작했는지
+- `/api/notices/map`이 200으로 응답하는지
+
+지도 화면은 Kakao Map JavaScript SDK 키를 사용합니다. 백엔드 `KAKAO_REST_API_KEY`만 넣어서는 브라우저 지도 화면이 뜨지 않습니다.
+
+### Kakao REST API 키의 호출 허용 IP가 유효하지 않다고 나옴
+
+REST API 키의 호출 허용 IP에는 URL을 넣을 수 없습니다. `http://localhost:5173`은 JavaScript 키 도메인에 넣고, REST API 키는 IP 제한을 비워두거나 현재 서버의 외부 IPv4 주소를 넣습니다.
+
+### 지도 위치가 실제 단지보다 넓은 지역 중심으로 보임
+
+LH 공고가 정확한 도로명 주소 없이 지구명만 제공하면 Kakao geocoding이 실패할 수 있습니다. 이 경우 서비스는 지역 fallback 좌표를 사용합니다. `geocode_notice_locations` 명령으로 좌표를 보강하고, 그래도 실패하는 공고는 지도 화면의 위치 정확도 안내를 기준으로 확인합니다.
+
 ### 실제 LH 공고가 너무 적게 보임
 
 소유형 공공분양 공고 자체가 시점에 따라 적을 수 있습니다. 기본 설정은 실제 DB 공고를 먼저 보여주고, 17개 광역시·도별 활성 서비스 대상 공고가 `FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION`보다 적으면 해당 지역에만 fixture를 보조로 붙입니다.
@@ -511,7 +597,7 @@ pip install -r backend/requirements.txt
 
 ### AI가 외부 모델을 호출하지 않음
 
-기본값은 `AI_PROVIDER=template`입니다. 외부 LLM을 쓰려면 `AI_PROVIDER=openai`, `OPENAI_API_KEY`, `AI_ENABLE_LLM_CHAT=true` 또는 `AI_ENABLE_LLM_EXTRACTION=true`를 설정한 뒤 서버를 재시작합니다.
+기본값은 `AI_PROVIDER=openai`입니다. `OPENAI_API_KEY`가 비어 있으면 LLM 호출이 실패하거나 template fallback으로 내려갈 수 있습니다. 키를 넣은 뒤 Django 서버를 재시작합니다.
 
 ---
 
