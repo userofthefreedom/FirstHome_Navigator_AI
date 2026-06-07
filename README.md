@@ -77,21 +77,26 @@ backend/
   fixtures/            시연 보조 fixture
   manage.py
   requirements.txt
-  requirements-ai.txt
 
 frontend/
-  public/
+  public/              favicon, 공통 SVG 아이콘 등 정적 파일
   src/
-    api/
-    components/
-    layouts/
-    pages/
-    router/
-    stores/
-    utils/
-    main.js
-  package.json
-  vite.config.js
+    api/               Axios 기반 backend API wrapper
+    components/        전역 챗봇 등 재사용 컴포넌트
+    layouts/           사이드바, 상단바, 모바일 nav 공통 레이아웃
+    pages/             대시보드, 조건 입력, 추천, 지도, 상세, 자금, AI 코치 화면
+    router/            Vue Router 경로 정의
+    stores/            Pinia 인증/프로필 상태
+    utils/             금액 포맷, 분석 상태, 선택 공고/옵션 상태 유틸
+    main.js            Vue 앱 진입점
+  package.json         프론트 의존성 및 npm scripts
+  vite.config.js       Vite 설정
+
+docs/
+  README.md
+  history/             과거 MVP/확장 기획서 버전 문서
+  api_guide/           실행 가이드, API Key 신청 가이드
+  detail/              ERD, Use Case, 와이어프레임, WBS, 참고자료
 ```
 
 ---
@@ -173,11 +178,7 @@ python -m pip install --upgrade pip
 pip install -r backend/requirements.txt
 ```
 
-현재 기본 기능 실행에는 `backend/requirements.txt`만 필요합니다. 임베딩/로컬 AI 실험용 패키지가 필요할 때만 별도로 설치합니다.
-
-```bash
-pip install -r backend/requirements-ai.txt
-```
+현재 프로젝트는 HuggingFace/local model serving을 사용하지 않으므로 별도 AI requirements 파일이 없습니다. AI 코치, 전역 챗봇, LLM 보조 PDF 분석은 `requirements.txt`의 기본 의존성과 OpenAI-compatible API 호출로 동작합니다.
 
 DB를 준비하고 서버를 실행합니다.
 
