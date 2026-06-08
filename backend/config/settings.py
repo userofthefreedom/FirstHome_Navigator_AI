@@ -30,7 +30,12 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-+kh8+(+yt5%-io_upre
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "testserver"]
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "testserver",
+    "webshots-heading-jul-chip.trycloudflare.com",
+]
 
 EXTERNAL_API_KEYS = {
     "DATA_GO_KR_SERVICE_KEY": os.getenv("DATA_GO_KR_SERVICE_KEY", ""),
@@ -110,6 +115,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'config.urls'
 
