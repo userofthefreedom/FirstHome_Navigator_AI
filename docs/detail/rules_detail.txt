@@ -1,0 +1,536 @@
+FirstHome rules detail
+작성 기준: 2026-06-12
+
+이 문서는 FirstHome Navigator AI에서 "판단"이 들어가는 규칙을 한 곳에서 설명하기 위한 운영 문서다.
+실제 규칙 코드는 backend/apps/rules/ 아래를 중심으로 두고, 각 app은 필요한 규칙을 import해 사용한다.
+추천 점수, 자금 계산, 지역 매칭, 공고 분류, PDF 분석, 정책/금융/대출 후보 선정, AI 응답 안전장치가 이 문서의 대상이다.
+
+중요한 전제
+- 이 서비스는 소유형 공공분양 청약 준비를 돕는 참고 서비스다.
+- 청약 신청 가능 여부, 당첨, 대출 승인, 정책 수급을 보장하지 않는다.
+- 화면 계산보다 공식 공고문 원문, 금융기관 심사, 정책 기관 안내가 우선한다.
+- fixture는 실제 데이터 부족을 보완하는 시연/안전망 데이터이며 실제 공고처럼 원문 링크를 제공하지 않는다.
+
+1. 조건 입력값 저장과 단위
+
+관련 파일
+- frontend/src/pages/ProfileFormPage.vue
+- frontend/src/stores/profileStore.js
+- backend/apps/profiles/views.py
+- backend/apps/profiles/models.py
+- backend/apps/rules/funding.py
+- backend/apps/rules/scoring.py
+
+저장 흐름
+- 비로그인 사용자는 Django session profile에 저장한다.
+- 로그인 사용자는 UserProfile DB에 저장한다.
+- 로그아웃하면 프론트 선택 상태와 임시 조건을 초기화한다.
+- 로그인 사용자는 입력 조건, 선택 공고/옵션, AI 코치 캐시가 사용자 기준으로 이어진다.
+
+단위
+- 금액 입력 UI는 만원 단위로 받는다.
+- API/DB/계산 내부 값은 원 단위다.
+- 면적 입력 UI는 m2와 평 입력을 지원한다.
+- API/DB/계산 내부 값은 m2 단위다.
+- 평 변환은 1평 = 3.305785m2 기준이다.
+
+계산에 직접 쓰지 않는 값
+- name은 점수 계산에는 쓰지 않고 화면 문구와 AI 코치 호칭에 사용한다.
+
+2. 자금 기본 규칙
+
+관련 파일
+- backend/apps/rules/funding.py
+- backend/apps/funding/services/calculator.py
+- backend/apps/rules/scoring.py
+
+기본 비율
+- DEFAULT_CONTRACT_RATE = 0.1
+- DEFAULT_MIDDLE_PAYMENT_RATE = 0.6
+- 공고/옵션에 실제 납부 일정이 있으면 실제 일정을 우선한다.
+- 대표 공고값만 있을 때는 분양가 기준 계약금 10%, 중도금 60%, 잔금 30%로 기본 계산한다.
+
+부채 반영
+- debt_cash_reserve = debt * 0.3
+- debt_monthly_reserve = ceil(debt / 60)
+- available_cash = max(0, asset - debt_cash_reserve)
+- effective_down_payment_cash = max(0, max_down_payment 또는 asset - debt_cash_reserve)
+- effective_monthly_capacity = max(0, monthly_payment_capacity 또는 monthly_saving * job_status_factor - debt_monthly_reserve)
+
+직업 상태 계수
+- employed: 1.0
+- self_employed: 0.95
+- student: 0.9
+- unemployed: 0.85
+- 알 수 없는 값: 0.85
+- 직업 상태는 최종 추천 점수 감점은 약하게, AI 코치 우선 확인 항목에는 강하게 반영한다.
+
+자금 로드맵 표시 원칙
+- "준비 가능 현금" 표시는 사용자가 입력한 보유 현금 흐름을 직관적으로 보여준다.
+- 내부 자금 점수와 부족액 계산에는 부채 reserve를 반영할 수 있다.
+- 부족액 표시는 기본적으로 계약금 - 현재 현금 관점이 사용자에게 가장 직관적이다.
+- 융자금은 잔금처럼 입주 전 전액 납부하는 돈이 아니라 잔금 이후 대출 조건에 따라 상환할 금액으로 분리한다.
+
+3. 청약 추천 점수
+
+관련 파일
+- backend/apps/recommendations/services/scoring.py
+- backend/apps/recommendations/services/ranking.py
+- backend/apps/rules/scoring.py
+
+총점은 100점이다.
+- eligibility: 35점
+- funding: 25점
+- location: 30점
+- schedule: 10점
+
+자격 점수 eligibility_score, 최대 35점
+- 무주택이면 +8
+- 청약통장 가입기간이 공고 요구 개월 이상이면 +7, 아니면 +3
+- 공고 age_min <= 사용자 나이 <= age_max이면 +6, 아니면 +2
+- annual_income <= notice.max_income이면 +6
+- asset <= notice.max_asset이면 +4
+- special_conditions가 공고 tag와 맞으면 +4
+  - first_home + 생애최초
+  - youth + 청년
+- 특별조건이 맞지 않아도 기본 +1
+- 최종값은 35점으로 clamp한다.
+
+지역 점수 location_score, 최대 30점
+- preferred_regions 중 하나가 공고 지역과 매칭되면 +24
+- preferred_supply_types 중 하나가 공고 공급유형/주택유형과 매칭되면 +6
+- 최종값은 30점으로 clamp한다.
+
+일정 점수 schedule_score, 최대 10점
+- 접수 마감까지 7일 이상 남으면 +3
+- 접수 마감이 지나지 않았지만 7일 미만이면 +1
+- 계약일까지 30일 이상 남으면 +5
+- 계약일이 지나지 않았지만 30일 미만이면 +2
+- 입주 예정이 2027-01 이후이면 +2, 아니면 +1
+- 최종값은 10점으로 clamp한다.
+
+자금 점수 funding_score_from_plan, 최대 25점
+- 계약금이 없으면 중립값 10점
+- 준비율 = min(available_cash / down_payment, 1)
+- 준비율 * 10점을 더한다.
+- 부족액이 3,000만원 이하이면 +5
+- 부족액이 5,000만원 이하이면 +3
+- 그보다 크면 +1
+- 월 준비 목표가 effective_monthly_capacity 이하이면 +7
+- 월 준비 목표가 effective_monthly_capacity * 1.5 이하이면 +4
+- 그보다 크면 +1
+- target_months >= 12이고 계약일까지 30일 이상이면 +3, 아니면 +1
+- 최종값은 25점으로 clamp한다.
+
+fixture 공고 감점
+- backend/apps/recommendations/services/ranking.py
+- fixture 공고는 실제 공고보다 낮게 보이도록 점수 보정을 한다.
+- eligibility -10
+- funding -4
+- schedule -8
+- location은 사용자가 고른 지역 일치성을 보여주는 축이라 감점하지 않는다.
+
+4. 주택형 옵션 점수
+
+관련 파일
+- backend/apps/rules/scoring.py
+- backend/apps/recommendations/services/ranking.py
+
+옵션 우선순위
+- general_supply: 4
+- basic: 3
+- pre_subscription: 2
+- minus: 1
+- 기타: 0
+
+option_fit_score는 100점 기준이다.
+
+면적 점수, 최대 35점
+- exclusive_area_m2가 희망 최소/최대 범위 안이면 35점
+- 범위를 벗어나면 초과/미달 비율만큼 감점한다.
+- 감점식: max(0, 35 - gap_ratio * 100)
+- 면적값이 없으면 0점
+
+가격 점수, 최대 35점
+- base_price가 희망 분양가 최소/최대 범위 안이면 35점
+- 희망 최대보다 비싸면 max(0, 35 - gap_ratio * 100)
+- 희망 최소보다 싸면 max(15, 35 - gap_ratio * 50)
+- 가격값이 없으면 10점
+
+계약금 점수
+- 계약금이 있고 effective_down_payment_cash 안에 들어오면 +20
+- 계약금 부족액을 target_months 동안 effective_monthly_capacity로 준비 가능하면 +14
+- 계약금은 있지만 부담이 크면 +8
+- 계약금이 없으면 +5
+
+중도금/할부 일정 점수
+- 월 필요액이 effective_monthly_capacity 이하이면 +10
+- 1.5배 이하이면 +6
+- 그보다 크면 +4
+- 일정 데이터가 없으면 +5
+
+입주 전 총액 점수
+- move_in_cash_gap == 0이고 due_before_move_in > 0이면 +4
+- gap이 있지만 6개월치 준비 여력 안이면 +2
+- gap이 크면 -6
+
+융자금 점수
+- loan_amount > 0이고 loan_monthly_hint가 월 여력보다 크면 -4
+- loan_amount > 0이지만 월 여력과 비교할 수 없거나 부담이 크지 않으면 -1
+- due_before_move_in이 price 이하로 정상 범위면 +2
+
+대표 옵션 선정
+- 공고별 옵션은 option_type_priority, option_fit_score, confidence 순으로 정렬한다.
+- 사용자가 특정 옵션을 선택한 경우 그 선택을 유지한다.
+- 공고만 선택된 경우 해당 공고 안의 대표 옵션을 사용한다.
+- 아무 선택도 없으면 추천 1위 공고와 그 안의 대표 옵션을 사용한다.
+
+5. 지역 규칙
+
+관련 파일
+- backend/apps/rules/regions.py
+
+기본 원칙
+- 대한민국 광역자치단체는 canonical label로 통일한다.
+- 서울, 부산, 대구, 인천, 광주, 대전, 울산, 세종, 경기, 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주를 기본 권역으로 본다.
+- 경기 북부/경기 남부는 공식 행정구역이 아니라 FirstHome 서비스 편의를 위한 하위 버킷이다.
+
+경기 북부 키워드
+- 고양, 남양주, 파주, 의정부, 양주시, 구리, 포천, 동두천, 가평, 연천
+
+경기 남부 키워드
+- 수원, 성남, 용인, 화성, 동탄, 평택, 오산, 안성, 이천, 여주, 광주, 하남, 과천, 안양, 군포, 의왕, 안산, 시흥, 광명, 부천, 양평
+
+매칭 규칙
+- preferred_region이 경기이면 경기도 전체를 허용한다.
+- preferred_region이 경기 북부/남부이면 제목, 지역, 지구명, source_meta.supply_summary.district에서 하위 버킷 키워드를 찾는다.
+- 하위 버킷 키워드가 있으면 그 버킷과 정확히 맞아야 한다.
+- 하위 버킷 키워드가 없고 지역값이 단순 경기/경기도이면 보수적으로 매칭을 허용할 수 있다.
+- 정책/지도/추천에서 같은 region_matches 계열 규칙을 공유한다.
+
+6. 공고 분류 규칙
+
+관련 파일
+- backend/apps/rules/notice_classification.py
+- backend/apps/notices/services/classifier.py
+
+서비스 대상
+- public_sale
+- newlywed_public_sale
+- private_participation_public_sale
+
+강제 제외 키워드
+- 행복주택, 국민임대, 영구임대, 매입임대, 장기전세, 든든전세, 전세, 신혼희망타운 임대
+- 분양전환, 10년공공임대, 청년 공공주택
+- 일반매각, 분양광고, 오피스텔, 상가, 임대
+
+분류 우선순위
+- 오피스텔/상가/토지는 서비스 범위 밖으로 제외한다.
+- 강제 제외 키워드가 있으면 excluded 처리한다.
+- 신혼희망타운 + 공공분양이면 newlywed_public_sale
+- 민간참여 + 공공분양이면 private_participation_public_sale
+- 공공분양주택/공공분양/분양주택이면 public_sale
+- 무순위/잔여세대/선착순 계열은 공공분양 여부 확인 필요 상태로 둔다.
+- 그 외는 소유형 공공분양 여부 확인 필요 상태로 둔다.
+
+LH 공고 수집 보조 규칙
+- 토지, 상가, 주차장, 주유소, 산업시설, 근린생활은 LH 공고 후보에서 제외한다.
+- 주택, 임대, 분양, 행복, 국민, 영구, 매입, 전세, 공공 키워드를 주택 관련 후보 판별에 사용한다.
+- 최종 서비스 노출은 위의 소유형 공공분양 분류를 다시 통과해야 한다.
+
+7. PDF/공식 문서 분석 규칙
+
+관련 파일
+- backend/apps/rules/document_discovery.py
+- backend/apps/rules/document_extraction.py
+- backend/apps/rules/retrieval.py
+- backend/apps/rules/confidence.py
+- backend/apps/notice_docs/services/analysis.py
+
+문서 후보 우선순위
+- PDF이면 +50
+- HWP/HWPX이면 +15
+- 입주자모집공고문/입주자 모집공고문/모집공고문이면 +80
+- 입주자모집/모집공고/공고문이면 +40
+- 팸플릿, 브로슈어, 위임장, 동의서, 견본주택, 안내문, 서식, 동호, 배치도, 평면도, 발코니, 옵션, cad, dwg는 -45
+
+금액 섹션 판별
+- 주택가격, 계약금, 중도금, 잔금, 공급금액, 분양가격 중 3개 이상 있으면 가격 섹션으로 본다.
+
+옵션 추출 유효성
+- 전용면적은 20m2 이상 120m2 이하만 유효하다.
+- 분양가는 1억원 이상 20억원 이하만 유효하다.
+- 최대 추출 옵션 수는 50개다.
+
+융자금 판별 키워드
+- 융자금, 대출금, 주택도시기금
+
+옵션 유형 판별
+- 사전청약 또는 계약금 5% 문구가 있으면 pre_subscription
+- 일반 당첨자/특별공급/일반공급 또는 계약금 10% 문구가 있으면 general_supply
+- 마이너스 문구가 있으면 minus
+- 그 외는 basic
+
+공식 확인 체크리스트
+- 무주택 기준 확인
+- 소득·자산 기준 확인
+- 청약통장 요건 확인
+- 지역 우선공급 확인
+- 각 항목은 키워드 수, 선호 문구, 페이지 번호, 기준/판정 문구를 기준으로 근거 페이지와 신뢰도를 계산한다.
+
+제출서류 후보
+- 제출서류/구비서류/계약서류/당첨자 제출서류 섹션에서 발견되면 높은 점수를 준다.
+- 20쪽 이후에서 발견되면 추가 가중치를 준다.
+- 필수 문구가 있으면 추가 가중치를 준다.
+- 후보는 최대 18개까지 표시한다.
+
+문서 검색 chunk 랭킹
+- 금액, 자격, 서류, 유의사항 목적별 query term을 사용한다.
+- table 블록에서 금액 용어가 맞으면 +2
+- 제출서류와 주민등록이 함께 있으면 +1
+- 공급금액과 납부가 함께 있으면 +1
+- 주택형 패턴 또는 금액 패턴이 있으면 각각 +1
+
+8. 신뢰도 규칙
+
+관련 파일
+- backend/apps/rules/confidence.py
+
+옵션 신뢰도
+- 기본 하한: 0.55
+- 최대값: 0.94
+- 검토 필요 cap: 0.49
+- 분양가가 있으면 +0.04, 없으면 -0.12
+- 일정이 있으면 +0.05, 없으면 -0.12
+- source가 있으면 +0.03, 없으면 -0.06
+- 필수 일정 유형이 있으면 +0.04, 없으면 -0.04
+- 융자금 신호가 있으면 +0.02
+- validation warning이 있으면 warning 수당 0.04씩, 최대 0.18 감점하고 0.49 이하로 제한한다.
+
+체크리스트 신뢰도
+- 기본 0.62
+- preferred phrase 점수는 최대 +0.16
+- keyword 점수는 최대 +0.12
+- 4쪽 이후면 +0.03
+- 기준/판정 같은 정의 marker가 있으면 +0.02
+- 최종값은 0.58 이상 0.91 이하로 clamp한다.
+
+추출 묶음 신뢰도
+- 옵션 신뢰도의 단순 평균을 사용한다.
+
+9. 금융상품 추천 규칙
+
+관련 파일
+- backend/apps/products/services/matcher.py
+- backend/apps/rules/matching.py
+- backend/apps/fixture_store.py
+
+대상
+- 예금/적금/청약통장 계열 금융상품 후보
+- 자금 로드맵 하단에서는 "금융 상품 후보"로 표시한다.
+
+점수 product_match_score
+- target_months와 term_months 차이가 6개월 이하면 +4
+- term_months가 target_months + 12개월 이내이면 +2
+- monthly_limit이 없거나 월 저축 가능액 이상이면 +3
+- monthly_limit이 월 저축 가능액의 70% 이상이면 +2
+- category가 적금 또는 청약통장이면 +2
+- 예금자보호 등 protection_status가 있으면 +1
+- source_url이 있으면 +1
+
+10. 구입자금 대출 추천 규칙
+
+관련 파일
+- backend/apps/products/services/loan_matcher.py
+- backend/apps/funding/services/calculator.py
+
+대상 목적
+- purchase
+- public_purchase
+- first_home_purchase
+
+제외 목적
+- rent
+- jeonse
+- monthly_rent
+- subscription_collateral
+- credit
+
+제외 키워드
+- 전세, 월세, 임차, 임대, 보증금대출
+- 청약통장담보, 청약저축담보, 예금담보
+- 신용대출, 마이너스통장
+
+기본 점수
+- 시작 점수 30점
+
+가산/감점
+- 연령 조건 충족 +8, 미충족 -8
+- 소득 기준 없음 또는 annual_income <= max_income이면 +12, 초과 -18
+- 무주택 요건이 없거나 사용자가 무주택이면 +12, 아니면 -20
+- 선택 주택형 분양가가 max_price 이하이면 +8, 초과 -12
+- 선택 주택형 전용면적이 max_area_m2 이하이면 +6, 초과 -10
+- 대출 한도가 cash_gap 이상이면 +10
+- 대출 한도가 cash_gap의 70% 이상이면 +5
+- 대출 한도가 부족하면 -10
+- 추정 월 상환액이 effective_monthly_capacity 이하이면 +5
+- 추정 월 상환액이 월 여력을 넘으면 -8
+- source_url이 있으면 +3
+- fixture 대출은 -8
+- 최종값은 0 이상 100 이하로 clamp한다.
+
+cash_gap 계산
+- due_before_move_in = 계약금 + 중도금 + 할부금 + 잔금
+- down_payment_shortfall = 계약금 부족액
+- current_cash = profile.asset 또는 funding_plan.available_cash 또는 available_cash(profile)
+- cash_gap = max(down_payment_shortfall, due_before_move_in - current_cash, 0)
+
+정렬/중복 제거
+- real source_url 데이터가 가장 우선이다.
+- DB 데이터가 fixture보다 우선이다.
+- fixture는 보조 데이터다.
+- provider, category, base_name 기준으로 중복을 제거한다.
+
+11. 정책 추천 규칙
+
+관련 파일
+- backend/apps/policies/services/matcher.py
+- backend/apps/rules/matching.py
+
+정책 후보 필터
+- 청약/주거 서비스와 무관하면 후보에서 제외한다.
+- 주거, 청약, 주택, 공공분양, 분양, 월세, 전세, 보증금, 임차보증금, 임대, 주택구입, 구입자금, 주택담보, 내집, 첫집, 부동산 키워드를 사용한다.
+- 창업자, 사업장, 점포, 상가, 보행환경, 도로, 거리 조성, 환경 개선, 정비사업 등 주거 직접성이 낮은 정책은 제외한다.
+
+지역 필터
+- 전국 정책은 허용한다.
+- 전국이 아니면 사용자가 선택한 preferred_regions와 매칭되어야 한다.
+- 사용자가 부산을 골랐는데 강화도/경상도 등 다른 지역 정책이 나오면 안 된다.
+- 지역 텍스트가 provider/name/target/benefit에만 들어 있어도 지역을 추론한다.
+
+정책 점수
+- 연령 조건 충족 +4
+- 소득 기준 없음 또는 annual_income <= max_income이면 +3
+- 정책 지역이 사용자 선택 지역과 직접 매칭되면 +4
+- 전국 정책이면 +2
+- 무주택 요건이 없거나 사용자가 무주택이면 +2
+- 카테고리가 월세/전세/주거지원/상담/주거이면 +1
+- source_url이 있으면 +1
+- fixture 정책은 -2
+- 온통청년 데이터는 source_priority 1, fixture는 0으로 둔다.
+
+12. fixture 운영 규칙
+
+관련 파일
+- backend/apps/fixture_store.py
+- backend/fixtures/firsthome_mvp.json
+- backend/apps/recommendations/services/ranking.py
+
+청약 fixture
+- 실제 DB 공고를 먼저 사용한다.
+- 활성 소유형 공공분양 공고가 광역자치단체별 기준치보다 적으면 부족한 지역에만 fixture를 보충한다.
+- 기본 기준은 FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5다.
+- fixture 공고는 data_source=fixture 또는 source_meta.fixture_id를 가진다.
+- 화면에서는 공식 원문/공식 출처 버튼 대신 Fixture로 표시한다.
+- fixture 공고는 실제 PDF가 없으므로 seed_fixture_notice_analysis로 구조화 분석 결과를 만든다.
+
+금융/정책/대출 fixture
+- 실제 DB 데이터가 있으면 실제 데이터와 fixture를 합치되, 중복은 제외한다.
+- 실제 데이터가 전혀 없으면 fixture만 사용한다.
+- 대출 fixture는 -8, 정책 fixture는 -2, 공고 fixture는 추천 세부 점수에서 별도 감점한다.
+
+13. AI 코치와 챗봇 규칙
+
+관련 파일
+- backend/apps/ai_coach/services/prompt_templates.py
+- backend/apps/ai_coach/services/ai_client.py
+- backend/apps/ai_coach/services/safety_filter.py
+- backend/apps/rules/safety.py
+
+AI 코치
+- 선택 공고와 선택 주택형 옵션 기준으로 이번 주 할 일, 선택 판단 기준, 공식 확인 항목을 만든다.
+- 로그인 사용자만 실제 LLM 심층 분석을 받는다.
+- 비로그인 사용자는 예시/로그인 유도 화면을 본다.
+- 로그인 사용자는 notice, option, profile, official_context 기반 input_hash가 같으면 기존 AiCoachPlan 캐시를 재사용한다.
+- fixture는 실제 PDF가 없다는 점을 명확히 표시하고, fixture 구조화 데이터 기준 예시 분석으로 제한한다.
+- 이미 option_id가 있는 흐름에서는 "후보를 하나 정하세요" 같은 조언을 하지 않는다.
+
+전역 챗봇
+- 모든 화면에서 현재 화면 사용법과 청약 관련 질문에 답한다.
+- page_context를 받아 화면별 버튼/다음 행동을 설명한다.
+- 새로고침, 로그인, 로그아웃 시 대화 기록은 초기화한다.
+- 새 메시지가 생기면 챗봇 스크롤을 최신 메시지로 내린다.
+
+안전 문구
+- 당첨됩니다, 신청 가능합니다, 대출 승인됩니다, 자격이 됩니다 같은 확정 표현은 치환한다.
+- 답변은 420자, 액션은 90자로 제한한다.
+- 청약/자금/정책/대출 판단에는 공식 확인 필요 문구를 붙인다.
+
+14. 지도/검색/선택 유지 규칙
+
+관련 파일
+- frontend/src/pages/MapPage.vue
+- frontend/src/utils/globalSearch.js
+- frontend/src/utils/selectionState.js
+- backend/apps/notices/services/map_locations.py
+- backend/apps/notices/management/commands/geocode_notice_locations.py
+
+지도
+- Kakao Map JS 키는 프론트 지도 렌더링에 사용한다.
+- Kakao REST 키는 백엔드 지오코딩/좌표 보강에 사용한다.
+- 첫 화면은 대한민국이 넉넉하게 보이도록 잡고, 공고를 직접 선택했을 때만 해당 위치로 줌인한다.
+- 좌표가 없는 공고는 지구명/지역 중심 좌표 또는 fixture 보조 좌표를 사용한다.
+- 경기 북부/남부 필터는 regions.py의 서비스 버킷 규칙과 일치해야 한다.
+
+전역 검색
+- 공고명/지역/지구/정책 키워드로 검색한다.
+- 주요 개념어는 화면으로 매핑한다.
+- 예: 대출은 자금 로드맵 또는 지도/공고 후보로, 정책은 자금 로드맵의 정책 후보 영역 또는 지도 필터 흐름으로 연결한다.
+
+선택 유지
+- 사용자가 공고와 옵션을 선택하면 명시적으로 바꾸기 전까지 유지한다.
+- 청약 상세 화면으로 이동해도 임의로 추천 1위/옵션 1위로 리셋하지 않는다.
+- 선택이 전혀 없을 때만 추천 1위 공고와 대표 옵션을 기본값으로 사용한다.
+
+15. 표시값 우선순위
+
+분양가
+- 주택형 옵션이 있으면 selected/best option의 base_price를 우선한다.
+- 옵션이 없으면 notice.price를 사용한다.
+- notice.price가 0이어도 옵션 base_price가 있으면 화면에서는 옵션 분양가를 보여준다.
+- 저장 옵션 목록에서는 unit_type이 "전체"이고 면적/금액이 0인 의미 없는 행을 제외한다.
+
+공식 출처
+- 실제 공고는 source_url 또는 공식 문서 분석 상태를 보여준다.
+- fixture는 source_url을 노출하지 않고 Fixture로 표시한다.
+
+대출/정책 표시
+- 구입자금 대출 후보는 "심사 보장 아님"을 표시한다.
+- 대출 기간이 실제 상품 기간으로 확정되지 않으면 "상품별 공식 약정기간 확인"처럼 확정적이지 않은 문구를 사용한다.
+- 금융상품 후보는 대출이 아니라 예금/적금/청약통장 계열이면 "금융 상품 후보"로 표시한다.
+
+16. 데이터 수집 명령 기본 운영
+
+관련 파일
+- backend/apps/products/management/commands/import_finlife.py
+- backend/apps/policies/management/commands/import_youthcenter.py
+- backend/apps/notices/management/commands/import_lh.py
+- backend/apps/notices/management/commands/geocode_notice_locations.py
+- backend/apps/notice_docs/management/commands/analyze_notice_documents.py
+
+운영 원칙
+- 실제 서비스 운영 명령은 확인, 가져오기, 지우고 가져오기 3단계로 단순화한다.
+- 금융상품/주택담보대출: import_finlife --dry-run, import_finlife, import_finlife --clear
+- 청년정책: import_youthcenter --dry-run, import_youthcenter, import_youthcenter --clear
+- LH 공고: import_lh --dry-run, import_lh, import_lh --clear
+- LH 수집은 service-target-only와 with-supply-info를 기본 방향으로 본다.
+- import_lh 기본 supply-limit은 75로 운용한다.
+
+17. 유지보수 체크리스트
+
+- 새로운 판단식이 생기면 backend/apps/rules에 둘 수 있는지 먼저 검토한다.
+- app 내부에 점수/필터/분류 상수가 생기면 rules_detail.txt와 함께 갱신한다.
+- fixture가 실제 데이터보다 앞서는 현상이 생기면 source_priority와 fixture penalty를 먼저 확인한다.
+- 경기 북부/남부처럼 공식 행정구역이 아닌 서비스 규칙은 regions.py를 단일 기준으로 삼는다.
+- 화면 표시값이 0원으로 보이면 notice.price와 option.base_price 우선순위를 확인한다.
+- AI 응답이 일반론으로 흐르면 prompt context에 notice, option, 금액, 날짜, 공식근거가 들어가는지 확인한다.

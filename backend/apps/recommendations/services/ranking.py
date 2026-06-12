@@ -7,6 +7,7 @@ from django.db import OperationalError, ProgrammingError
 
 from apps.fixture_store import current_notices, default_profile
 from apps.recommendations.services.scoring import score_detail, score_max, score_reasons
+from apps.rules.regions import notice_matches_preferred_region
 from apps.rules.scoring import option_fit_reasons, option_fit_score, option_funding_insights, option_type_priority
 
 
@@ -22,18 +23,8 @@ _REGION_ONLY_RE = re.compile(r"^[가-힣]+(?:특별시|광역시|특별자치도
 _GENERIC_SITE_VALUES = {"전국", "경기 남부", "경기 북부", "공식 공고 확인"}
 _FIXTURE_SCORE_PENALTY = {
     "eligibility": 10,
-    "funding": 12,
+    "funding": 4,
     "schedule": 8,
-}
-_REGION_ALIAS_KEYS = {
-    "충북": ("충북", "충청북도"),
-    "충남": ("충남", "충청남도"),
-    "전북": ("전북", "전라북도", "전북특별자치도"),
-    "전남": ("전남", "전라남도"),
-    "경북": ("경북", "경상북도"),
-    "경남": ("경남", "경상남도"),
-    "강원": ("강원", "강원특별자치도"),
-    "세종": ("세종", "세종특별자치시"),
 }
 _WHITESPACE_RE = re.compile(r"\s+")
 
@@ -106,26 +97,7 @@ def _filter_by_preferred_regions(notices: list[dict[str, Any]], profile: dict[st
 
 
 def _notice_matches_preferred_region(notice: dict[str, Any], preferred_region: str) -> bool:
-    preferred_key = _normalize_key_text(preferred_region)
-    region_key = _normalize_key_text(notice.get("region", ""))
-    text_key = _normalize_key_text(
-        " ".join(
-            [
-                str(notice.get("region") or ""),
-                str(notice.get("district") or ""),
-                str(notice.get("title") or ""),
-                _notice_site_value(notice),
-            ]
-        )
-    )
-
-    if preferred_key in {"경기", "경기도"}:
-        return "경기" in text_key
-    if preferred_key == "경기북부":
-        return "경기북부" in text_key or region_key in {"경기북부", "경기"}
-    if preferred_key == "경기남부":
-        return "경기북부" not in text_key and (region_key in {"경기남부", "경기"} or "경기남부" in text_key)
-    return any(_normalize_key_text(alias) in text_key for alias in _REGION_ALIAS_KEYS.get(preferred_key, (preferred_key,)))
+    return notice_matches_preferred_region(notice, preferred_region)
 
 
 def _notice_site_value(notice: dict[str, Any]) -> str:

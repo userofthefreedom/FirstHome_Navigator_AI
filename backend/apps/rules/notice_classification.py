@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from apps.rules.regions import canonical_region
+
 from dataclasses import dataclass
 from typing import Any
 
@@ -127,15 +129,7 @@ def is_rental_text(text: str) -> bool:
 
 
 def lh_region_name(value: str) -> str:
-    if value.startswith("서울"):
-        return "서울"
-    if value.startswith("경기"):
-        return "경기 남부"
-    if value.startswith("인천"):
-        return "인천"
-    if value.startswith("부산"):
-        return "부산"
-    return value or "전국"
+    return canonical_region(value)
 
 
 def lh_supply_type(raw_supply_type: str, title: str) -> str:

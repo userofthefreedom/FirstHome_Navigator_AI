@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { CalendarDays, ClipboardList, FileCheck2, MapPin, ShieldAlert, Sparkles, Trophy } from 'lucide-vue-next';
+import { Bot, CalendarDays, ClipboardList, FileCheck2, MapPin, SearchCheck, Sparkles, Trophy, WalletCards } from 'lucide-vue-next';
 import { fetchDashboard, fetchFundingPlan, fetchNotices } from '../api/firsthome';
 import { formatMoney } from '../utils/format';
 import { saveCurrentSelection } from '../utils/selectionState';
@@ -20,6 +20,28 @@ const activeNoticeCount = computed(() => dashboard.value?.notice_count ?? sorted
 const selectedRecommendation = computed(() => recommendations.value.find((item) => item.notice_id === selectedId.value) ?? recommendations.value[0]);
 const selected = computed(() => notices.value.find((notice) => notice.id === selectedId.value) ?? notices.value[0]);
 const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+const serviceSteps = [
+    {
+        icon: SearchCheck,
+        title: '조건 입력',
+        description: '희망 지역, 자금, 면적을 먼저 저장합니다.',
+    },
+    {
+        icon: Trophy,
+        title: '후보 비교',
+        description: '점수와 마감일 기준으로 검토할 공고를 고릅니다.',
+    },
+    {
+        icon: WalletCards,
+        title: '옵션 자금',
+        description: '선택 주택형의 계약금과 부족액을 확인합니다.',
+    },
+    {
+        icon: Bot,
+        title: 'AI 코치',
+        description: '서류, 공고문 조건, 다음 행동을 정리합니다.',
+    },
+];
 function scoreLabel(item) {
     if (!item)
         return '0점';
@@ -31,6 +53,27 @@ function scorePercent(item) {
     const max = item.score_max || 100;
     return Math.min(100, Math.round(((item.total_score || 0) / max) * 100));
 }
+const selectedBestOption = computed(() => selectedRecommendation.value?.best_option ?? null);
+const selectedRequiredDocuments = computed(() => (selected.value?.required_documents ?? []).filter(Boolean).slice(0, 6));
+const selectedCautions = computed(() => (selected.value?.cautions ?? []).filter(Boolean).slice(0, 3));
+function recommendationPrice(item) {
+    return Number(item?.best_option?.base_price || item?.price || 0);
+}
+const selectedDisplayPrice = computed(() => Number(selectedBestOption.value?.base_price || selected.value?.price || 0));
+const selectedOptionLabel = computed(() => {
+    const option = selectedBestOption.value;
+    if (!option)
+        return selected.value?.area || '대표 주택형';
+    return [option.unit_type, option.floor_group].filter(Boolean).join(' · ') || '대표 주택형';
+});
+const selectedOptionDetail = computed(() => {
+    const option = selectedBestOption.value;
+    if (!option)
+        return selected.value?.area || '-';
+    const area = option.exclusive_area_m2 ? `${option.exclusive_area_m2}㎡` : selected.value?.area;
+    const price = option.base_price || selected.value?.price;
+    return [area, price ? formatMoney(price) : null].filter(Boolean).join(' · ');
+});
 function parseDeadline(value) {
     const date = new Date(`${value}T00:00:00`);
     return Number.isNaN(date.getTime()) ? null : date;
@@ -132,6 +175,7 @@ const selectedDayEvents = computed(() => {
 const preApplyTasks = computed(() => {
     if (!selected.value)
         return [];
+    const requiredDocuments = selected.value.required_documents ?? [];
     return [
         {
             title: '주택형 옵션의 공식 자격 확인',
@@ -143,7 +187,7 @@ const preApplyTasks = computed(() => {
             title: '필수 서류 발급 가능 여부 확인',
             date: 'D-7',
             status: '준비',
-            description: `${selected.value.required_documents.slice(0, 3).join(', ')} 발급 시점과 유효 기간을 확인합니다.`,
+            description: `${requiredDocuments.slice(0, 3).join(', ') || '필수 서류'} 발급 시점과 유효 기간을 확인합니다.`,
         },
         {
             title: '접수 전 공식 일정 고정',
@@ -167,15 +211,6 @@ function rankClass(rank) {
     if (rank === 3)
         return 'bg-amber-500 text-white';
     return 'bg-slate-200 text-slate-700';
-}
-function statusClass(status) {
-    if (status === '진행')
-        return 'bg-blue-50 text-blue-700';
-    if (status === '준비')
-        return 'bg-slate-100 text-slate-600';
-    if (status === '마감')
-        return 'bg-amber-50 text-amber-700';
-    return 'bg-emerald-50 text-emerald-700';
 }
 function eventCountClass(count) {
     if (count >= 6)
@@ -275,7 +310,7 @@ onMounted(loadDashboard);
 
     <template v-else-if="selected && selectedRecommendation">
       <section class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div class="overflow-hidden rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div class="flex min-h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div class="min-w-0">
               <div class="mb-5 inline-flex items-center gap-2 rounded-md bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-normal text-blue-700">
@@ -312,6 +347,27 @@ onMounted(loadDashboard);
               <p class="mt-2 text-2xl font-bold text-slate-950">{{ formatMoney(dashboard?.profile.asset ?? 0) }}</p>
             </div>
           </div>
+
+          <div class="mt-6 flex flex-1 items-center border-t border-slate-200 py-4">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div
+                v-for="(step, index) in serviceSteps"
+                :key="step.title"
+                class="flex min-w-0 items-start gap-2"
+              >
+                <span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                  <component :is="step.icon" class="h-3.5 w-3.5" />
+                </span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-bold text-slate-950">{{ step.title }}</p>
+                    <span v-if="index < serviceSteps.length - 1" class="hidden text-xs font-bold text-slate-300 xl:inline">→</span>
+                  </div>
+                  <p class="mt-0.5 text-xs leading-5 text-slate-500">{{ step.description }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-sm sm:p-6">
@@ -331,7 +387,7 @@ onMounted(loadDashboard);
           <div class="mt-6 grid grid-cols-2 gap-3 text-sm">
             <div class="rounded-lg bg-white/10 p-3">
               <p class="text-slate-300">분양가</p>
-              <p class="mt-1 font-bold text-white">{{ formatMoney(selected.price) }}</p>
+              <p class="mt-1 font-bold text-white">{{ formatMoney(selectedDisplayPrice) }}</p>
             </div>
             <div class="rounded-lg bg-white/10 p-3">
               <p class="text-slate-300">계약금 부족액</p>
@@ -366,56 +422,47 @@ onMounted(loadDashboard);
       </section>
 
       <section class="grid gap-4 xl:grid-cols-[0.86fr_1.14fr]">
-        <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div class="flex items-center justify-between gap-3 border-b border-slate-200 p-5">
+        <div class="flex h-full flex-col rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
             <div>
               <h2 class="text-lg font-bold text-slate-950">검토 후보 요약</h2>
-              <p class="mt-1 text-sm text-slate-500">후보를 선택하면 공식 일정과 계약금 준비 계획이 함께 바뀝니다.</p>
             </div>
             <Trophy class="h-5 w-5 text-blue-600" />
           </div>
-          <div class="divide-y divide-slate-100">
+          <div class="grid flex-1 auto-rows-fr gap-2 p-3 sm:grid-cols-2">
             <button
               v-for="(item, index) in recommendations"
               :key="item.notice_id"
               type="button"
-              class="grid w-full gap-4 p-5 text-left transition sm:grid-cols-[1fr_auto]"
-              :class="item.notice_id === selectedId ? 'bg-blue-50/80' : 'hover:bg-slate-50'"
+              class="flex h-full flex-col rounded-lg border p-3 text-left transition"
+              :class="item.notice_id === selectedId ? 'border-blue-500 bg-blue-50/80' : 'border-slate-200 hover:bg-slate-50'"
               @click="selectedId = item.notice_id"
             >
-              <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="rounded-md px-2.5 py-1 text-xs font-bold" :class="rankClass(index + 1)">
-                    {{ index + 1 }}순위
-                  </span>
-                  <h3 class="font-bold text-slate-950">{{ item.title }}</h3>
-                  <span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-                    {{ item.supply_type }}
-                  </span>
-                </div>
-                <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                  <span class="inline-flex items-center gap-1">
-                    <MapPin class="h-4 w-4" />
-                    {{ item.region }}
-                  </span>
-                  <span>{{ formatMoney(item.price) }}</span>
-                </div>
+              <div class="flex items-center gap-2">
+                <span class="rounded-md px-2 py-0.5 text-[11px] font-bold" :class="rankClass(index + 1)">
+                  {{ index + 1 }}순위
+                </span>
+                <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                  {{ item.supply_type }}
+                </span>
               </div>
-              <div class="grid grid-cols-2 gap-2 text-sm sm:w-52">
-                <div class="rounded-lg bg-white p-3">
-                  <p class="text-slate-500">점수</p>
-                  <p class="mt-1 font-bold text-blue-700">{{ scoreLabel(item) }}</p>
-                </div>
-                <div class="rounded-lg bg-white p-3">
-                  <p class="text-slate-500">마감</p>
-                  <p class="mt-1 font-bold text-slate-950">{{ item.application_deadline }}</p>
-                </div>
+              <h3 class="mt-2 line-clamp-2 min-h-10 text-sm font-bold leading-5 text-slate-950">{{ item.title }}</h3>
+              <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1">
+                  <MapPin class="h-4 w-4" />
+                  {{ item.region }}
+                </span>
+                <span>{{ formatMoney(recommendationPrice(item)) }}</span>
+              </div>
+              <div class="mt-auto flex items-center justify-between gap-2 border-t border-slate-200 pt-2 text-xs">
+                <span class="font-bold text-blue-700">{{ scoreLabel(item) }}</span>
+                <span class="font-semibold text-slate-600">마감 {{ item.application_deadline }}</span>
               </div>
             </button>
           </div>
         </div>
 
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-5 flex items-center justify-between gap-3">
             <div>
               <h2 class="text-lg font-bold text-slate-950">{{ calendarTitle }}</h2>
@@ -513,24 +560,40 @@ onMounted(loadDashboard);
             </RouterLink>
           </div>
 
-          <div class="grid gap-3 sm:grid-cols-2">
+          <div class="overflow-hidden rounded-lg border border-slate-200">
             <div v-for="[label, value] in [
-              ['위치', selected.district],
+              ['위치', [selected.region, selected.district].filter(Boolean).join(' · ')],
               ['공급 유형', selected.supply_type],
-              ['분양가', formatMoney(selected.price)],
+              ['분양가', formatMoney(selectedDisplayPrice)],
               ['전용면적', selected.area],
-              ['경쟁률', selected.competition],
+              ['공급 규모', selected.competition || '-'],
               ['입주 예정', selected.move_in],
-            ]" :key="label" class="rounded-lg bg-slate-50 p-4">
-              <p class="text-sm text-slate-500">{{ label }}</p>
-              <p class="mt-1 font-bold text-slate-950">{{ value }}</p>
+              ['선택 주택형', selectedOptionLabel],
+              ['옵션 기준가', selectedOptionDetail],
+              ['계약금 부족액', formatMoney(selectedPlan?.shortfall ?? 0)],
+            ]" :key="label" class="grid gap-2 border-b border-slate-200 px-4 py-3 last:border-b-0 sm:grid-cols-[120px_1fr]">
+              <p class="text-sm font-bold text-slate-500">{{ label }}</p>
+              <p class="font-bold text-slate-950">{{ value }}</p>
             </div>
           </div>
 
-          <div class="mt-5">
+          <div v-if="selectedRequiredDocuments.length" class="mt-4">
+            <p class="mb-2 text-sm font-bold text-slate-700">주요 준비 서류</p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="document in selectedRequiredDocuments"
+                :key="document"
+                class="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700"
+              >
+                {{ document }}
+              </span>
+            </div>
+          </div>
+
+          <div v-if="selectedCautions.length" class="mt-5">
             <p class="mb-2 text-sm font-bold text-slate-700">공식 확인 주의사항</p>
             <div class="space-y-2">
-              <div v-for="caution in selected.cautions" :key="caution" class="flex items-start gap-2 text-sm text-slate-600">
+              <div v-for="caution in selectedCautions" :key="caution" class="flex items-start gap-2 text-sm text-slate-600">
                 <ShieldAlert class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                 <span>{{ caution }}</span>
               </div>
@@ -556,18 +619,14 @@ onMounted(loadDashboard);
                 <p class="mt-2 text-xs font-bold text-slate-500">{{ task.date }}</p>
               </div>
               <div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="font-bold text-slate-950">{{ task.title }}</h3>
-                  <span class="rounded-md px-2 py-1 text-xs font-bold" :class="statusClass(task.status)">
-                    {{ task.status }}
-                  </span>
-                </div>
+                <h3 class="font-bold text-slate-950">{{ task.title }}</h3>
                 <p class="mt-2 text-sm leading-6 text-slate-600">{{ task.description }}</p>
               </div>
             </div>
           </div>
 
-          <div class="mt-5 rounded-lg bg-blue-50 p-4">
+          <div class="mt-auto pt-5">
+            <div class="rounded-lg bg-blue-50 p-4">
             <div class="flex items-start gap-3">
               <FileCheck2 class="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
               <div>
@@ -576,6 +635,7 @@ onMounted(loadDashboard);
                   계약금 부족액, 이번 주 할 일, 공식 확인 항목을 같은 주택형 기준으로 이어서 봅니다.
                 </p>
               </div>
+            </div>
             </div>
           </div>
         </div>

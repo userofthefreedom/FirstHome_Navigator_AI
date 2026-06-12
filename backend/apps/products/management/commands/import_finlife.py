@@ -3,19 +3,19 @@ from __future__ import annotations
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.products.models import FinancialProduct
-from apps.products.services.finlife import fetch_all_finlife_products
+from apps.products.models import FinancialProduct, LoanProduct
+from apps.products.services.finlife import fetch_all_finlife_loans, fetch_all_finlife_products
 
 
 class Command(BaseCommand):
-    help = "Import deposit and saving products from the FSS Finlife API."
+    help = "Import financial and mortgage products from the FSS Finlife API."
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--kind",
-            choices=["deposit", "saving", "both"],
-            default="both",
-            help="Which Finlife product type to import.",
+            choices=["deposit", "saving", "mortgage", "both", "all"],
+            default="all",
+            help="Which Finlife product type to import. both means deposit+saving, all also includes mortgage loans.",
         )
         parser.add_argument(
             "--top-fin-grp-no",
@@ -25,7 +25,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--clear",
             action="store_true",
-            help="Delete existing financial products before importing.",
+            help="Delete existing selected financial and loan products before importing.",
         )
         parser.add_argument(
             "--dry-run",
@@ -38,22 +38,41 @@ class Command(BaseCommand):
         if not api_key:
             raise CommandError("FINLIFE_API_KEY is missing. Add it to backend/.env.")
 
-        kinds = ["deposit", "saving"] if options["kind"] == "both" else [options["kind"]]
-        products = fetch_all_finlife_products(
-            api_key,
-            kinds=kinds,
-            top_fin_grp_no=options["top_fin_grp_no"],
+        product_kinds = self._product_kinds(options["kind"])
+        loan_kinds = self._loan_kinds(options["kind"])
+        products = (
+            fetch_all_finlife_products(
+                api_key,
+                kinds=product_kinds,
+                top_fin_grp_no=options["top_fin_grp_no"],
+            )
+            if product_kinds
+            else []
+        )
+        loans = (
+            fetch_all_finlife_loans(
+                api_key,
+                kinds=loan_kinds,
+                top_fin_grp_no=options["top_fin_grp_no"],
+            )
+            if loan_kinds
+            else []
         )
 
         if options["dry_run"]:
-            self.stdout.write(self.style.SUCCESS(f"Fetched {len(products)} Finlife products. No database changes."))
-            self.stdout.write(self._summary_line(products))
+            self.stdout.write(self.style.SUCCESS(f"Fetched {len(products)} Finlife products and {len(loans)} loan products. No database changes."))
+            self.stdout.write(self._summary_line(products, loans))
             for product in products[:5]:
                 self.stdout.write(f"- {product.provider} {product.name} {product.rate}")
+            for loan in loans[:5]:
+                self.stdout.write(f"- {loan.provider} {loan.name} {loan.rate}")
             return
 
         if options["clear"]:
-            FinancialProduct.objects.all().delete()
+            if product_kinds:
+                FinancialProduct.objects.all().delete()
+            if loan_kinds:
+                LoanProduct.objects.all().delete()
 
         created_count = 0
         updated_count = 0
@@ -75,16 +94,63 @@ class Command(BaseCommand):
                 created_count += 1
             else:
                 updated_count += 1
+        loan_created_count = 0
+        loan_updated_count = 0
+        for loan in loans:
+            _instance, created = LoanProduct.objects.update_or_create(
+                provider=loan.provider,
+                name=loan.name,
+                category=loan.category,
+                defaults={
+                    "loan_purpose": loan.loan_purpose,
+                    "description": loan.description,
+                    "target": loan.target,
+                    "rate": loan.rate,
+                    "limit": loan.limit,
+                    "limit_amount": loan.limit_amount,
+                    "term": loan.term,
+                    "term_years": loan.term_years,
+                    "age_min": loan.age_min,
+                    "age_max": loan.age_max,
+                    "max_income": loan.max_income,
+                    "max_price": loan.max_price,
+                    "max_area_m2": loan.max_area_m2,
+                    "requires_homeless": loan.requires_homeless,
+                    "source_url": loan.source_url,
+                    "reasons": loan.reasons,
+                    "caveats": loan.caveats,
+                },
+            )
+            if created:
+                loan_created_count += 1
+            else:
+                loan_updated_count += 1
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Imported Finlife products: {created_count} created, {updated_count} updated."
+                f"Imported Finlife products: {created_count} created, {updated_count} updated. "
+                f"Loan products: {loan_created_count} created, {loan_updated_count} updated."
             )
         )
-        self.stdout.write(self._summary_line(products))
+        self.stdout.write(self._summary_line(products, loans))
 
-    def _summary_line(self, products):
+    def _product_kinds(self, kind: str) -> list[str]:
+        if kind == "both":
+            return ["deposit", "saving"]
+        if kind == "all":
+            return ["deposit", "saving"]
+        if kind in {"deposit", "saving"}:
+            return [kind]
+        return []
+
+    def _loan_kinds(self, kind: str) -> list[str]:
+        if kind in {"mortgage", "all"}:
+            return ["mortgage"]
+        return []
+
+    def _summary_line(self, products, loans):
         deposit_count = sum(1 for product in products if product.category == "예금")
         saving_count = sum(1 for product in products if product.category == "적금")
         protected_count = sum(1 for product in products if product.protection_status)
-        return f"Summary: {deposit_count} deposits, {saving_count} savings, {protected_count} protected products."
+        mortgage_count = sum(1 for loan in loans if loan.category == "주택담보대출")
+        return f"Summary: {deposit_count} deposits, {saving_count} savings, {protected_count} protected products, {mortgage_count} mortgage loans."

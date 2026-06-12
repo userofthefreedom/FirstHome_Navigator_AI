@@ -8,11 +8,18 @@ from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
 from apps.notices.models import HousingNotice
 from apps.policies.models import YouthPolicy
 from apps.policies.services.matcher import match_policies
-from apps.products.models import FinancialProduct
+from apps.products.models import FinancialProduct, LoanProduct
+from apps.products.services.loan_matcher import match_purchase_loans
 from apps.products.services.matcher import match_products
 from apps.recommendations.services.ranking import ranked_recommendations
 from apps.rules.confidence import option_confidence_from_quality
-from apps.rules.funding import ceil_divide, default_payment_amounts
+from apps.rules.funding import (
+    available_cash,
+    ceil_divide,
+    default_payment_amounts,
+    effective_down_payment_cash,
+    effective_monthly_capacity,
+)
 from apps.rules.document_discovery import document_candidate_priority
 from apps.rules.retrieval import query_terms, rank_document_chunk
 from apps.rules.scoring import location_score, option_fit_score, option_funding_insights, option_type_priority
@@ -26,6 +33,47 @@ class SharedRuleTests(SimpleTestCase):
         self.assertEqual(amounts["middle_payment"], 300_000_000)
         self.assertEqual(amounts["final_payment"], 150_000_000)
         self.assertEqual(ceil_divide(42_634_000, 12), 3_552_834)
+
+    def test_debt_and_job_status_adjust_funding_capacity(self):
+        profile = {
+            "asset": 50_000_000,
+            "debt": 12_000_000,
+            "monthly_payment_capacity": 1_200_000,
+            "job_status": "unemployed",
+        }
+
+        self.assertEqual(available_cash(profile), 46_400_000)
+        self.assertEqual(effective_down_payment_cash(profile), 46_400_000)
+        self.assertEqual(effective_monthly_capacity(profile), 820_000)
+
+    def test_option_price_and_area_scores_decline_by_gap_ratio(self):
+        profile = {
+            "desired_area_min_m2": 50,
+            "desired_area_max_m2": 60,
+            "desired_price_min": 300_000_000,
+            "desired_price_max": 500_000_000,
+            "max_down_payment": 60_000_000,
+            "monthly_payment_capacity": 10_000_000,
+        }
+        in_range = {
+            "exclusive_area_m2": 59,
+            "base_price": 500_000_000,
+            "down_payment": 50_000_000,
+            "middle_payment": 100_000_000,
+        }
+        slightly_over = {
+            **in_range,
+            "exclusive_area_m2": 63,
+            "base_price": 525_000_000,
+        }
+        far_over = {
+            **in_range,
+            "exclusive_area_m2": 84,
+            "base_price": 700_000_000,
+        }
+
+        self.assertGreater(option_fit_score(in_range, profile), option_fit_score(slightly_over, profile))
+        self.assertGreater(option_fit_score(slightly_over, profile), option_fit_score(far_over, profile))
 
     def test_option_scoring_rules_prefer_general_supply(self):
         option = {
@@ -137,9 +185,9 @@ class RecommendationServiceTests(TestCase):
 
         self.assertEqual(plan["price"], 520000000)
         self.assertEqual(plan["down_payment"], 52000000)
-        self.assertEqual(plan["available_cash"], 8000000)
-        self.assertEqual(plan["shortfall"], 44000000)
-        self.assertEqual(plan["monthly_target"], 2444445)
+        self.assertEqual(plan["available_cash"], 7100000)
+        self.assertEqual(plan["shortfall"], 44900000)
+        self.assertEqual(plan["monthly_target"], 2494445)
 
     def test_fixture_has_enough_demo_data(self):
         presentation_date = date(2026, 6, 26)
@@ -151,8 +199,12 @@ class RecommendationServiceTests(TestCase):
         self.assertGreaterEqual(len(regions), 17)
         for region in regions:
             self.assertGreaterEqual(sum(1 for notice in notices() if notice["region"] == region), 5)
+        fixture_data = load_fixture()
+        self.assertGreaterEqual(len(fixture_data["loan_products"]), 40)
+        self.assertGreaterEqual(len(fixture_data["policies"]), 100)
         self.assertGreaterEqual(len(match_products(default_profile(), limit=20)), 8)
         self.assertGreaterEqual(len(match_policies(default_profile(), limit=20)), 8)
+        self.assertGreaterEqual(len(match_purchase_loans(default_profile(), limit=20)), 8)
 
     def test_fixture_analysis_seed_is_idempotent(self):
         fixture_notice = load_fixture()["notices"][0]
@@ -430,6 +482,28 @@ class RecommendationServiceTests(TestCase):
 
         self.assertEqual(location_score(notice, profile), 30)
 
+    def test_fixture_funding_score_keeps_user_cash_signal(self):
+        profile = {
+            **default_profile(),
+            "annual_income": 50_000_000,
+            "asset": 10_000_000,
+            "debt": 3_000_000,
+            "monthly_saving": 1_000_000,
+            "desired_price_min": 200_000_000,
+            "desired_price_max": 555_000_000,
+            "max_down_payment": 50_000_000,
+            "monthly_payment_capacity": 1_200_000,
+            "desired_area_min_m2": 48,
+            "desired_area_max_m2": 84,
+            "preferred_regions": ["인천"],
+            "preferred_supply_types": ["공공분양", "뉴홈", "신혼희망타운", "민간참여형 공공분양"],
+        }
+
+        recommendations = ranked_recommendations(profile, limit=6)
+
+        self.assertTrue(recommendations)
+        self.assertTrue(any(item["score_detail"]["funding"] > 0 for item in recommendations))
+
     def test_product_and_policy_matchers_change_by_profile(self):
         representative = default_profile()
         incheon_profile = {
@@ -447,6 +521,254 @@ class RecommendationServiceTests(TestCase):
 
         self.assertNotEqual(representative_policy_ids, incheon_policy_ids)
         self.assertNotEqual(representative_product_ids, incheon_product_ids)
+
+    def test_policy_matcher_excludes_unrelated_policy_categories(self):
+        YouthPolicy.objects.create(
+            id=9101,
+            name="청년 문화활동 바우처",
+            provider="테스트기관",
+            target="청년",
+            benefit="공연 관람비 지원",
+            policy_category="문화",
+            regions=["전국"],
+            age_min=19,
+            age_max=39,
+            max_income=0,
+            requires_homeless=False,
+            source_url="https://example.com/culture",
+            reasons=["비주거 정책입니다."],
+        )
+        YouthPolicy.objects.create(
+            id=9102,
+            name="청년 전월세 보증금 이자 지원",
+            provider="테스트기관",
+            target="무주택 청년",
+            benefit="전월세 보증금 대출이자 일부 지원",
+            policy_category="전세",
+            regions=["전국"],
+            age_min=19,
+            age_max=39,
+            max_income=0,
+            requires_homeless=True,
+            source_url="https://example.com/housing",
+            reasons=["주거 정책입니다."],
+        )
+
+        policy_ids = [policy["id"] for policy in match_policies(default_profile(), limit=20)]
+
+        self.assertIn(9102, policy_ids)
+        self.assertNotIn(9101, policy_ids)
+
+    def test_policy_matcher_excludes_unselected_local_regions(self):
+        YouthPolicy.objects.create(
+            id=9111,
+            name="강화 청년 전세보증금 지원",
+            provider="인천광역시",
+            target="인천 청년",
+            benefit="전세보증금 이자 지원",
+            policy_category="전세",
+            regions=["인천"],
+            age_min=19,
+            age_max=39,
+            max_income=0,
+            requires_homeless=True,
+            source_url="https://example.com/incheon",
+            reasons=["인천 지역 정책입니다."],
+        )
+        YouthPolicy.objects.create(
+            id=9112,
+            name="전국 청년 주거자금 상담",
+            provider="국토교통부",
+            target="무주택 청년",
+            benefit="주거자금 상담",
+            policy_category="주거지원",
+            regions=["전국"],
+            age_min=19,
+            age_max=39,
+            max_income=0,
+            requires_homeless=True,
+            source_url="https://example.com/nationwide",
+            reasons=["전국 정책입니다."],
+        )
+        profile = {**default_profile(), "preferred_regions": ["부산"]}
+
+        policy_ids = [policy["id"] for policy in match_policies(profile, limit=30)]
+
+        self.assertIn(9112, policy_ids)
+        self.assertNotIn(9111, policy_ids)
+
+    def test_policy_matcher_excludes_business_rent_support(self):
+        YouthPolicy.objects.create(
+            id=9121,
+            name="2026년 청년창업자 임차료 지원사업",
+            provider="경상북도 고령군 인구정책실",
+            target="고령군 거주 예정 초기 청년창업가",
+            benefit="사업장 임차료 일부 지원",
+            policy_category="일자리",
+            regions=["전국"],
+            age_min=18,
+            age_max=45,
+            max_income=0,
+            requires_homeless=False,
+            source_url="https://example.com/startup-rent",
+            reasons=["창업 정책입니다."],
+        )
+        profile = {**default_profile(), "preferred_regions": ["서울", "경기 남부", "경기 북부", "인천"]}
+
+        policy_ids = [policy["id"] for policy in match_policies(profile, limit=30)]
+
+        self.assertNotIn(9121, policy_ids)
+
+    def test_policy_matcher_excludes_non_housing_fund_jobs(self):
+        YouthPolicy.objects.create(
+            id=9131,
+            name="청년어업인 영어정착지원",
+            provider="인천광역시 수산기술지원센터",
+            target="인천 청년 어업인",
+            benefit="정착 지원금과 창업 자금을 지원합니다.",
+            policy_category="일자리",
+            regions=["인천"],
+            age_min=18,
+            age_max=45,
+            max_income=0,
+            requires_homeless=False,
+            source_url="https://example.com/fishery",
+            reasons=["일자리 정책입니다."],
+        )
+        YouthPolicy.objects.create(
+            id=9132,
+            name="인천 청년 주거자금 상담",
+            provider="인천광역시",
+            target="인천 무주택 청년",
+            benefit="청약과 주거자금 상담을 지원합니다.",
+            policy_category="주거지원",
+            regions=["인천"],
+            age_min=19,
+            age_max=39,
+            max_income=0,
+            requires_homeless=True,
+            source_url="https://example.com/incheon-housing",
+            reasons=["주거 정책입니다."],
+        )
+        profile = {**default_profile(), "preferred_regions": ["인천"]}
+
+        policy_ids = [policy["id"] for policy in match_policies(profile, limit=30)]
+
+        self.assertIn(9132, policy_ids)
+        self.assertNotIn(9131, policy_ids)
+
+    def test_purchase_loan_matcher_only_keeps_home_purchase_loans(self):
+        profile = {
+            **default_profile(),
+            "birth_year": 1996,
+            "annual_income": 50_000_000,
+            "asset": 10_000_000,
+            "is_homeless": True,
+            "monthly_payment_capacity": 1_200_000,
+        }
+        plan = {
+            "price": 500_000_000,
+            "exclusive_area_m2": 59,
+            "shortfall": 40_000_000,
+            "available_cash": 10_000_000,
+            "timeline_summary": {"due_before_move_in": 300_000_000},
+        }
+        candidates = [
+            {
+                "id": 1,
+                "name": "생애최초 주택구입자금",
+                "provider": "테스트",
+                "category": "구입자금 대출",
+                "loan_purpose": "first_home_purchase",
+                "limit_amount": 300_000_000,
+                "term_years": 30,
+                "age_min": 19,
+                "age_max": 70,
+                "max_income": 70_000_000,
+                "max_price": 600_000_000,
+                "max_area_m2": 85,
+                "requires_homeless": True,
+                "source_url": "https://example.com/purchase",
+            },
+            {
+                "id": 2,
+                "name": "청년 전세자금대출",
+                "provider": "테스트",
+                "category": "전세자금",
+                "loan_purpose": "jeonse",
+            },
+            {
+                "id": 3,
+                "name": "주택청약통장담보대출",
+                "provider": "테스트",
+                "category": "담보대출",
+                "loan_purpose": "subscription_collateral",
+            },
+        ]
+
+        matched = match_purchase_loans(profile, plan, candidates=candidates)
+
+        self.assertEqual([loan["id"] for loan in matched], [1])
+        self.assertGreater(matched[0]["match_score"], 0)
+
+    def test_purchase_loan_matcher_dedupes_same_provider_product_options(self):
+        profile = {**default_profile(), "is_homeless": True}
+        plan = {
+            "price": 500_000_000,
+            "exclusive_area_m2": 59,
+            "shortfall": 40_000_000,
+            "available_cash": 10_000_000,
+            "timeline_summary": {"due_before_move_in": 300_000_000},
+        }
+        common = {
+            "category": "주택담보대출",
+            "loan_purpose": "purchase",
+            "limit_amount": 400_000_000,
+            "term_years": 30,
+            "age_min": 19,
+            "age_max": 70,
+            "source_url": "https://finlife.fss.or.kr/finlife/main/contents.do?menuNo=700029",
+        }
+        candidates = [
+            {**common, "id": 1, "provider": "테스트은행", "name": "주택담보대출 (아파트 · 고정금리)"},
+            {**common, "id": 2, "provider": "테스트은행", "name": "주택담보대출 (아파트 · 변동금리)"},
+            {**common, "id": 3, "provider": "다른은행", "name": "내집마련대출 (아파트 · 고정금리)"},
+        ]
+
+        matched = match_purchase_loans(profile, plan, candidates=candidates, limit=2)
+
+        self.assertEqual([loan["id"] for loan in matched], [1, 3])
+
+    def test_db_purchase_loans_are_used_before_fixture_supplements(self):
+        LoanProduct.objects.create(
+            id=999,
+            name="DB 생애최초 구입자금",
+            provider="테스트은행",
+            category="주택담보대출",
+            loan_purpose="purchase",
+            description="DB에서 수집한 주택 구입 목적 대출입니다.",
+            target="주택 구입 예정자",
+            rate="최저 연 3.20%",
+            limit="최대 4억원",
+            limit_amount=400000000,
+            term="최대 30년",
+            term_years=30,
+            age_min=19,
+            age_max=70,
+            max_income=0,
+            max_price=0,
+            max_area_m2=0,
+            requires_homeless=False,
+            source_url="https://finlife.fss.or.kr/finlife/main/contents.do?menuNo=700029",
+            reasons=["금융감독원 API 수집 상품입니다."],
+            caveats=["공식 심사가 필요합니다."],
+        )
+
+        matched = match_purchase_loans(default_profile(), limit=5)
+
+        self.assertTrue(matched)
+        self.assertEqual(matched[0]["id"], 999)
+        self.assertEqual(matched[0]["data_source"], "금융감독원 API")
 
     def test_db_data_is_used_before_fixture_when_available(self):
         deadline = date.today() + timedelta(days=30)
@@ -487,9 +809,9 @@ class RecommendationServiceTests(TestCase):
             id=999,
             name="DB 우선 정책",
             provider="테스트기관",
-            target="청년",
-            benefit="상담",
-            policy_category="상담",
+            target="무주택 청년",
+            benefit="청약 및 주거 상담",
+            policy_category="주거",
             regions=["서울"],
             age_min=19,
             age_max=39,

@@ -1,17 +1,25 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onBeforeUnmount, onMounted, ref, ref } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { Bell, Bookmark, Bot, Building2, CalendarClock, Home, LogOut, MapPinned, Search, UserRound, WalletCards, X } from 'lucide-vue-next';
+import { Bookmark, Bot, Building2, ChevronRight, CalendarClock, Home, LogOut, MapPinned, Search, UserRound, WalletCards, X } from 'lucide-vue-next';
 import FloatingCoachChat from '../components/FloatingCoachChat.vue';
+import { fetchHousingRecommendations } from '../api/firsthome';
 import { fetchFavorites, fetchNotices, fetchPolicies } from '../api/firsthome';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
 import { formatMoney } from '../utils/format';
-import { clearCurrentSelection, currentSelectionRoute, syncCurrentSelectionWithAccount } from '../utils/selectionState';
+import { buildGlobalSearchResults } from '../utils/globalSearch';
+import { clearCurrentSelection, currentSelectionRoute, readCurrentSelection, syncCurrentSelectionWithAccount } from '../utils/selectionState';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const profileStore = useProfileStore();
+const searchBox = ref(null);
+const searchQuery = ref('');
+const searchOpen = ref(false);
+const searchLoading = ref(false);
+const searchError = ref('');
+const searchRecommendations = ref([]);
 const searchText = ref('');
 const searchOpen = ref(false);
 const notificationOpen = ref(false);
@@ -114,6 +122,11 @@ const menus = [
     { label: 'AI 코치', shortLabel: '코치', path: '/ai-coach', to: currentSelectionRoute('/ai-coach'), icon: Bot },
     { label: '관심목록', shortLabel: '관심', path: '/favorites', icon: Bookmark },
 ];
+const searchResults = computed(() => buildGlobalSearchResults({
+    query: searchQuery.value,
+    recommendations: searchRecommendations.value,
+    selection: readCurrentSelection(),
+}));
 function menuTo(menu) {
     if (menu.path === '/funding')
         return currentSelectionRoute('/funding');
@@ -190,6 +203,53 @@ async function handleLogout() {
     clearCurrentSelection();
     await router.push('/');
 }
+async function loadSearchRecommendations() {
+    if (searchRecommendations.value.length || searchLoading.value)
+        return;
+    searchLoading.value = true;
+    searchError.value = '';
+    try {
+        searchRecommendations.value = await fetchHousingRecommendations();
+    }
+    catch {
+        searchError.value = '검색 후보를 불러오지 못했습니다.';
+    }
+    finally {
+        searchLoading.value = false;
+    }
+}
+function openSearch() {
+    searchOpen.value = true;
+    void loadSearchRecommendations();
+}
+function closeSearch() {
+    searchOpen.value = false;
+}
+function handleSearchInput() {
+    searchOpen.value = true;
+    void loadSearchRecommendations();
+}
+async function goSearchResult(result) {
+    if (!result?.route)
+        return;
+    closeSearch();
+    searchQuery.value = '';
+    await router.push(result.route);
+}
+async function handleSearchKeydown(event) {
+    if (event.key === 'Escape') {
+        closeSearch();
+        return;
+    }
+    if (event.key === 'Enter' && searchResults.value.length) {
+        event.preventDefault();
+        await goSearchResult(searchResults.value[0]);
+    }
+}
+function handleDocumentPointer(event) {
+    if (searchBox.value && !searchBox.value.contains(event.target))
+        closeSearch();
+}
 async function loadHeaderData() {
     headerError.value = '';
     const [noticeResult, policyResult, favoriteResult] = await Promise.allSettled([
@@ -211,6 +271,7 @@ async function loadHeaderData() {
     }
 }
 onMounted(async () => {
+    document.addEventListener('pointerdown', handleDocumentPointer);
     let session = null;
     if (!authStore.loaded) {
         session = await authStore.hydrateAuth();
@@ -229,14 +290,20 @@ onMounted(async () => {
 onBeforeUnmount(() => {
     document.removeEventListener('click', handleDocumentClick);
 });
+onBeforeUnmount(() => {
+    document.removeEventListener('pointerdown', handleDocumentPointer);
+});
+onBeforeUnmount(() => {
+    document.removeEventListener('pointerdown', handleDocumentPointer);
+});
 </script>
 
 <template>
   <div class="min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-950 lg:grid lg:grid-cols-[260px_1fr]">
     <aside class="hidden bg-slate-950 text-white lg:block">
-      <div class="sticky top-0 flex h-screen flex-col">
-        <div class="border-b border-white/10 px-6 py-5">
-          <RouterLink to="/" class="flex items-center gap-3">
+      <div class="sticky top-0 flex h-screen flex-col lg:relative lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:top-16 lg:after:w-px lg:after:bg-white/10">
+        <div class="flex h-16 items-center border-b border-white/10 px-6">
+          <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-500/25">
               <Home class="h-5 w-5" />
             </div>
@@ -244,7 +311,7 @@ onBeforeUnmount(() => {
               <p class="text-lg font-semibold text-white">FirstHome</p>
               <p class="text-xs text-slate-400">Navigator AI</p>
             </div>
-          </RouterLink>
+          </div>
         </div>
 
         <nav class="flex-1 space-y-1 px-3 py-4">
@@ -264,123 +331,64 @@ onBeforeUnmount(() => {
     </aside>
 
     <main class="flex min-h-screen min-w-0 flex-col">
-      <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div class="flex min-h-16 flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:h-16 lg:flex-nowrap lg:py-0">
-          <RouterLink to="/" class="flex min-w-0 items-center gap-2 lg:hidden">
+      <header class="sticky top-0 z-30 h-16 border-b border-slate-200 bg-slate-950">
+        <div class="flex h-full items-center gap-3 px-4 sm:px-6">
+          <div class="flex items-center gap-2 lg:hidden">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/20">
               <Home class="h-4 w-4" />
             </div>
-            <span class="hidden font-semibold sm:inline">FirstHome</span>
-          </RouterLink>
+            <span class="font-semibold">FirstHome</span>
+          </div>
 
-          <form ref="searchBox" class="order-last relative w-full min-w-0 md:order-none md:flex-1 lg:ml-0" @submit.prevent="submitSearch">
+          <div ref="searchBox" class="relative ml-auto hidden min-w-0 flex-1 md:block lg:ml-0">
             <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
-              v-model="searchText"
-              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/80 pl-10 pr-10 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
-              placeholder="청약명, 지역, 정책 검색"
+              v-model="searchQuery"
+              class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              placeholder="청약명, 지역, 화면 검색"
               type="search"
-              @focus="searchOpen = Boolean(searchText.trim())"
-              @input="searchOpen = Boolean(searchText.trim())"
+              @focus="openSearch"
+              @input="handleSearchInput"
+              @keydown="handleSearchKeydown"
             />
-            <button
-              v-if="searchText"
-              type="button"
-              class="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-700"
-              title="검색어 지우기"
-              @click="clearSearch"
-            >
-              <X class="h-4 w-4" />
-            </button>
             <div
-              v-if="searchOpen"
-              class="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
+              v-if="searchOpen && (searchQuery.trim() || searchLoading || searchError)"
+              class="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15"
             >
-              <button
-                v-for="result in searchResults"
-                :key="result.id"
-                type="button"
-                class="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-slate-50"
-                @click="selectSearchResult(result)"
-              >
-                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-700">
-                  <WalletCards v-if="result.type === 'policy'" class="h-4 w-4" />
-                  <Building2 v-else class="h-4 w-4" />
-                </span>
-                <span class="min-w-0 flex-1">
-                  <span class="line-clamp-1 text-sm font-bold text-slate-950">
-                    {{ result.type === 'policy' ? result.item.name : result.item.title }}
-                  </span>
-                  <span class="mt-1 block truncate text-xs text-slate-500">
-                    <template v-if="result.type === 'policy'">
-                      {{ result.item.provider }} · {{ result.item.policy_category || result.item.target || '지원정책' }}
-                    </template>
-                    <template v-else>
-                      {{ result.item.provider }} · {{ result.item.region }} {{ result.item.district }} · {{ deadlineLabel(result.item.application_deadline) }}
-                    </template>
-                  </span>
-                </span>
-              </button>
-              <div v-if="searchResults.length === 0" class="px-4 py-4 text-sm font-semibold text-slate-500">
-                검색 결과가 없습니다. 지역명이나 공고명을 다시 입력해 주세요.
+              <div v-if="searchLoading" class="px-4 py-3 text-sm font-semibold text-slate-500">
+                검색 후보를 불러오는 중입니다.
               </div>
-            </div>
-          </form>
-
-          <div class="ml-auto flex items-center gap-2">
-            <div ref="notificationBox" class="relative">
-            <button
-              class="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
-              type="button"
-              :aria-expanded="notificationOpen"
-              aria-label="알림"
-              @click.stop="notificationOpen = !notificationOpen"
-            >
-              <Bell class="h-4 w-4" />
-              <span v-if="notificationCount" class="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white">
-                {{ notificationCount > 9 ? '9+' : notificationCount }}
-              </span>
-            </button>
-            <div
-              v-if="notificationOpen"
-              class="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(92vw,380px)] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
-            >
-              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <p class="text-sm font-bold text-slate-950">알림</p>
-                <span class="text-xs font-semibold text-slate-500">{{ notificationCount }}건</span>
+              <div v-else-if="searchError" class="px-4 py-3 text-sm font-semibold text-amber-700">
+                {{ searchError }}
               </div>
-              <div v-if="notificationCount" class="max-h-[420px] overflow-y-auto">
+              <div v-else-if="searchResults.length" class="max-h-[420px] overflow-y-auto p-2">
                 <button
-                  v-for="item in notifications"
-                  :key="item.id"
+                  v-for="result in searchResults"
+                  :key="result.id"
                   type="button"
-                  class="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-slate-50"
-                  @click="openNotification(item)"
+                  class="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-slate-50"
+                  @click="goSearchResult(result)"
                 >
-                  <span
-                    class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
-                    :class="{
-                      'bg-blue-50 text-blue-700': item.tone === 'blue',
-                      'bg-amber-50 text-amber-700': item.tone === 'amber',
-                      'bg-emerald-50 text-emerald-700': item.tone === 'emerald',
-                      'bg-rose-500 text-white': item.tone === 'rose',
-                    }"
-                  >
-                    <component :is="item.icon" class="h-4 w-4" />
-                  </span>
+                  <span class="shrink-0 rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ result.type }}</span>
                   <span class="min-w-0 flex-1">
-                    <span class="block text-sm font-bold text-slate-950">{{ item.title }}</span>
-                    <span class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{{ item.description }}</span>
+                    <span class="block truncate text-sm font-bold text-slate-950">{{ result.title }}</span>
+                    <span class="mt-0.5 block truncate text-xs font-semibold text-slate-500">{{ result.description }}</span>
                   </span>
+                  <span v-if="result.meta" class="hidden shrink-0 text-xs font-bold text-slate-400 xl:inline">{{ result.meta }}</span>
+                  <ChevronRight class="h-4 w-4 shrink-0 text-slate-400" />
                 </button>
               </div>
-              <div v-else class="px-4 py-5 text-sm font-semibold text-slate-500">
-                지금 확인할 새 알림이 없습니다.
+              <div v-else class="px-4 py-3 text-sm font-semibold text-slate-500">
+                검색 결과가 없습니다. 공고명, 지역, 지구명, 화면 이름으로 검색해보세요.
               </div>
             </div>
-            </div>
+          </div>
 
-            <div class="hidden min-w-0 max-w-[300px] items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:flex">
+          <div class="ml-auto flex items-center gap-2">
+            <div
+              class="hidden min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:flex"
+              :class="authStore.user.is_authenticated ? 'max-w-[300px]' : 'max-w-[360px]'"
+            >
               <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-900 text-white">
                 <UserRound class="h-4 w-4" />
               </div>

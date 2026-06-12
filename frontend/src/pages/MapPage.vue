@@ -12,6 +12,7 @@ import {
     SlidersHorizontal,
     WalletCards,
 } from 'lucide-vue-next';
+import { useRoute } from 'vue-router';
 import { fetchMapNotices } from '../api/firsthome';
 import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
 import { formatMoney } from '../utils/format';
@@ -59,6 +60,7 @@ const REGION_CENTERS = {
     제주특별자치도: { lat: 33.499621, lng: 126.531188 },
 };
 
+const route = useRoute();
 const mapElement = ref(null);
 const map = ref(null);
 const markers = ref([]);
@@ -69,7 +71,7 @@ const loading = ref(true);
 const error = ref('');
 const mapReady = ref(false);
 const mapError = ref('');
-const searchTerm = ref('');
+const searchTerm = ref(String(route.query.search ?? ''));
 const selectedRegion = ref('all');
 const selectedSupply = ref('all');
 const selectedSource = ref('all');
@@ -358,6 +360,12 @@ function goToPage(page) {
 
 watch([searchTerm, selectedRegion, selectedSupply, selectedSource], () => {
     currentPage.value = 1;
+});
+
+watch(() => route.query.search, (value) => {
+    const nextSearch = String(value ?? '');
+    if (searchTerm.value !== nextSearch)
+        searchTerm.value = nextSearch;
 });
 
 watch(filteredItems, async () => {

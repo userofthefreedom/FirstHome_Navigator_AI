@@ -94,6 +94,10 @@ export async function fetchProducts() {
     const response = await api.get('/recommendations/products');
     return response.data;
 }
+export async function fetchLoanProducts() {
+    const response = await api.get('/recommendations/loans');
+    return response.data;
+}
 export async function fetchPolicies() {
     const response = await api.get('/recommendations/policies');
     return response.data;

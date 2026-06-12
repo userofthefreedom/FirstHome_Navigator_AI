@@ -3,6 +3,7 @@ from rest_framework.response import Response
 
 from apps.policies.services.matcher import match_policies
 from apps.profiles.services import profile_from_request, save_last_recommendations
+from apps.products.services.loan_matcher import match_purchase_loans
 from apps.products.services.matcher import match_products
 from apps.recommendations.services.ranking import recommendation_candidate_notices, ranked_recommendations
 
@@ -37,6 +38,12 @@ def housing_recommendations(request):
 def product_recommendations(request):
     profile = profile_from_request(request)
     return Response(match_products(profile))
+
+
+@api_view(["GET"])
+def loan_recommendations(request):
+    profile = profile_from_request(request)
+    return Response(match_purchase_loans(profile))
 
 
 @api_view(["GET"])

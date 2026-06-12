@@ -51,3 +51,20 @@ class YouthCenterPolicyNormalizerTests(SimpleTestCase):
         self.assertEqual(policies[0].regions, ["전국"])
         self.assertEqual(policies[0].age_min, 19)
         self.assertEqual(policies[0].age_max, 39)
+
+    def test_full_province_name_is_normalized_to_region_alias(self):
+        payload = {
+            "youthPolicyList": [
+                {
+                    "plcyNm": "2026년 청년 전월세 보증금 지원",
+                    "sprvsnInstCdNm": "경상북도 고령군",
+                    "sprtTrgtCn": "경상북도 고령군 거주 무주택 청년",
+                    "plcySprtCn": "전월세 보증금 이자 지원",
+                    "lclsfNm": "주거",
+                }
+            ]
+        }
+
+        policies = normalize_youthcenter_policies(payload)
+
+        self.assertEqual(policies[0].regions, ["경북"])

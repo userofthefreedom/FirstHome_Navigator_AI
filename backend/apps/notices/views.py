@@ -5,6 +5,7 @@ from apps.fixture_store import current_notices, find_notice, notices
 from apps.notices.services.map_locations import offset_location, resolve_notice_location
 from apps.profiles.services import profile_from_request
 from apps.recommendations.services.ranking import calculate_score
+from apps.rules.regions import canonical_region
 
 
 @api_view(["GET"])
@@ -80,35 +81,4 @@ def notice_map(request):
 
 
 def _map_region(notice: dict) -> str:
-    region = str(notice.get("region") or "").strip()
-    text = f"{region} {notice.get('district', '')} {notice.get('title', '')}".replace(" ", "")
-    if "경기북부" in text:
-        return "경기 북부"
-    if "경기남부" in text:
-        return "경기 남부"
-    if "경기" in text or "경기도" in text:
-        northern = ("고양", "남양주", "파주", "의정부", "양주", "구리", "포천", "동두천", "가평", "연천")
-        return "경기 북부" if any(name in text for name in northern) else "경기 남부"
-    aliases = (
-        ("서울", ("서울", "서울특별시")),
-        ("부산", ("부산", "부산광역시")),
-        ("대구", ("대구", "대구광역시")),
-        ("인천", ("인천", "인천광역시")),
-        ("광주", ("광주", "광주광역시")),
-        ("대전", ("대전", "대전광역시")),
-        ("울산", ("울산", "울산광역시")),
-        ("세종", ("세종", "세종특별자치시")),
-        ("강원", ("강원", "강원도", "강원특별자치도")),
-        ("충북", ("충북", "충청북도")),
-        ("충남", ("충남", "충청남도")),
-        ("전북", ("전북", "전라북도", "전북특별자치도")),
-        ("전남", ("전남", "전라남도")),
-        ("경북", ("경북", "경상북도")),
-        ("경남", ("경남", "경상남도")),
-        ("제주", ("제주", "제주도", "제주특별자치도")),
-    )
-    normalized_region = region.replace(" ", "")
-    for label, names in aliases:
-        if any(name.replace(" ", "") in normalized_region for name in names):
-            return label
-    return region or "전국"
+    return canonical_region(notice.get("region"), notice.get("district"), notice.get("title"))

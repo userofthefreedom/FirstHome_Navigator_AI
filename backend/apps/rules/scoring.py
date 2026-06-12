@@ -3,6 +3,9 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
+from apps.rules.funding import debt_cash_reserve, effective_down_payment_cash, effective_monthly_capacity, job_status_capacity_factor
+from apps.rules.regions import notice_matches_preferred_region
+
 
 SCORE_WEIGHTS = {
     "eligibility": 35,
@@ -13,27 +16,6 @@ SCORE_WEIGHTS = {
 
 SCHEDULE_BURDEN_TYPES = {"middle_payment", "installment_payment"}
 DOWN_PAYMENT_TYPES = {"down_payment"}
-REGION_ALIASES = {
-    "서울": ("서울", "서울특별시"),
-    "부산": ("부산", "부산광역시"),
-    "대구": ("대구", "대구광역시"),
-    "인천": ("인천", "인천광역시"),
-    "광주": ("광주", "광주광역시"),
-    "대전": ("대전", "대전광역시"),
-    "울산": ("울산", "울산광역시"),
-    "세종": ("세종", "세종특별자치시"),
-    "경기": ("경기", "경기도", "경기 남부", "경기 북부"),
-    "경기 남부": ("경기 남부", "경기남부", "경기도"),
-    "경기 북부": ("경기 북부", "경기북부", "경기도"),
-    "강원": ("강원", "강원도", "강원특별자치도"),
-    "충북": ("충북", "충청북도"),
-    "충남": ("충남", "충청남도"),
-    "전북": ("전북", "전라북도", "전북특별자치도"),
-    "전남": ("전남", "전라남도"),
-    "경북": ("경북", "경상북도"),
-    "경남": ("경남", "경상남도"),
-    "제주": ("제주", "제주도", "제주특별자치도"),
-}
 
 
 def eligibility_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
@@ -60,24 +42,14 @@ def eligibility_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
 def location_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
     preferred_regions = [str(region or "").strip() for region in profile.get("preferred_regions", [])]
     preferred_supply_types = [str(supply_type or "").strip() for supply_type in profile.get("preferred_supply_types", [])]
-    notice_region = str(notice.get("region") or "")
-    notice_district = str(notice.get("district") or "")
 
     score = 0
     score += 24 if any(
-        _region_matches(notice_region, region) or _region_matches(notice_district, region)
+        notice_matches_preferred_region(notice, region)
         for region in preferred_regions
     ) else 0
     score += 6 if any(_supply_type_matches(notice, supply_type) for supply_type in preferred_supply_types) else 0
     return min(score, SCORE_WEIGHTS["location"])
-
-
-def _region_matches(target: str, preferred_region: str) -> bool:
-    target_key = _normalize_key(target)
-    if not target_key:
-        return False
-    aliases = REGION_ALIASES.get(preferred_region, (preferred_region,))
-    return any(_normalize_key(alias) in target_key for alias in aliases if alias)
 
 
 def _supply_type_matches(notice: dict[str, Any], preferred_supply_type: str) -> bool:
@@ -128,24 +100,15 @@ def option_fit_score(option: dict[str, Any], profile: dict[str, Any]) -> int:
     price = int(option.get("base_price") or option.get("price") or 0)
     min_price = int(profile.get("desired_price_min") or 0)
     max_price = int(profile.get("desired_price_max") or 0)
-    max_down_payment = int(profile.get("max_down_payment") or 0)
     insights = option_funding_insights(option, profile)
     down_payment = int(insights["down_payment"])
+    max_down_payment = int(insights["max_down_payment"])
     monthly_need = int(insights["monthly_schedule_need"])
     monthly_capacity = int(insights["monthly_capacity"])
     move_in_cash_gap = int(insights["move_in_cash_gap"])
 
-    if area and (not min_area or area >= min_area) and (not max_area or area <= max_area):
-        score += 35
-    elif area and ((min_area and area >= min_area * 0.9) or (max_area and area <= max_area * 1.1)):
-        score += 15
-
-    if price and (not min_price or price >= min_price) and (not max_price or price <= max_price):
-        score += 35
-    elif price and ((min_price and price >= min_price * 0.9) or (max_price and price <= max_price * 1.1)):
-        score += 15
-    elif not price:
-        score += 10
+    score += _area_range_score(area, min_area, max_area)
+    score += _price_range_score(price, min_price, max_price)
 
     if down_payment and max_down_payment and down_payment <= max_down_payment:
         score += 20
@@ -180,6 +143,34 @@ def option_fit_score(option: dict[str, Any], profile: dict[str, Any]) -> int:
     return min(score, 100)
 
 
+def _area_range_score(area: float, min_area: float, max_area: float) -> int:
+    if not area:
+        return 0
+    if (not min_area or area >= min_area) and (not max_area or area <= max_area):
+        return 35
+    if min_area and area < min_area:
+        gap_ratio = (min_area - area) / min_area
+    elif max_area and area > max_area:
+        gap_ratio = (area - max_area) / max_area
+    else:
+        gap_ratio = 0
+    return round(max(0, 35 - gap_ratio * 100))
+
+
+def _price_range_score(price: int, min_price: int, max_price: int) -> int:
+    if not price:
+        return 10
+    if (not min_price or price >= min_price) and (not max_price or price <= max_price):
+        return 35
+    if max_price and price > max_price:
+        gap_ratio = (price - max_price) / max_price
+        return round(max(0, 35 - gap_ratio * 100))
+    if min_price and price < min_price:
+        gap_ratio = (min_price - price) / min_price
+        return round(max(15, 35 - gap_ratio * 50))
+    return 0
+
+
 def option_fit_reasons(option: dict[str, Any], profile: dict[str, Any]) -> list[str]:
     reasons: list[str] = []
     area = float(option.get("exclusive_area_m2") or 0)
@@ -198,12 +189,12 @@ def option_fit_reasons(option: dict[str, Any], profile: dict[str, Any]) -> list[
     if area and (not min_area or area >= min_area) and (not max_area or area <= max_area):
         reasons.append("희망 면적 범위에 들어옵니다.")
     elif area:
-        reasons.append("희망 면적과 가까운 대안입니다.")
+        reasons.append("희망 면적 범위에서 벗어나지만 차이 비율을 반영해 비교했습니다.")
 
     if price and (not min_price or price >= min_price) and (not max_price or price <= max_price):
         reasons.append("희망 분양가 범위에 들어옵니다.")
     elif price:
-        reasons.append("희망 분양가와 차이가 있어 자금 여유를 확인해야 합니다.")
+        reasons.append("희망 분양가와의 차이 비율을 반영했으므로 자금 여유를 확인해야 합니다.")
     else:
         reasons.append("분양가 근거가 부족해 공식 공고문 확인이 필요합니다.")
 
@@ -251,8 +242,8 @@ def option_funding_insights(option: dict[str, Any], profile: dict[str, Any]) -> 
         if str(schedule.get("payment_type") or "") in {"final_payment", "move_in_balance"}
     ) or int(option.get("final_payment") or 0)
     loan_amount = int(option.get("loan_amount") or 0)
-    max_down_payment = int(profile.get("max_down_payment") or profile.get("asset") or 0)
-    monthly_capacity = int(profile.get("monthly_payment_capacity") or profile.get("monthly_saving") or 0)
+    max_down_payment = effective_down_payment_cash(profile)
+    monthly_capacity = effective_monthly_capacity(profile)
     target_months = max(int(profile.get("target_months") or 1), 1)
     down_payment_shortfall = max(0, down_payment - max_down_payment)
     down_payment_monthly_target = _ceil_divide(down_payment_shortfall, target_months)
@@ -276,6 +267,9 @@ def option_funding_insights(option: dict[str, Any], profile: dict[str, Any]) -> 
         "due_before_move_in": due_before_move_in,
         "max_down_payment": max_down_payment,
         "monthly_capacity": monthly_capacity,
+        "debt_cash_reserve": debt_cash_reserve(profile),
+        "job_status": str(profile.get("job_status") or "employed"),
+        "job_status_capacity_factor": job_status_capacity_factor(profile),
         "target_months": target_months,
         "down_payment_shortfall": down_payment_shortfall,
         "down_payment_monthly_target": down_payment_monthly_target,

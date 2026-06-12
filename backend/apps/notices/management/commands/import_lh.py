@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
@@ -15,30 +16,38 @@ class Command(BaseCommand):
     help = "Import LH housing notices from data.go.kr."
 
     def add_arguments(self, parser):
-        parser.add_argument("--page-size", type=int, default=100)
+        parser.add_argument("--page-size", type=int)
         parser.add_argument(
             "--max-pages",
             type=int,
-            default=5,
-            help="Maximum pages to fetch. Use 0 to fetch every page.",
+            help="Maximum pages to fetch. Defaults to 1 page for dry-run and 7 pages for import. Use 0 to fetch every page.",
         )
         parser.add_argument("--clear", action="store_true", help="Delete existing notices before importing.")
         parser.add_argument("--dry-run", action="store_true", help="Fetch and normalize notices without writing to DB.")
         parser.add_argument(
             "--service-target-only",
             action="store_true",
-            help="Persist only ownership-sale notices that are in the FirstHome service scope.",
+            help="Compatibility option. Service-target filtering is enabled by default.",
+        )
+        parser.add_argument(
+            "--include-excluded",
+            action="store_true",
+            help="Also persist notices outside the FirstHome ownership-sale service scope.",
         )
         parser.add_argument(
             "--with-supply-info",
             action="store_true",
-            help="Fetch LH supply detail rows and enrich area, price, and housing type when possible.",
+            help="Compatibility option. Supply info enrichment is enabled by default.",
+        )
+        parser.add_argument(
+            "--without-supply-info",
+            action="store_true",
+            help="Skip LH supply detail rows.",
         )
         parser.add_argument(
             "--supply-limit",
             type=int,
-            default=30,
-            help="Maximum notices to enrich with LH supply detail rows. Use 0 for every notice.",
+            help="Maximum notices to enrich with LH supply detail rows. Defaults to 10 for dry-run and 75 for import. Use 0 for every notice.",
         )
 
     def handle(self, *args, **options):
@@ -46,12 +55,22 @@ class Command(BaseCommand):
         if not api_key:
             raise CommandError("DATA_GO_KR_SERVICE_KEY is missing. Add it to backend/.env.")
 
-        notices = fetch_all_lh_notices(
-            api_key,
-            page_size=options["page_size"],
-            max_pages=options["max_pages"],
-        )
-        supply_summaries = self._fetch_supply_summaries(api_key, notices, options) if options["with_supply_info"] else {}
+        page_size = options["page_size"] or (50 if options["dry_run"] else 250)
+        max_pages = options["max_pages"] if options["max_pages"] is not None else (1 if options["dry_run"] else 7)
+        supply_limit = options["supply_limit"] if options["supply_limit"] is not None else (10 if options["dry_run"] else 75)
+        service_target_only = not options["include_excluded"]
+        with_supply_info = not options["without_supply_info"]
+        self._supply_enrichment_halted = False
+
+        try:
+            notices = fetch_all_lh_notices(
+                api_key,
+                page_size=page_size,
+                max_pages=max_pages,
+            )
+        except (requests.RequestException, ValueError) as exc:
+            raise CommandError(f"LH notice API request failed: {exc}") from exc
+        supply_summaries = self._fetch_supply_summaries(api_key, notices, supply_limit) if with_supply_info else {}
 
         if options["dry_run"]:
             service_target_count = sum(1 for notice in notices if self._classification(notice).is_service_target)
@@ -74,7 +93,11 @@ class Command(BaseCommand):
                     f"({missing_target_price_count} service-target). No database changes."
                 )
             )
-            preview_notices = self._supply_target_order(notices)[:5] if options["service_target_only"] else notices[:5]
+            self.stdout.write(
+                f"Defaults used: page_size={page_size}, max_pages={max_pages}, "
+                f"service_target_only={service_target_only}, with_supply_info={with_supply_info}, supply_limit={supply_limit}"
+            )
+            preview_notices = self._supply_target_order(notices)[:5] if service_target_only else notices[:5]
             for notice in preview_notices:
                 summary = supply_summaries.get(notice.source_id, {})
                 target_mark = "sale" if self._classification(notice).is_service_target else "skip"
@@ -83,10 +106,15 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"- [{target_mark}] {notice.region} {notice.supply_type} "
                     f"{notice.title} ({summary.get('area', notice.area)}, {price_label})"
-                )
+            )
             return
 
         if options["clear"]:
+            if with_supply_info and self._supply_enrichment_halted:
+                raise CommandError(
+                    "LH supply info enrichment failed repeatedly, so --clear was not applied. "
+                    "Retry later, or run with --without-supply-info if you intentionally want notice-only data."
+                )
             HousingNotice.objects.all().delete()
 
         created_count = 0
@@ -117,7 +145,7 @@ class Command(BaseCommand):
                 "source_meta": {**notice.source_meta, "supply_summary": summary} if summary else notice.source_meta,
             }
             classification = classify_notice_payload({**defaults, "provider": notice.provider, "source_id": notice.source_id})
-            if options["service_target_only"] and not classification.is_service_target:
+            if service_target_only and not classification.is_service_target:
                 skipped_count += 1
                 continue
             if price <= 0:
@@ -146,21 +174,41 @@ class Command(BaseCommand):
             )
         )
 
-    def _fetch_supply_summaries(self, api_key, notices, options):
-        limit = options["supply_limit"]
+    def _fetch_supply_summaries(self, api_key, notices, limit):
         selected_notices = self._supply_target_order(notices)
         selected_notices = selected_notices if limit == 0 else selected_notices[:limit]
         summaries = {}
+        consecutive_failures = 0
+        max_consecutive_failures = 5
         for notice in selected_notices:
             meta = notice.source_meta
             if not meta.get("pan_id"):
                 continue
-            payload = fetch_lh_supply_payload(
-                api_key,
-                pan_id=meta["pan_id"],
-                spl_inf_tp_cd=meta.get("spl_inf_tp_cd", ""),
-                ccr_cnnt_sys_ds_cd=meta.get("ccr_cnnt_sys_ds_cd", ""),
-            )
+            try:
+                payload = fetch_lh_supply_payload(
+                    api_key,
+                    pan_id=meta["pan_id"],
+                    spl_inf_tp_cd=meta.get("spl_inf_tp_cd", ""),
+                    ccr_cnnt_sys_ds_cd=meta.get("ccr_cnnt_sys_ds_cd", ""),
+                )
+            except (requests.RequestException, ValueError) as exc:
+                consecutive_failures += 1
+                self.stderr.write(
+                    self.style.WARNING(
+                        f"Skipped LH supply info for {notice.source_id}: {exc}"
+                    )
+                )
+                if consecutive_failures >= max_consecutive_failures:
+                    self._supply_enrichment_halted = True
+                    self.stderr.write(
+                        self.style.WARNING(
+                            "Stopped LH supply info enrichment after repeated API failures. "
+                            "Notice list import will continue without supply details."
+                        )
+                    )
+                    break
+                continue
+            consecutive_failures = 0
             summary = supply_info_summary(payload)
             if summary:
                 summaries[notice.source_id] = summary

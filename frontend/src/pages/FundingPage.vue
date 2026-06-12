@@ -6,9 +6,11 @@ import { addFavorite, fetchFavorites, fetchFundingPlan, fetchHousingRecommendati
 import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
 import { formatMoney } from '../utils/format';
 import { readCurrentSelection, saveCurrentSelection } from '../utils/selectionState';
+import { useProfileStore } from '../stores/profileStore';
 
 const route = useRoute();
 const router = useRouter();
+const profileStore = useProfileStore();
 const noticeId = computed(() => Number(route.params.noticeId ?? 0));
 const selectedOptionId = computed(() => {
     const routeOptionId = Number(route.query.option_id ?? 0) || null;
@@ -30,12 +32,6 @@ const loading = ref(true);
 const savingFavoriteKey = ref('');
 const error = ref('');
 
-const readinessRate = computed(() => {
-    if (!fundingPlan.value?.down_payment)
-        return 0;
-    return Math.round((fundingPlan.value.available_cash / fundingPlan.value.down_payment) * 100);
-});
-const readinessWidth = computed(() => `${Math.min(readinessRate.value, 100)}%`);
 const optionComparisons = computed(() => unitOptions.value.map((option) => ({ option, plan: optionFundingPlans.value[option.id] })));
 const selectedOption = computed(() => unitOptions.value.find((option) => option.id === fundingPlan.value?.option_id) ?? null);
 const selectedComparison = computed(() => optionComparisons.value.find(({ option }) => option.id === fundingPlan.value?.option_id) ?? null);
@@ -63,12 +59,57 @@ const visibleOptionComparisons = computed(() => activeOptionGroup.value?.compari
 const otherVisibleComparisons = computed(() => visibleOptionComparisons.value.filter(({ option }) => option.id !== fundingPlan.value?.option_id));
 const currentAnalysisSummary = computed(() => analysisSummary(selectedNotice.value?.analysis_summary, selectedNotice.value?.official_document_status));
 const timelineSummary = computed(() => fundingPlan.value?.timeline_summary ?? {});
+const purchaseLoanProducts = computed(() => fundingPlan.value?.purchase_loan_products ?? []);
+const displayedPurchaseLoanProducts = computed(() => purchaseLoanProducts.value.slice(0, 4));
 const middleSchedules = computed(() => fundingPlan.value?.timeline.filter((item) => item.payment_type === 'middle_payment') ?? []);
 const installmentSchedules = computed(() => fundingPlan.value?.timeline.filter((item) => item.payment_type === 'installment_payment') ?? []);
-const postBalanceItems = computed(() => fundingPlan.value?.post_balance_items ?? []);
+const displayAvailableCash = computed(() => Number(profileStore.profile.asset || 0) || fundingPlan.value?.available_cash || 0);
+const displayContractShortfall = computed(() => Math.max(0, Number(fundingPlan.value?.down_payment || 0) - displayAvailableCash.value));
+const otherOptionPage = ref(1);
+const OTHER_OPTION_PAGE_SIZE = 8;
+const otherOptionTotalPages = computed(() => Math.max(1, Math.ceil(otherVisibleComparisons.value.length / OTHER_OPTION_PAGE_SIZE)));
+const safeOtherOptionPage = computed(() => Math.min(otherOptionPage.value, otherOptionTotalPages.value));
+const visibleOtherOptionRows = computed(() => {
+    const start = (safeOtherOptionPage.value - 1) * OTHER_OPTION_PAGE_SIZE;
+    return otherVisibleComparisons.value.slice(start, start + OTHER_OPTION_PAGE_SIZE);
+});
+const otherOptionPageNumbers = computed(() => {
+    const total = otherOptionTotalPages.value;
+    const current = safeOtherOptionPage.value;
+    const start = Math.max(1, Math.min(current - 2, total - 4));
+    const end = Math.min(total, start + 4);
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+});
+const otherOptionRangeLabel = computed(() => {
+    const total = otherVisibleComparisons.value.length;
+    if (!total)
+        return '0건';
+    const start = (safeOtherOptionPage.value - 1) * OTHER_OPTION_PAGE_SIZE + 1;
+    const end = Math.min(total, start + OTHER_OPTION_PAGE_SIZE - 1);
+    return `${total}건 중 ${start}-${end}건`;
+});
+const displayReadinessRate = computed(() => {
+    if (!fundingPlan.value?.down_payment)
+        return 0;
+    return Math.round((displayAvailableCash.value / fundingPlan.value.down_payment) * 100);
+});
+const displayReadinessWidth = computed(() => `${Math.min(displayReadinessRate.value, 100)}%`);
 
 function priceLabel(price) {
     return Number(price || 0) > 0 ? formatMoney(price) : '공식 확인 필요';
+}
+
+function productProtectionLabel(product) {
+    return product.protection_status ? '예금자보호' : '보호 여부 확인';
+}
+
+function loanRepaymentLabel(loan) {
+    const optionText = String(loan?.name || '').match(/\(([^)]+)\)/)?.[1] || '';
+    const repayment = optionText
+        .split('·')
+        .map((item) => item.trim())
+        .find((item) => item.includes('상환'));
+    return repayment || '상환방식 공식 확인';
 }
 
 function optionTypeLabel(type) {
@@ -166,6 +207,9 @@ async function loadFunding() {
         ]);
         selectedNotice.value = noticeResponse;
         fundingPlan.value = fundingResponse;
+        if (!profileStore.loaded) {
+            await profileStore.hydrateProfile();
+        }
         saveCurrentSelection(targetNoticeId, fundingResponse.option_id || selectedOptionId.value);
         unitOptions.value = unitOptionResponse;
         financialProducts.value = productsResponse;
@@ -254,8 +298,13 @@ async function selectFundingOption(option) {
     await router.push({ path: `/funding/${selectedNotice.value.id}`, query: { option_id: option.id } });
 }
 
+function setOtherOptionPage(page) {
+    otherOptionPage.value = Math.min(Math.max(1, page), otherOptionTotalPages.value);
+}
+
 async function selectOptionGroup(groupKey) {
     activeOptionType.value = groupKey;
+    otherOptionPage.value = 1;
     const group = groupedOptionComparisons.value.find((item) => item.key === groupKey);
     const selectedInGroup = group?.comparisons.find(({ option }) => option.id === fundingPlan.value?.option_id);
     const target = selectedInGroup?.option ?? group?.comparisons[0]?.option;
@@ -295,6 +344,9 @@ function paymentTypeClass(type) {
 }
 
 watch([noticeId, selectedOptionId], loadFunding);
+watch([otherVisibleComparisons, () => fundingPlan.value?.option_id], () => {
+    otherOptionPage.value = 1;
+});
 onMounted(loadFunding);
 </script>
 
@@ -358,45 +410,66 @@ onMounted(loadFunding);
         </div>
       </section>
 
-      <section class="grid gap-3 md:grid-cols-4">
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="flex items-center gap-2 text-sm text-slate-500">
-            <Landmark class="h-4 w-4" />
-            예상 분양가
-          </p>
-          <p class="mt-2 text-2xl font-bold">{{ priceLabel(fundingPlan.price) }}</p>
+      <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div class="min-w-0">
+            <p class="flex items-center gap-2 text-sm font-bold text-blue-700">
+              <WalletCards class="h-4 w-4" />
+              계약금 준비 현황
+            </p>
+            <h2 class="mt-2 text-2xl font-bold text-slate-950">
+              {{ formatMoney(fundingPlan.down_payment) }} 중 {{ formatMoney(displayContractShortfall) }} 부족
+            </h2>
+            <p class="mt-2 text-sm text-slate-500">
+              보유 현금 {{ formatMoney(displayAvailableCash) }} 기준입니다. 부채와 직업 상태는 내부 위험 계산에 별도로 반영됩니다.
+            </p>
+          </div>
+          <div class="w-full lg:max-w-sm">
+            <div class="flex items-end justify-between gap-4">
+              <div>
+                <p class="text-xs font-bold text-slate-500">준비율</p>
+                <p class="mt-1 text-2xl font-bold text-slate-950">{{ displayReadinessRate }}%</p>
+              </div>
+              <p class="text-right text-sm font-bold text-blue-700">{{ formatMoney(displayContractShortfall) }}</p>
+            </div>
+            <div class="mt-3 h-3 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-blue-600" :style="{ width: displayReadinessWidth }" />
+            </div>
+          </div>
         </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="flex items-center gap-2 text-sm text-slate-500">
-            <WalletCards class="h-4 w-4" />
-            계약금
-          </p>
-          <p class="mt-2 text-2xl font-bold">{{ formatMoney(fundingPlan.down_payment) }}</p>
-        </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="flex items-center gap-2 text-sm text-slate-500">
-            <PiggyBank class="h-4 w-4" />
-            준비 가능 현금
-          </p>
-          <p class="mt-2 text-2xl font-bold">{{ formatMoney(fundingPlan.available_cash) }}</p>
-        </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="flex items-center gap-2 text-sm text-slate-500">
-            <Calculator class="h-4 w-4" />
-            부족액
-          </p>
-          <p class="mt-2 text-2xl font-bold text-blue-700">{{ formatMoney(fundingPlan.shortfall) }}</p>
+        <div class="mt-5 grid gap-3 md:grid-cols-4">
+          <div class="rounded-lg bg-slate-50 p-4">
+            <p class="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <Landmark class="h-4 w-4" />
+              예상 분양가
+            </p>
+            <p class="mt-2 text-lg font-bold text-slate-950">{{ priceLabel(fundingPlan.price) }}</p>
+          </div>
+          <div class="rounded-lg bg-slate-50 p-4">
+            <p class="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <WalletCards class="h-4 w-4" />
+              계약금
+            </p>
+            <p class="mt-2 text-lg font-bold text-slate-950">{{ formatMoney(fundingPlan.down_payment) }}</p>
+          </div>
+          <div class="rounded-lg bg-slate-50 p-4">
+            <p class="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <PiggyBank class="h-4 w-4" />
+              보유 현금
+            </p>
+            <p class="mt-2 text-lg font-bold text-slate-950">{{ formatMoney(displayAvailableCash) }}</p>
+          </div>
+          <div class="rounded-lg bg-blue-50 p-4">
+            <p class="flex items-center gap-2 text-xs font-bold text-blue-700">
+              <Calculator class="h-4 w-4" />
+              남은 부족액
+            </p>
+            <p class="mt-2 text-lg font-bold text-blue-700">{{ formatMoney(displayContractShortfall) }}</p>
+          </div>
         </div>
       </section>
 
-      <section class="grid gap-5 lg:grid-cols-3">
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm font-semibold text-blue-700">계약금 준비율</p>
-          <h2 class="mt-1 text-xl font-bold">{{ readinessRate }}% 준비됨</h2>
-          <div class="mt-6 h-3 overflow-hidden rounded-full bg-slate-100">
-            <div class="h-full rounded-full bg-blue-600" :style="{ width: readinessWidth }" />
-          </div>
-        </div>
+      <section class="grid gap-5" :class="timelineSummary.has_post_balance_loan ? 'lg:grid-cols-3' : 'lg:grid-cols-2'">
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-sm font-semibold text-slate-500">입주 전 필요 금액</p>
           <h2 class="mt-1 text-xl font-bold text-slate-950">{{ formatMoney(timelineSummary.due_before_move_in || 0) }}</h2>
@@ -407,16 +480,12 @@ onMounted(loadFunding);
           <h2 class="mt-1 text-2xl font-bold">{{ formatMoney(fundingPlan.monthly_target) }}</h2>
           <p class="mt-3 text-sm leading-6 text-slate-300">계약 예정일까지 {{ fundingPlan.months_until_contract }}개월 기준입니다.</p>
         </div>
-      </section>
-
-      <section v-if="timelineSummary.has_post_balance_loan" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-sm font-semibold text-slate-500">잔금 이후 상환 항목</p>
-        <h2 class="mt-1 text-xl font-bold text-slate-950">{{ formatMoney(timelineSummary.post_balance_amount || 0) }}</h2>
-        <p class="mt-2 text-sm leading-6 text-slate-600">{{ fundingPlan.loan_repayment_note }}</p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <span v-for="item in postBalanceItems" :key="`${item.label}-${item.amount}`" class="rounded-md bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700">
-            {{ item.label }} · {{ formatMoney(item.amount) }}
-          </span>
+        <div v-if="timelineSummary.has_post_balance_loan" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-sm font-semibold text-slate-500">잔금 이후 상환</p>
+          <h2 class="mt-1 text-xl font-bold text-slate-950">{{ formatMoney(timelineSummary.post_balance_amount || 0) }}</h2>
+          <p class="mt-3 text-xs leading-5 text-slate-500">
+            융자금은 입주 전 납부금이 아니라, 잔금 이후 기금 대출 조건에 따라 상환할 금액입니다.
+          </p>
         </div>
       </section>
 
@@ -489,7 +558,7 @@ onMounted(loadFunding);
 
         <div class="mt-4 overflow-hidden rounded-lg border border-slate-200">
           <div
-            v-for="{ option, plan } in otherVisibleComparisons"
+            v-for="{ option, plan } in visibleOtherOptionRows"
             :key="option.id"
             class="grid gap-3 border-b border-slate-100 bg-white p-3 text-sm last:border-b-0 md:grid-cols-[minmax(0,1.2fr)_1fr_1fr_1fr_120px] md:items-center"
           >
@@ -530,6 +599,40 @@ onMounted(loadFunding);
               </button>
             </div>
           </div>
+          <div v-if="otherOptionTotalPages > 1" class="flex flex-col gap-3 border-t border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm font-bold text-slate-700">다른 주택형 옵션</p>
+              <p class="mt-0.5 text-xs text-slate-500">{{ otherOptionRangeLabel }}</p>
+            </div>
+            <nav class="flex flex-wrap items-center gap-2" aria-label="주택형 옵션 페이지">
+              <button
+                type="button"
+                class="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                :disabled="safeOtherOptionPage <= 1"
+                @click="setOtherOptionPage(safeOtherOptionPage - 1)"
+              >
+                이전
+              </button>
+              <button
+                v-for="page in otherOptionPageNumbers"
+                :key="page"
+                type="button"
+                class="flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-bold transition"
+                :class="page === safeOtherOptionPage ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-700'"
+                @click="setOtherOptionPage(page)"
+              >
+                {{ page }}
+              </button>
+              <button
+                type="button"
+                class="h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                :disabled="safeOtherOptionPage >= otherOptionTotalPages"
+                @click="setOtherOptionPage(safeOtherOptionPage + 1)"
+              >
+                다음
+              </button>
+            </nav>
+          </div>
           <div v-if="otherVisibleComparisons.length === 0" class="bg-white p-4 text-sm font-semibold text-slate-500">
             이 그룹의 다른 주택형 옵션이 없습니다.
           </div>
@@ -565,9 +668,6 @@ onMounted(loadFunding);
             <div>
               <p class="font-bold text-slate-950">{{ item.label }}</p>
               <p class="mt-1 text-slate-500">{{ item.date }}</p>
-              <p v-if="item.evidence_text" class="mt-2 rounded-md bg-slate-50 p-2 text-xs leading-5 text-slate-500">
-                {{ item.evidence_text }}
-              </p>
             </div>
             <p class="font-bold text-slate-950 md:text-right">{{ formatMoney(item.amount) }}</p>
           </div>
@@ -600,9 +700,50 @@ onMounted(loadFunding);
         </a>
       </section>
 
+      <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-blue-700">구입자금 대출 후보</p>
+            <h2 class="mt-1 text-lg font-bold text-slate-950">첫 집 구입 목적에 맞는 대출 제도만 검토</h2>
+            <p class="mt-1 text-sm text-slate-500">
+              금융감독원 공시 기반 주택담보대출 중 전세자금, 월세, 청약통장담보, 신용대출을 제외하고 보여줍니다. 공공분양 잔금 또는 주택 구입자금 활용 가능 여부는 금융기관 심사가 필요합니다.
+            </p>
+          </div>
+          <span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">심사 보장 아님</span>
+        </div>
+        <div class="mt-4 grid gap-3 lg:grid-cols-2">
+          <p v-if="purchaseLoanProducts.length === 0" class="rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-600 lg:col-span-2">
+            현재 조건에서 검토할 구입자금 대출 후보가 없습니다.
+          </p>
+          <div v-for="loan in displayedPurchaseLoanProducts" :key="loan.id" class="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="font-bold text-slate-950">{{ loan.name }}</p>
+                <p class="mt-1 text-sm text-slate-500">{{ loan.provider }} · {{ loan.category }}</p>
+              </div>
+              <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">적합도 {{ loan.match_score }}점</span>
+            </div>
+            <div class="mt-3 grid gap-2 sm:grid-cols-3">
+              <div class="rounded-md bg-white p-3">
+                <p class="text-xs font-bold text-slate-500">한도</p>
+                <p class="mt-1 font-bold text-slate-950">{{ loan.limit || '공식 확인' }}</p>
+              </div>
+              <div class="rounded-md bg-white p-3">
+                <p class="text-xs font-bold text-slate-500">상환방식</p>
+                <p class="mt-1 font-bold text-slate-950">{{ loanRepaymentLabel(loan) }}</p>
+              </div>
+              <div class="rounded-md bg-white p-3">
+                <p class="text-xs font-bold text-slate-500">금리</p>
+                <p class="mt-1 font-bold text-slate-950">{{ loan.rate || '공식 확인' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="grid gap-5 lg:grid-cols-2">
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 class="text-lg font-bold text-slate-950">대출 상품 후보</h2>
+          <h2 class="text-lg font-bold text-slate-950">금융 상품 후보</h2>
           <div class="mt-4 grid gap-3">
             <p v-if="financialProducts.length === 0" class="rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-600">
               조건에 맞는 상품 후보가 없습니다.
@@ -613,7 +754,11 @@ onMounted(loadFunding);
                 <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ product.category }}</span>
               </div>
               <p class="mt-1 text-sm text-slate-500">{{ product.provider }} · {{ product.rate }} · {{ product.period }}</p>
-              <p class="mt-2 text-sm text-slate-600">{{ product.reasons[0] }}</p>
+              <div class="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                <span class="rounded-md bg-white px-2.5 py-1 text-slate-600">한도 {{ product.limit || '확인 필요' }}</span>
+                <span class="rounded-md bg-white px-2.5 py-1 text-slate-600">{{ productProtectionLabel(product) }}</span>
+                <span v-if="product.match_score !== undefined" class="rounded-md bg-blue-50 px-2.5 py-1 text-blue-700">적합도 {{ product.match_score }}점</span>
+              </div>
             </div>
           </div>
         </div>
@@ -630,7 +775,7 @@ onMounted(loadFunding);
                 <span v-if="policy.policy_category" class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ policy.policy_category }}</span>
               </div>
               <p class="mt-1 text-sm text-slate-500">{{ policy.provider }} · {{ policy.target }}</p>
-              <p class="mt-2 text-sm text-slate-600">{{ policy.benefit }}</p>
+              <p class="mt-2 text-sm text-slate-600 two-line-clamp">{{ policy.benefit }}</p>
             </div>
           </div>
         </div>
@@ -638,3 +783,12 @@ onMounted(loadFunding);
     </template>
   </div>
 </template>
+
+<style scoped>
+.two-line-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+</style>

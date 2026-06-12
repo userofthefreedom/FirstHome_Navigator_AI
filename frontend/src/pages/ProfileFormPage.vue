@@ -10,6 +10,8 @@ const saved = ref(false);
 const saving = ref(false);
 const saveError = ref('');
 const showExtraRegions = ref(false);
+const areaUnit = ref('m2');
+const M2_PER_PYEONG = 3.305785;
 const form = reactive({
     ...emptyProfile,
     ...profileStore.profile,
@@ -35,6 +37,11 @@ const moneyFields = [
     { key: 'max_down_payment', label: '최대 계약금 준비액' },
     { key: 'monthly_payment_capacity', label: '월 납부 감당액' },
 ];
+const moneyInputValues = reactive({});
+const areaInputValues = reactive({
+    min: '',
+    max: '',
+});
 function applyProfile(profile) {
     Object.assign(form, {
         ...profile,
@@ -42,6 +49,7 @@ function applyProfile(profile) {
         preferred_regions: [...profile.preferred_regions],
         preferred_supply_types: [...profile.preferred_supply_types],
     });
+    syncFriendlyInputs();
 }
 function toggleArrayValue(target, value) {
     const index = target.indexOf(value);
@@ -50,18 +58,68 @@ function toggleArrayValue(target, value) {
     else
         target.push(value);
 }
-function formatNumberInput(value) {
-    return Number(value || 0).toLocaleString('ko-KR');
+function wonToMan(value) {
+    const numberValue = Number(value || 0);
+    if (!numberValue)
+        return '';
+    return String(Math.round(numberValue / 10000));
 }
-function updateMoneyField(key, event) {
-    const input = event.target;
-    const numericText = input.value.replace(/[^\d]/g, '');
-    form[key] = numericText ? Number(numericText) : 0;
-    input.value = formatNumberInput(form[key]);
+function pyeongToM2(value) {
+    const numberValue = Number(value || 0);
+    return numberValue ? Math.round(numberValue * M2_PER_PYEONG * 10) / 10 : 0;
 }
-function normalizeMoneyField(key, event) {
-    const input = event.target;
-    input.value = formatNumberInput(form[key]);
+function m2ToPyeong(value) {
+    const numberValue = Number(value || 0);
+    return numberValue ? String(Math.round((numberValue / M2_PER_PYEONG) * 10) / 10) : '';
+}
+function m2ToInput(value) {
+    const numberValue = Number(value || 0);
+    return numberValue ? String(Math.round(numberValue * 10) / 10) : '';
+}
+function syncFriendlyInputs() {
+    moneyFields.forEach((field) => {
+        moneyInputValues[field.key] = wonToMan(form[field.key]);
+    });
+    areaInputValues.min = areaUnit.value === 'pyeong' ? m2ToPyeong(form.desired_area_min_m2) : m2ToInput(form.desired_area_min_m2);
+    areaInputValues.max = areaUnit.value === 'pyeong' ? m2ToPyeong(form.desired_area_max_m2) : m2ToInput(form.desired_area_max_m2);
+}
+function sanitizeIntegerText(value) {
+    return String(value ?? '').replace(/[^\d]/g, '');
+}
+function sanitizeDecimalText(value) {
+    const text = String(value ?? '').replace(/[^\d.]/g, '');
+    const [head, ...tail] = text.split('.');
+    return tail.length ? `${head}.${tail.join('')}` : head;
+}
+function updateMoneyField(key) {
+    const numericText = sanitizeIntegerText(moneyInputValues[key]);
+    moneyInputValues[key] = numericText;
+    form[key] = numericText ? Number(numericText) * 10000 : 0;
+}
+function updateAreaField(bound) {
+    const key = bound === 'min' ? 'desired_area_min_m2' : 'desired_area_max_m2';
+    const numericText = sanitizeDecimalText(areaInputValues[bound]);
+    areaInputValues[bound] = numericText;
+    if (areaUnit.value === 'pyeong') {
+        form[key] = pyeongToM2(numericText);
+    }
+    else {
+        const numberValue = Number(numericText || 0);
+        form[key] = numberValue ? Math.round(numberValue * 10) / 10 : 0;
+    }
+}
+function switchAreaUnit(unit) {
+    areaUnit.value = unit;
+    syncFriendlyInputs();
+}
+function areaHelper(bound) {
+    const value = bound === 'min' ? form.desired_area_min_m2 : form.desired_area_max_m2;
+    if (!value)
+        return '면적 조건 없음';
+    if (areaUnit.value === 'pyeong') {
+        return `약 ${Math.round(Number(value) * 10) / 10}㎡ 기준`;
+    }
+    return `약 ${m2ToPyeong(value)}평 기준`;
 }
 async function handleSubmit() {
     saving.value = true;
@@ -128,43 +186,88 @@ watch(() => profileStore.profile, (profile) => applyProfile(profile), { deep: tr
       </div>
     </section>
 
-    <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <h2 class="flex items-center gap-2 text-lg font-bold">
         <Banknote class="h-5 w-5 text-blue-700" />
         자금 조건
       </h2>
-      <div class="mt-5 grid gap-4 md:grid-cols-2">
+      <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <label v-for="field in moneyFields" :key="field.key" class="block">
           <span class="text-sm font-medium text-slate-700">{{ field.label }}</span>
-          <input
-            :value="formatNumberInput(form[field.key])"
-            type="text"
-            inputmode="numeric"
-            autocomplete="off"
-            class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500"
-            @input="updateMoneyField(field.key, $event)"
-            @blur="normalizeMoneyField(field.key, $event)"
-          />
-          <p class="mt-1 text-xs text-slate-500">{{ formatMoney(Number(form[field.key])) }}</p>
+          <div class="relative mt-1.5">
+            <input
+              v-model="moneyInputValues[field.key]"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              class="w-full rounded-lg border border-slate-200 px-3 py-2.5 pr-12 text-sm outline-none focus:border-blue-500"
+              placeholder="0"
+              @input="updateMoneyField(field.key)"
+            />
+            <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">만원</span>
+          </div>
+          <p class="mt-1 text-[11px] text-slate-500">{{ formatMoney(Number(form[field.key])) }}</p>
         </label>
       </div>
     </section>
 
     <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 class="flex items-center gap-2 text-lg font-bold">
-        <Home class="h-5 w-5 text-blue-700" />
-        희망 주택형 범위
-      </h2>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="flex items-center gap-2 text-lg font-bold">
+          <Home class="h-5 w-5 text-blue-700" />
+          희망 주택형 범위
+        </h2>
+        <div class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs font-bold">
+          <button
+            type="button"
+            class="rounded-md px-3 py-1.5 transition"
+            :class="areaUnit === 'm2' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            @click="switchAreaUnit('m2')"
+          >
+            ㎡ 기준
+          </button>
+          <button
+            type="button"
+            class="rounded-md px-3 py-1.5 transition"
+            :class="areaUnit === 'pyeong' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            @click="switchAreaUnit('pyeong')"
+          >
+            평 기준
+          </button>
+        </div>
+      </div>
       <div class="mt-5 grid gap-4 md:grid-cols-2">
         <label class="block">
-          <span class="text-sm font-medium text-slate-700">희망 전용면적 최소</span>
-          <input v-model.number="form.desired_area_min_m2" type="number" min="0" step="0.1" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
-          <p class="mt-1 text-xs text-slate-500">{{ form.desired_area_min_m2 || 0 }}㎡ 이상</p>
+          <span class="text-sm font-medium text-slate-700">희망 면적 최소</span>
+          <div class="relative mt-2">
+            <input
+              v-model="areaInputValues.min"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              class="w-full rounded-lg border border-slate-200 px-4 py-3 pr-12 text-sm outline-none focus:border-blue-500"
+              :placeholder="areaUnit === 'm2' ? '예: 59' : '예: 18'"
+              @input="updateAreaField('min')"
+            />
+            <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">{{ areaUnit === 'm2' ? '㎡' : '평' }}</span>
+          </div>
+          <p class="mt-1 text-xs text-slate-500">{{ areaHelper('min') }} · 내부 계산은 ㎡로 저장</p>
         </label>
         <label class="block">
-          <span class="text-sm font-medium text-slate-700">희망 전용면적 최대</span>
-          <input v-model.number="form.desired_area_max_m2" type="number" min="0" step="0.1" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
-          <p class="mt-1 text-xs text-slate-500">{{ form.desired_area_max_m2 || 0 }}㎡ 이하</p>
+          <span class="text-sm font-medium text-slate-700">희망 면적 최대</span>
+          <div class="relative mt-2">
+            <input
+              v-model="areaInputValues.max"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              class="w-full rounded-lg border border-slate-200 px-4 py-3 pr-12 text-sm outline-none focus:border-blue-500"
+              :placeholder="areaUnit === 'm2' ? '예: 84' : '예: 25'"
+              @input="updateAreaField('max')"
+            />
+            <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">{{ areaUnit === 'm2' ? '㎡' : '평' }}</span>
+          </div>
+          <p class="mt-1 text-xs text-slate-500">{{ areaHelper('max') }} · 내부 계산은 ㎡로 저장</p>
         </label>
       </div>
       <p class="mt-3 text-xs leading-5 text-slate-500">
@@ -222,57 +325,59 @@ watch(() => profileStore.profile, (profile) => applyProfile(profile), { deep: tr
         <MapPinned class="h-5 w-5 text-blue-700" />
         희망 조건
       </h2>
-      <div class="mt-5">
-        <p class="text-sm font-medium text-slate-700">희망 지역</p>
-        <div class="mt-3 flex flex-wrap gap-2">
+      <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
+        <div>
+          <p class="text-sm font-medium text-slate-700">희망 지역</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button
+              v-for="region in primaryRegionOptions"
+              :key="region"
+              type="button"
+              class="rounded-lg px-4 py-2 text-sm font-bold transition"
+              :class="form.preferred_regions.includes(region) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+              @click="toggleArrayValue(form.preferred_regions, region)"
+            >
+              {{ region }}
+            </button>
+          </div>
           <button
-            v-for="region in primaryRegionOptions"
-            :key="region"
             type="button"
-            class="rounded-lg px-4 py-2 text-sm font-bold transition"
-            :class="form.preferred_regions.includes(region) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-            @click="toggleArrayValue(form.preferred_regions, region)"
+            class="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+            :aria-expanded="showExtraRegions"
+            @click="showExtraRegions = !showExtraRegions"
           >
-            {{ region }}
+            기타 지역
+            <ChevronDown class="h-4 w-4 transition" :class="showExtraRegions ? 'rotate-180' : ''" />
           </button>
+          <div v-if="showExtraRegions" class="mt-3 flex flex-wrap gap-2">
+            <button
+              v-for="region in extraRegionOptions"
+              :key="region"
+              type="button"
+              class="rounded-lg px-4 py-2 text-sm font-bold transition"
+              :class="form.preferred_regions.includes(region) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+              @click="toggleArrayValue(form.preferred_regions, region)"
+            >
+              {{ region }}
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          class="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-          :aria-expanded="showExtraRegions"
-          @click="showExtraRegions = !showExtraRegions"
-        >
-          기타 지역
-          <ChevronDown class="h-4 w-4 transition" :class="showExtraRegions ? 'rotate-180' : ''" />
-        </button>
-        <div v-if="showExtraRegions" class="mt-3 flex flex-wrap gap-2">
-          <button
-            v-for="region in extraRegionOptions"
-            :key="region"
-            type="button"
-            class="rounded-lg px-4 py-2 text-sm font-bold transition"
-            :class="form.preferred_regions.includes(region) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-            @click="toggleArrayValue(form.preferred_regions, region)"
-          >
-            {{ region }}
-          </button>
-        </div>
-      </div>
 
-      <div class="mt-5">
-        <p class="text-sm font-medium text-slate-700">공급 유형</p>
-        <p class="mt-1 text-xs text-slate-500">추천은 소유형 공공분양 범위 안에서만 계산됩니다.</p>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <button
-            v-for="type in supplyTypeOptions"
-            :key="type"
-            type="button"
-            class="rounded-lg px-4 py-2 text-sm font-bold transition"
-            :class="form.preferred_supply_types.includes(type) ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-            @click="toggleArrayValue(form.preferred_supply_types, type)"
-          >
-            {{ type }}
-          </button>
+        <div class="rounded-lg border border-slate-200/80 bg-slate-50/70 p-4">
+          <p class="text-sm font-medium text-slate-700">공급 유형</p>
+          <p class="mt-1 text-xs text-slate-500">추천은 소유형 공공분양 범위 안에서만 계산됩니다.</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button
+              v-for="type in supplyTypeOptions"
+              :key="type"
+              type="button"
+              class="rounded-lg px-4 py-2 text-sm font-bold transition"
+              :class="form.preferred_supply_types.includes(type) ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 hover:bg-slate-100'"
+              @click="toggleArrayValue(form.preferred_supply_types, type)"
+            >
+              {{ type }}
+            </button>
+          </div>
         </div>
       </div>
     </section>

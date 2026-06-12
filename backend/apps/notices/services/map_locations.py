@@ -6,6 +6,8 @@ from typing import Any
 import requests
 from django.conf import settings
 
+from apps.rules.regions import canonical_region
+
 
 SEOUL_CENTER = {"lat": 37.566826, "lng": 126.978656}
 
@@ -206,12 +208,9 @@ def _source_meta_location(notice: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _region_center(region: str) -> dict[str, float]:
+    region = canonical_region(region)
     if region in REGION_CENTERS:
         return REGION_CENTERS[region]
-    if "경기" in region and "북" in region:
-        return REGION_CENTERS["경기 북부"]
-    if "경기" in region:
-        return REGION_CENTERS["경기 남부"]
     for key, center in REGION_CENTERS.items():
         if key and key in region:
             return center

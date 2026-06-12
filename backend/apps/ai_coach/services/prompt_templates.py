@@ -11,6 +11,7 @@ from apps.ai_coach.models import AiChatLog, AiCoachPlan
 from apps.ai_coach.services.ai_client import AiClientError, chat_completion, llm_enabled
 from apps.ai_coach.services.safety_filter import sanitize_actions, sanitize_reply, sanitize_summary, safety_flags
 from apps.fixture_store import default_profile, find_notice
+from apps.rules.funding import available_cash, effective_monthly_capacity
 from apps.funding.services.calculator import funding_plan
 from apps.notice_docs.services.schemas import COACH_CHAT_SCHEMA, COACH_SUMMARY_SCHEMA
 from apps.recommendations.services.ranking import calculate_score
@@ -93,18 +94,18 @@ def coach_summary(
         "todo_this_week": (
             [
                 f"{plan.get('unit_type', '선택 주택형')} {plan.get('floor_group', '')} 기준 계약금 부족액 {plan['shortfall']:,}원을 월 {plan['monthly_target']:,}원 준비 계획으로 바꾸세요.",
+                _profile_risk_todo(profile),
                 "이 후보는 fixture라 실제 공식 PDF 확인이 불가하다는 점을 먼저 표시하세요.",
                 "fixture 제출서류 후보와 자격 후보를 예시 체크리스트로만 검토하세요.",
                 "지역우선, 특별공급, 선택품목, 감액 조건은 fixture 구조화 데이터 기준의 판단거리로 정리하세요.",
-                "계약금, 중도금, 잔금, 융자금 일정을 캘린더에 나눠 등록하세요.",
             ]
             if is_fixture
             else [
                 f"{plan.get('unit_type', '선택 주택형')} {plan.get('floor_group', '')} 기준 계약금 부족액 {plan['shortfall']:,}원을 월 {plan['monthly_target']:,}원 준비 계획으로 바꾸세요.",
+                _profile_risk_todo(profile),
                 "무주택, 소득·자산, 청약통장 기준을 공식 공고문 페이지 기준으로 한 번에 확인하세요.",
                 "당첨자 제출서류와 주민등록표등본 등 발급 서류의 준비 순서를 정하세요.",
                 "공고문 세부 조건 중 지역우선, 특별공급, 선택품목, 감액 조건처럼 본인에게 적용될 항목을 따로 표시하세요.",
-                "계약금, 중도금, 잔금, 융자금 일정을 캘린더에 나눠 등록하세요.",
             ]
         ),
         "official_checklist": (
@@ -198,6 +199,7 @@ def _coach_summary_with_llm(
                         "사용자가 option_id가 있는 선택 주택형에서 들어온 경우, 이미 공고와 옵션을 선택한 상태입니다. 후보를 하나 정하라는 조언은 하지 마세요. "
                         "모든 조언은 반드시 제공된 특정 공고, 선택 주택형, 계약금 부족액, 월 준비 목표, 마감일 중 하나 이상을 반영해야 합니다. "
                         "모든 공고와 모든 사용자에게 통하는 일반 조언만 쓰지 마세요. "
+                        "컨텍스트의 '직업/부채 우선 확인 지시'가 구직 중, 학생, 자영업, 부채 보유를 언급하면 점수 감점은 과장하지 말고 todo_this_week 또는 decision_points에 소득증빙, 고정지출, 부채 상환액, 월 납부 지속 가능성 확인을 반드시 포함하세요. "
                         f"{source_instruction}"
                         "사용자가 말한 발코니는 예시일 뿐입니다. 발코니만 반복하지 말고 지역우선 물량, 거주기간, 특별공급, 다자녀/신혼/생애최초 조건, 선택품목, 미선택 감액, 별도계약, 전매/거주의무, 서류, 납부 유의사항 등 공고문에서 발견되는 다양한 판단거리를 우선순위로 뽑으세요. "
                         "추가 선택품목 금액이 0원으로 제공되면 무료라고 단정하지 말고, 구조화된 금액이 아직 없으므로 공식 공고문 원문 확인이 필요하다고 표현하세요. "
@@ -506,6 +508,20 @@ def _unit_label(plan: dict[str, Any]) -> str:
     return f"{plan.get('unit_type', '')} {plan.get('floor_group', '')}".strip()
 
 
+def _profile_risk_todo(profile: dict[str, Any]) -> str:
+    job_status = str(profile.get("job_status") or "employed")
+    debt = int(profile.get("debt") or 0)
+    if job_status == "unemployed":
+        return "구직 중 기준으로 소득 예정, 고정지출, 월 납부 지속 가능성을 먼저 점검하세요."
+    if job_status == "student":
+        return "학생 상태 기준으로 소득원, 가족 지원 여부, 월 납부 지속 가능성을 먼저 확인하세요."
+    if job_status == "self_employed":
+        return "자영업 소득 변동성과 소득증빙 가능 여부를 먼저 확인하세요."
+    if debt > 0:
+        return "부채 상환액과 계약금 준비 현금을 분리해 관리하세요."
+    return "월 납부 여력이 계약금 준비 목표와 중도금 일정에 동시에 맞는지 확인하세요."
+
+
 def _coach_summary_context(
     notice: dict[str, Any],
     plan: dict[str, Any],
@@ -532,6 +548,7 @@ def _coach_summary_context(
         if option_extra_price > 0
         else "구조화된 추가 선택품목 금액 없음. 0원은 무료 확정이 아니라 선택품목/감액/별도계약 여부를 공식 원문에서 확인해야 함"
     )
+    job_status_line = _job_status_coach_line(profile)
     deep_review_lines = "\n".join(official_context.get("deep_review_lines", [])[:18])
     personalization_brief = (
         f"개인화 핵심: 사용자는 {notice['title']}의 {option_label} 옵션을 보고 있습니다. "
@@ -577,7 +594,12 @@ def _coach_summary_context(
         f"융자금: {plan.get('loan_amount', 0):,}원\n"
         f"추가 선택품목/감액/별도계약 정보: {option_extra_line}\n"
         f"사용자 보유 현금: {int(profile.get('asset') or 0):,}원\n"
+        f"부채: {int(profile.get('debt') or 0):,}원\n"
+        f"직업 상태: {profile.get('job_status') or 'employed'}\n"
+        f"보수 적용 후 가용 현금: {available_cash(profile):,}원\n"
         f"월 저축 가능액: {int(profile.get('monthly_saving') or 0):,}원\n"
+        f"보수 적용 후 월 납부 여력: {effective_monthly_capacity(profile):,}원\n"
+        f"직업/부채 우선 확인 지시: {job_status_line}\n"
         f"계약금 부족액: {plan.get('shortfall', 0):,}원\n"
         f"월 준비 목표: {plan.get('monthly_target', 0):,}원\n"
         f"접수 마감: {notice.get('application_deadline')}\n"
@@ -623,12 +645,31 @@ def _chat_context(
         f"부족액: {plan.get('shortfall', 0):,}원\n"
         f"월 준비 목표: {plan.get('monthly_target', 0):,}원\n"
         f"사용자 자산: {int(profile.get('asset') or 0):,}원\n"
+        f"부채: {int(profile.get('debt') or 0):,}원\n"
+        f"직업 상태: {profile.get('job_status') or 'employed'}\n"
+        f"보수 적용 후 가용 현금: {available_cash(profile):,}원\n"
         f"월 저축 가능액: {int(profile.get('monthly_saving') or 0):,}원\n"
+        f"보수 적용 후 월 납부 여력: {effective_monthly_capacity(profile):,}원\n"
+        f"직업/부채 우선 확인 지시: {_job_status_coach_line(profile)}\n"
         f"분석 상태:\n{analysis}\n"
         f"타임라인:\n{timeline}\n"
         f"공식 근거 후보:\n{evidence}\n"
         f"공식 확인 체크리스트:\n{checklists}"
     )
+
+
+def _job_status_coach_line(profile: dict[str, Any]) -> str:
+    job_status = str(profile.get("job_status") or "employed")
+    debt = int(profile.get("debt") or 0)
+    if job_status == "unemployed":
+        return "구직 중이므로 점수 감점은 약하게 적용하되, 이번 주 할 일에는 소득 예정, 고정지출, 월 납부 지속 가능성 확인을 우선 포함하세요."
+    if job_status == "student":
+        return "학생 상태이므로 점수 감점은 약하게 적용하되, 이번 주 할 일에는 소득원, 가족 지원 여부, 월 납부 지속 가능성 확인을 우선 포함하세요."
+    if job_status == "self_employed":
+        return "자영업 상태이므로 점수 감점은 약하게 적용하되, 이번 주 할 일에는 소득 변동성, 소득증빙, 납부 여력 확인을 우선 포함하세요."
+    if debt > 0:
+        return "부채가 있으므로 이번 주 할 일에는 부채 상환액과 계약금 준비 현금의 분리 관리를 포함하세요."
+    return "직업/부채 특이 위험은 낮지만, 계약금과 월 납부 여력은 공식 일정 기준으로 재확인하세요."
 
 
 def _page_context_text(page_context: dict[str, Any]) -> str:
@@ -829,19 +870,23 @@ def _coach_plan_input_hash(
     relevant_profile_keys = [
         "name",
         "birth_year",
-        "income",
+        "job_status",
+        "annual_income",
         "asset",
         "debt",
         "monthly_saving",
+        "monthly_payment_capacity",
+        "max_down_payment",
         "preferred_regions",
-        "preferred_area_min",
-        "preferred_area_max",
-        "preferred_price_min",
-        "preferred_price_max",
+        "preferred_supply_types",
+        "desired_area_min_m2",
+        "desired_area_max_m2",
+        "desired_price_min",
+        "desired_price_max",
         "special_conditions",
-        "supply_types",
-        "housing_status",
+        "is_homeless",
         "subscription_months",
+        "target_months",
     ]
     official_fingerprint = {
         "refs": official_context.get("refs", [])[:24],

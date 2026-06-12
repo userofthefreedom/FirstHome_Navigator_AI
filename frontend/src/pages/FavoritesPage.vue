@@ -10,25 +10,46 @@ const error = ref('');
 const removingKey = ref('');
 const noticeFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'notice'));
 const optionFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'option'));
-const productFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'product'));
-const policyFavorites = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'policy'));
+const hasVisibleFavorites = computed(() => noticeFavorites.value.length > 0 || savedOptionRows.value.length > 0);
 const savedOptionRows = computed(() => {
     return optionFavorites.value
-        .map((favorite) => ({
+        .map((favorite) => {
+        const unitType = String(favorite.item?.unit_type ?? '').trim();
+        const floorGroup = String(favorite.item?.floor_group ?? '').trim();
+        const area = Number(favorite.item?.exclusive_area_m2 ?? 0);
+        const price = Number(favorite.item?.base_price ?? 0);
+        return {
         favorite,
         name: itemName(favorite),
         noticeId: Number(favorite.item?.notice_id ?? 0),
-        unitType: String(favorite.item?.unit_type ?? ''),
-        floorGroup: String(favorite.item?.floor_group ?? '전체'),
-        area: Number(favorite.item?.exclusive_area_m2 ?? 0),
-        price: Number(favorite.item?.base_price ?? 0),
+        unitType,
+        floorGroup: floorGroup || '전체',
+        area,
+        price,
         downPayment: downPayment(favorite),
         middlePayment: paymentAmount(favorite, 'middle_payment'),
         finalPayment: paymentAmount(favorite, 'final_payment'),
         confidence: Number(favorite.item?.confidence ?? 0),
-    }))
+        };
+    })
+        .filter(isMeaningfulOptionRow)
         .sort((a, b) => a.downPayment - b.downPayment || a.price - b.price);
 });
+function isMeaningfulOptionRow(row) {
+    const label = `${row.unitType}${row.floorGroup}`.trim();
+    const hasNamedUnit = Boolean(row.unitType) && label !== '전체';
+    const hasMoney = row.price > 0 || row.downPayment > 0 || row.middlePayment > 0 || row.finalPayment > 0;
+    return row.noticeId > 0 && row.area > 0 && hasNamedUnit && hasMoney;
+}
+function noticeDisplayPrice(favorite) {
+    const directPrice = Number(favorite.item?.price ?? 0);
+    const representativePrice = Number(favorite.item?.representative_option?.base_price ?? 0);
+    const options = Array.isArray(favorite.item?.unit_options) ? favorite.item.unit_options : [];
+    const optionPrice = options
+        .map((option) => Number(option?.base_price ?? 0))
+        .find((price) => price > 0);
+    return directPrice || representativePrice || optionPrice || 0;
+}
 function favoriteKey(favorite) {
     return `${favorite.favorite_type}-${favorite.object_id}`;
 }
@@ -37,9 +58,7 @@ function typeLabel(type) {
         return '공고';
     if (type === 'option')
         return '주택형';
-    if (type === 'product')
-        return '상품';
-    return '정책';
+    return '저장 항목';
 }
 function itemName(favorite) {
     return String(favorite.item?.title ?? favorite.item?.name ?? '저장 항목');
@@ -51,22 +70,16 @@ function itemMeta(favorite) {
     if (favorite.favorite_type === 'option') {
         return `${favorite.item?.unit_type ?? ''} · ${favorite.item?.floor_group ?? '전체'} · ${favorite.item?.exclusive_area_m2 ?? ''}㎡`;
     }
-    if (favorite.favorite_type === 'product') {
-        return `${favorite.item?.provider ?? ''} · ${favorite.item?.category ?? ''} · ${favorite.item?.rate ?? ''}`;
-    }
-    return `${favorite.item?.provider ?? ''} · ${favorite.item?.policy_category ?? favorite.item?.target ?? ''}`;
+    return `${favorite.item?.provider ?? ''} · ${favorite.item?.category ?? favorite.item?.policy_category ?? ''}`;
 }
 function itemDescription(favorite) {
     if (favorite.favorite_type === 'notice') {
-        return `예상 분양가 ${formatMoney(Number(favorite.item?.price ?? 0))}, 접수 마감 ${favorite.item?.application_deadline ?? '확인 필요'}`;
+        return `예상 분양가 ${formatMoney(noticeDisplayPrice(favorite))}, 접수 마감 ${favorite.item?.application_deadline ?? '확인 필요'}`;
     }
     if (favorite.favorite_type === 'option') {
         return `분양가 ${formatMoney(Number(favorite.item?.base_price ?? 0))}, 계약금 ${formatMoney(downPayment(favorite))}`;
     }
-    if (favorite.favorite_type === 'product') {
-        return String(favorite.item?.reasons?.[0] ?? favorite.item?.period ?? '저축 목표와 월 납입 여력을 기준으로 저장한 상품입니다.');
-    }
-    return String(favorite.item?.benefit ?? favorite.item?.reasons?.[0] ?? '나이, 소득, 지역 조건을 기준으로 저장한 정책입니다.');
+    return String(favorite.item?.benefit ?? favorite.item?.reasons?.[0] ?? '저장한 항목입니다.');
 }
 function downPayment(favorite) {
     return paymentAmount(favorite, 'down_payment');
@@ -120,8 +133,8 @@ onMounted(loadFavorites);
           <Bookmark class="h-4 w-4" />
           관심 목록
         </p>
-        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">저장한 주택형과 준비 후보</h1>
-        <p class="mt-2 text-sm text-slate-500">공고, 주택형 옵션, 금융상품, 정책을 한곳에서 다시 비교합니다.</p>
+        <h1 class="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">저장한 공고와 주택형</h1>
+        <p class="mt-2 text-sm text-slate-500">저장한 청약 공고와 주택형 옵션을 다시 확인합니다.</p>
       </div>
       <RouterLink to="/recommendations" class="inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-bold text-white">
         추천 옵션 보러 가기
@@ -136,28 +149,20 @@ onMounted(loadFavorites);
       {{ error }}
     </section>
 
-    <section v-else-if="favorites.length === 0" class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <section v-else-if="!hasVisibleFavorites" class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
       <p class="font-bold text-slate-950">아직 저장한 항목이 없습니다.</p>
       <p class="mt-2 text-sm text-slate-500">추천, 공고 상세, 자금 로드맵 화면에서 검토할 공고와 주택형 옵션을 저장할 수 있습니다.</p>
     </section>
 
     <template v-else>
-      <section class="grid gap-3 md:grid-cols-4">
+      <section class="grid gap-3 sm:grid-cols-2">
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-sm font-semibold text-slate-500">저장 공고</p>
           <p class="mt-2 text-2xl font-bold text-slate-950">{{ noticeFavorites.length }}건</p>
         </div>
         <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p class="text-sm font-semibold text-slate-500">저장 옵션</p>
-          <p class="mt-2 text-2xl font-bold text-slate-950">{{ optionFavorites.length }}건</p>
-        </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm font-semibold text-slate-500">저장 상품</p>
-          <p class="mt-2 text-2xl font-bold text-slate-950">{{ productFavorites.length }}건</p>
-        </div>
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p class="text-sm font-semibold text-slate-500">저장 정책</p>
-          <p class="mt-2 text-2xl font-bold text-slate-950">{{ policyFavorites.length }}건</p>
+          <p class="mt-2 text-2xl font-bold text-slate-950">{{ savedOptionRows.length }}건</p>
         </div>
       </section>
 
@@ -211,10 +216,10 @@ onMounted(loadFavorites);
         </div>
       </section>
 
-      <section class="grid gap-4 lg:grid-cols-2">
-        <article v-for="favorite in favorites" :key="favoriteKey(favorite)" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section v-if="noticeFavorites.length" class="grid gap-4 lg:grid-cols-2">
+        <article v-for="favorite in noticeFavorites" :key="favoriteKey(favorite)" class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
+            <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
                   {{ typeLabel(favorite.favorite_type) }}
@@ -227,7 +232,7 @@ onMounted(loadFavorites);
             </div>
             <button
               type="button"
-              class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700"
+              class="inline-flex h-9 min-w-20 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700"
               :disabled="removingKey === favoriteKey(favorite)"
               @click="handleRemove(favorite)"
             >
@@ -253,15 +258,6 @@ onMounted(loadFavorites);
             >
               <WalletCards class="h-4 w-4" />
               공고 자금 보기
-            </RouterLink>
-            <RouterLink
-              v-if="favorite.favorite_type === 'option' && favorite.item?.notice_id"
-              :to="{ path: `/funding/${favorite.item.notice_id}`, query: { option_id: favorite.object_id } }"
-              class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white"
-              @click="saveCurrentSelection(favorite.item.notice_id, favorite.object_id)"
-            >
-              <WalletCards class="h-4 w-4" />
-              저장 옵션 자금 보기
             </RouterLink>
             <span
               v-if="isFixtureFavorite(favorite)"

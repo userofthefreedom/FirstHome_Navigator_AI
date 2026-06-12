@@ -93,11 +93,32 @@ def products() -> list[dict[str, Any]]:
     return [_fixture_product(product) for product in load_fixture()["products"]]
 
 
+def loan_products() -> list[dict[str, Any]]:
+    db_loans = _db_loan_products()
+    fixture_loans = [_fixture_loan_product(product) for product in load_fixture().get("loan_products", [])]
+    if not db_loans:
+        return fixture_loans
+    seen_keys = {(loan.get("provider"), loan.get("name"), loan.get("category")) for loan in db_loans}
+    supplements = [
+        loan
+        for loan in fixture_loans
+        if (loan.get("provider"), loan.get("name"), loan.get("category")) not in seen_keys
+    ]
+    return [*db_loans, *supplements]
+
+
 def policies() -> list[dict[str, Any]]:
     db_policies = _db_policies()
-    if db_policies:
-        return db_policies
-    return [_fixture_policy(policy) for policy in load_fixture()["policies"]]
+    fixture_policies = [_fixture_policy(policy) for policy in load_fixture()["policies"]]
+    if not db_policies:
+        return fixture_policies
+    seen_keys = {(policy.get("provider"), policy.get("name")) for policy in db_policies}
+    supplements = [
+        policy
+        for policy in fixture_policies
+        if (policy.get("provider"), policy.get("name")) not in seen_keys
+    ]
+    return [*db_policies, *supplements]
 
 
 def find_notice(notice_id: int) -> dict[str, Any] | None:
@@ -481,6 +502,10 @@ def _fixture_product(product: dict[str, Any]) -> dict[str, Any]:
     return {**product.copy(), "data_source": "fixture"}
 
 
+def _fixture_loan_product(product: dict[str, Any]) -> dict[str, Any]:
+    return {**product.copy(), "data_source": "fixture"}
+
+
 def _fixture_policy(policy: dict[str, Any]) -> dict[str, Any]:
     return {**policy.copy(), "data_source": "fixture"}
 
@@ -490,6 +515,15 @@ def _db_products() -> list[dict[str, Any]]:
         from apps.products.models import FinancialProduct
 
         return [_serialize_product(product) for product in FinancialProduct.objects.order_by("term_months", "-protection_status", "id")]
+    except (OperationalError, ProgrammingError):
+        return []
+
+
+def _db_loan_products() -> list[dict[str, Any]]:
+    try:
+        from apps.products.models import LoanProduct
+
+        return [_serialize_loan_product(product) for product in LoanProduct.objects.order_by("provider", "name", "id")]
     except (OperationalError, ProgrammingError):
         return []
 
@@ -628,6 +662,33 @@ def _serialize_product(product: Any) -> dict[str, Any]:
     }
 
 
+def _serialize_loan_product(product: Any) -> dict[str, Any]:
+    return {
+        "id": product.id,
+        "data_source": _loan_product_data_source(product),
+        "name": product.name,
+        "provider": product.provider,
+        "category": product.category,
+        "loan_purpose": product.loan_purpose,
+        "description": product.description,
+        "target": product.target,
+        "rate": product.rate,
+        "limit": product.limit,
+        "limit_amount": product.limit_amount,
+        "term": product.term,
+        "term_years": product.term_years,
+        "age_min": product.age_min,
+        "age_max": product.age_max,
+        "max_income": product.max_income,
+        "max_price": product.max_price,
+        "max_area_m2": product.max_area_m2,
+        "requires_homeless": product.requires_homeless,
+        "source_url": product.source_url,
+        "reasons": product.reasons,
+        "caveats": product.caveats,
+    }
+
+
 def _serialize_policy(policy: Any) -> dict[str, Any]:
     return {
         "id": policy.id,
@@ -711,6 +772,12 @@ def _parse_iso_date(value: Any) -> date | None:
 
 
 def _product_data_source(product: Any) -> str:
+    if "finlife.fss.or.kr" in (product.source_url or ""):
+        return "금융감독원 API"
+    return "DB"
+
+
+def _loan_product_data_source(product: Any) -> str:
     if "finlife.fss.or.kr" in (product.source_url or ""):
         return "금융감독원 API"
     return "DB"

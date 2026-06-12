@@ -16,7 +16,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--page", type=int, default=1)
-        parser.add_argument("--display", type=int, default=100)
+        parser.add_argument("--display", type=int)
+        parser.add_argument(
+            "--max-pages",
+            type=int,
+            help="Maximum pages to fetch. Defaults to 1 page for dry-run and 4 pages for import.",
+        )
         parser.add_argument("--query", default="")
         parser.add_argument("--keyword", default="")
         parser.add_argument("--clear", action="store_true", help="Delete existing youth policies before importing.")
@@ -27,20 +32,40 @@ class Command(BaseCommand):
         if not api_key:
             raise CommandError("YOUTH_POLICY_API_KEY is missing. Add it to backend/.env after Ontong Youth approves it.")
 
+        display = options["display"] or (20 if options["dry_run"] else 50)
+        max_pages = options["max_pages"] if options["max_pages"] is not None else (1 if options["dry_run"] else 4)
+        if max_pages <= 0:
+            raise CommandError("--max-pages must be greater than 0 for import_youthcenter.")
+
+        policies = []
+        seen_keys = set()
         try:
-            payload = fetch_youthcenter_payload(
-                api_key,
-                page=options["page"],
-                display=options["display"],
-                query=options["query"],
-                keyword=options["keyword"],
-            )
+            for page in range(options["page"], options["page"] + max_pages):
+                payload = fetch_youthcenter_payload(
+                    api_key,
+                    page=page,
+                    display=display,
+                    query=options["query"],
+                    keyword=options["keyword"],
+                )
+                page_policies = normalize_youthcenter_policies(payload)
+                for policy in page_policies:
+                    key = (policy.provider, policy.name)
+                    if key in seen_keys:
+                        continue
+                    seen_keys.add(key)
+                    policies.append(policy)
+                if len(page_policies) < display:
+                    break
         except YouthCenterApiError as exc:
             raise CommandError(str(exc)) from exc
-        policies = normalize_youthcenter_policies(payload)
 
         if options["dry_run"]:
-            self.stdout.write(self.style.SUCCESS(f"Fetched {len(policies)} youth policies. No database changes."))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Fetched {len(policies)} youth policies from {max_pages} page(s), display={display}. No database changes."
+                )
+            )
             for policy in policies[:5]:
                 self.stdout.write(f"- {policy.provider} {policy.name}")
             return
@@ -72,4 +97,9 @@ class Command(BaseCommand):
             else:
                 updated_count += 1
 
-        self.stdout.write(self.style.SUCCESS(f"Imported youth policies: {created_count} created, {updated_count} updated."))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Imported youth policies: {created_count} created, {updated_count} updated "
+                f"from {max_pages} page(s), display={display}."
+            )
+        )

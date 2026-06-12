@@ -41,7 +41,7 @@ backend/
     products/        금융감독원 금융상품 수집/추천
     profiles/        사용자 조건, 인증, 관심목록, 계정 선택 상태
     recommendations/ 추천 점수, 후보 랭킹, 추천 API
-    rules/           서비스 판단 규칙의 중앙 모듈
+    rules/           서비스 판단 규칙의 중앙 코드 모듈
     fixture_store.py 실제 데이터 부족 시 fixture 보충 및 직렬화
   config/            Django settings, root urls, ASGI/WSGI
   fixtures/          발표/회귀용 fixture와 sample PDFs
@@ -53,7 +53,7 @@ backend/
 
 | App/File | Main Files | Used By |
 |---|---|---|
-| `apps/rules` | `notice_classification.py`, `scoring.py`, `funding.py`, `confidence.py`, `document_extraction.py`, `document_discovery.py`, `retrieval.py`, `safety.py` | notices, notice_docs, recommendations, funding, ai_coach |
+| `apps/rules` | `notice_classification.py`, `scoring.py`, `funding.py`, `regions.py`, `matching.py`, `confidence.py`, `document_extraction.py`, `document_discovery.py`, `retrieval.py`, `safety.py` | notices, notice_docs, recommendations, funding, products, policies, ai_coach |
 | `apps/notices` | `models.py`, `views.py`, `services/lh.py`, `services/map_locations.py`, `management/commands/import_lh.py`, `geocode_notice_locations.py` | recommendation list, detail page, map page |
 | `apps/notice_docs` | `models.py`, `services/analysis.py`, `extractors.py`, `pdf_parser.py`, `validators.py`, `llm_extractors.py` | notice detail, funding, AI coach official checks |
 | `apps/recommendations` | `services/ranking.py`, `services/scoring.py`, `views.py` | recommendation page, dashboard, map scoring |
@@ -84,6 +84,8 @@ DB actual notices
   -> materialize fixture notices
   -> mark as data_source=fixture and hide official source buttons
 ```
+
+규칙의 운영/발표용 상세 설명은 루트 기준 `docs/detail/rules_detail.txt`에 정리되어 있습니다. `apps/rules`는 실행 코드, `docs/detail/rules_detail.txt`는 계산식과 판별 기준을 사람이 읽기 좋게 풀어 쓴 문서입니다.
 
 ## Environment Variables
 
@@ -160,31 +162,46 @@ http://localhost:8000/api/recommendations/housing
 python manage.py load_firsthome_fixture
 ```
 
-### Financial Products
+### Financial Products and Mortgage Loans
 
 ```bash
 python manage.py import_finlife --dry-run
+python manage.py import_finlife
 python manage.py import_finlife --clear
 ```
 
 ### Youth Policies
 
 ```bash
-python manage.py import_youthcenter --dry-run --display 20
-python manage.py import_youthcenter --clear --page 1 --display 50
+python manage.py import_youthcenter --dry-run
+python manage.py import_youthcenter
+python manage.py import_youthcenter --clear
 ```
 
 ### LH Notices
 
 ```bash
-python manage.py import_lh --dry-run --service-target-only --page-size 100 --max-pages 5 --with-supply-info --supply-limit 30
-python manage.py import_lh --service-target-only --page-size 100 --max-pages 5 --with-supply-info --supply-limit 30
+python manage.py import_lh --dry-run
+python manage.py import_lh
+python manage.py import_lh --clear
 ```
+
+`python manage.py import_lh`는 운영 기본값으로 페이지당 250개씩 최대 7페이지를 조회하고, 공급정보 상세 조회는 75개 공고까지만 수행합니다. `--dry-run`은 API 연결 확인용으로 50개 1페이지와 공급정보 10개만 확인합니다. 모든 공고의 공급정보를 강제로 보강해야 할 때만 `--supply-limit 0`을 사용합니다.
 
 ### PDF Analysis
 
 ```bash
-python manage.py analyze_notice_documents --provider=LH --exclude-fixture --limit 20 --report-json=reports/lh_actual_readiness.json --report-md=reports/lh_actual_readiness.md
+python manage.py analyze_notice_documents --dry-run
+python manage.py analyze_notice_documents
+python manage.py analyze_notice_documents --force
+```
+
+### Map Coordinates
+
+```bash
+python manage.py geocode_notice_locations --dry-run
+python manage.py geocode_notice_locations
+python manage.py geocode_notice_locations --overwrite
 ```
 
 ### Kakao Geocoding

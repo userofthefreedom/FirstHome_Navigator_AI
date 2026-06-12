@@ -89,7 +89,13 @@ def _favorite_item(favorite: Favorite | dict) -> dict | None:
     favorite_type = favorite.favorite_type if isinstance(favorite, Favorite) else favorite["favorite_type"]
     object_id = int(favorite.object_id if isinstance(favorite, Favorite) else favorite["object_id"])
     if favorite_type == "notice":
-        return find_notice(object_id)
+        notice = find_notice(object_id)
+        if notice is None:
+            return None
+        option = _representative_option_for_notice(object_id)
+        if option:
+            notice = {**notice, "representative_option": option}
+        return notice
     if favorite_type == "option":
         try:
             option = HousingUnitOption.objects.select_related("notice", "extraction").prefetch_related("payment_schedules").get(id=object_id)
@@ -108,6 +114,18 @@ def _favorite_item(favorite: Favorite | dict) -> dict | None:
     if favorite_type == "policy":
         return next((policy for policy in policies() if policy["id"] == object_id), None)
     return None
+
+
+def _representative_option_for_notice(notice_id: int) -> dict | None:
+    option = (
+        HousingUnitOption.objects.filter(notice_id=notice_id, base_price__gt=0, exclusive_area_m2__gt=0)
+        .prefetch_related("payment_schedules")
+        .order_by("-confidence", "base_price", "id")
+        .first()
+    )
+    if option is None:
+        return None
+    return serialize_unit_option(option)
 
 
 def _serialize_favorite(favorite: Favorite | dict) -> dict:

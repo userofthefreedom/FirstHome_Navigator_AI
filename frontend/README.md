@@ -56,7 +56,7 @@ frontend/
       NoticeDetailPage.vue  Notice detail, official checks, unit options
       FundingPage.vue       Option-based funding roadmap
       AiCoachPage.vue       Selected notice/option AI action plan
-      FavoritesPage.vue     Saved notices/options/products/policies
+      FavoritesPage.vue     Saved notices and unit options
       AuthPage.vue          Login/register/logout helper
     router/
       index.js              Route definitions
@@ -66,6 +66,7 @@ frontend/
     utils/
       analysisStatus.js     Notice document status labels
       format.js             Money/date formatting
+      globalSearch.js       Topbar search routing and keyword mapping
       selectionState.js     Current notice/option persistence
     App.vue
     main.js
@@ -86,7 +87,7 @@ frontend/
 | Notice Detail | `/notices/:noticeId` | 공고 상세, 주택형 옵션 그룹, 공식 확인 체크리스트 |
 | Funding | `/funding/:noticeId?` | 선택 option_id 기준 계약금, 중도금, 잔금, 융자금, 부족액 계산 |
 | AI Coach | `/ai-coach/:noticeId?` | 선택 공고/옵션 기준 이번 주 할 일과 공식 확인 포인트 |
-| Favorites | `/favorites` | 저장한 공고/옵션/상품/정책 재확인 |
+| Favorites | `/favorites` | 저장한 공고와 주택형 옵션 재확인 |
 | Auth | `/auth` | 회원가입, 로그인, 로그아웃 상태 확인 |
 
 ## State Model
@@ -246,4 +247,3 @@ npm run build
 
 - backend `.env`의 `AI_PROVIDER`, `OPENAI_API_KEY`, `AI_ENABLE_LLM_CHAT` 값을 확인합니다.
 - 로그인 사용자만 실제 AI 코치 LLM 분석을 받을 수 있습니다.
-

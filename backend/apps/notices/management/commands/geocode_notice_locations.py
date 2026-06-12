@@ -12,7 +12,11 @@ class Command(BaseCommand):
     help = "Fill missing notice coordinates with Kakao Local REST API."
 
     def add_arguments(self, parser):
-        parser.add_argument("--limit", type=int, default=30)
+        parser.add_argument(
+            "--limit",
+            type=int,
+            help="Maximum notices to geocode. Defaults to 20 for dry-run and every missing coordinate for actual import.",
+        )
         parser.add_argument("--overwrite", action="store_true")
         parser.add_argument("--dry-run", action="store_true")
 
@@ -20,8 +24,9 @@ class Command(BaseCommand):
         queryset = HousingNotice.objects.order_by("application_deadline", "id")
         if not options["overwrite"]:
             queryset = queryset.filter(latitude__isnull=True, longitude__isnull=True)
-        if options["limit"] > 0:
-            queryset = queryset[: options["limit"]]
+        limit = options["limit"] if options["limit"] is not None else (20 if options["dry_run"] else 0)
+        if limit > 0:
+            queryset = queryset[:limit]
 
         updated = 0
         checked = 0

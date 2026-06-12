@@ -4,6 +4,7 @@ from datetime import date
 from typing import Any
 
 from apps.fixture_store import default_profile, find_notice
+from apps.products.services.loan_matcher import match_purchase_loans
 from apps.rules.funding import (
     DEFAULT_CONTRACT_RATE,
     DEFAULT_MIDDLE_PAYMENT_RATE,
@@ -31,7 +32,7 @@ def calculate_funding_plan(notice: dict[str, Any], profile: dict[str, Any]) -> d
     months = max(int(profile.get("target_months", 1)), 1)
     monthly_target = ceil_divide(shortfall, months)
 
-    return {
+    plan = {
         "notice_id": notice["id"],
         "notice_title": notice["title"],
         "price": price,
@@ -62,6 +63,7 @@ def calculate_funding_plan(notice: dict[str, Any], profile: dict[str, Any]) -> d
             else "분양가 정보가 없어 자금 계산이 제한됩니다. 공식 공고문에서 금액을 확인해야 합니다."
         ),
     }
+    return _with_purchase_loan_candidates(plan, profile)
 
 
 def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[str, Any]:
@@ -91,7 +93,7 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
             }
         )
 
-    return {
+    plan = {
         "notice_id": notice.id,
         "notice_title": notice.title,
         "option_id": option.id,
@@ -130,6 +132,7 @@ def calculate_option_funding_plan(option: Any, profile: dict[str, Any]) -> dict[
             "실제 계약과 납부 조건은 기금 안내와 공고문 원문을 확인해야 합니다."
         ),
     }
+    return _with_purchase_loan_candidates(plan, profile)
 
 
 def funding_plan(
@@ -227,4 +230,15 @@ def _timeline_summary(
         "loan_amount": loan_amount,
         "post_balance_amount": loan_amount,
         "has_post_balance_loan": loan_amount > 0,
+    }
+
+
+def _with_purchase_loan_candidates(plan: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **plan,
+        "purchase_loan_products": match_purchase_loans(profile, plan),
+        "purchase_loan_notice": (
+            "구입자금 대출 후보는 전세·월세·청약통장담보·신용대출을 제외하고, "
+            "소유형 청약의 잔금·입주 전 자금 계획 관점에서만 참고로 제시합니다."
+        ),
     }

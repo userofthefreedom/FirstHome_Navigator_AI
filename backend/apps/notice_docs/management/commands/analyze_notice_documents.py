@@ -15,7 +15,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--notice-id", type=int, help="Analyze one notice only.")
-        parser.add_argument("--limit", type=int, default=20, help="Maximum notices to analyze.")
+        parser.add_argument(
+            "--limit",
+            type=int,
+            help="Maximum notices to analyze. Defaults to 20 for dry-run and every pending notice for actual analysis.",
+        )
         parser.add_argument(
             "--force",
             action="store_true",
@@ -53,8 +57,9 @@ class Command(BaseCommand):
                 for notice in notices
                 if not isinstance(notice.source_meta, dict) or not notice.source_meta.get("fixture_id")
             ]
-        if options["limit"] and not options["notice_id"]:
-            notices = notices[: options["limit"]]
+        limit = options["limit"] if options["limit"] is not None else (20 if options["dry_run"] else 0)
+        if limit and not options["notice_id"]:
+            notices = notices[:limit]
         rows: list[dict[str, Any]] = []
         if options["dry_run"]:
             self.stdout.write(f"Selected {len(notices)} notice(s) for analysis.")

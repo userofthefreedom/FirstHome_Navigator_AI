@@ -1,5 +1,8 @@
 from datetime import date
+from types import SimpleNamespace
+from unittest.mock import patch
 
+import requests
 from django.test import SimpleTestCase
 from django.core.management import call_command
 from django.test import TestCase
@@ -10,6 +13,32 @@ from apps.notices.management.commands.import_lh import Command as ImportLhComman
 from apps.notices.models import HousingNotice
 from apps.notices.services.classifier import classify_notice_payload
 from apps.notices.services.lh import normalize_lh_notices, supply_info_summary
+from apps.notices.views import _map_region
+from apps.rules.regions import notice_matches_preferred_region
+
+
+class NoticeMapRegionTests(SimpleTestCase):
+    def test_gyeonggi_place_name_overrides_broad_region_label(self):
+        south_notice = {
+            "region": "경기 북부",
+            "district": "화성시 동탄2 C-27BL",
+            "title": "경기 화성동탄2 동탄2 C-27BL 민간참여 공공분양주택 입주자모집공고",
+        }
+        north_notice = {
+            "region": "경기 남부",
+            "district": "고양시 장항 S-3BL",
+            "title": "경기 고양 장항 공공분양주택 입주자모집공고",
+        }
+
+        self.assertEqual(_map_region(south_notice), "경기 남부")
+        self.assertEqual(_map_region(north_notice), "경기 북부")
+        self.assertFalse(notice_matches_preferred_region(south_notice, "경기 북부"))
+        self.assertTrue(notice_matches_preferred_region(south_notice, "경기 남부"))
+
+    def test_gyeonggi_broad_region_label_is_used_without_place_name(self):
+        notice = {"region": "경기 북부", "district": "", "title": "경기 북부 공공분양주택 입주자모집공고"}
+
+        self.assertEqual(_map_region(notice), "경기 북부")
 
 
 class LhNoticeNormalizerTests(SimpleTestCase):
@@ -234,6 +263,40 @@ class FirstHomeFixtureLoaderTests(TestCase):
 
 
 class ImportLhSupplyOptionTests(TestCase):
+    def test_supply_timeout_is_skipped_without_crashing_import(self):
+        command = ImportLhCommand()
+        command._supply_enrichment_halted = False
+        command._supply_target_order = lambda notices: notices
+        notice = SimpleNamespace(source_id="LH-TIMEOUT", source_meta={"pan_id": "PAN-1"})
+
+        with patch(
+            "apps.notices.management.commands.import_lh.fetch_lh_supply_payload",
+            side_effect=requests.exceptions.ConnectTimeout("timeout"),
+        ):
+            summaries = command._fetch_supply_summaries("api-key", [notice], limit=0)
+
+        self.assertEqual(summaries, {})
+        self.assertFalse(command._supply_enrichment_halted)
+
+    def test_repeated_supply_failures_halt_supply_enrichment(self):
+        command = ImportLhCommand()
+        command._supply_enrichment_halted = False
+        command._supply_target_order = lambda notices: notices
+        notices = [
+            SimpleNamespace(source_id=f"LH-TIMEOUT-{index}", source_meta={"pan_id": f"PAN-{index}"})
+            for index in range(6)
+        ]
+
+        with patch(
+            "apps.notices.management.commands.import_lh.fetch_lh_supply_payload",
+            side_effect=requests.exceptions.ConnectTimeout("timeout"),
+        ) as mock_fetch:
+            summaries = command._fetch_supply_summaries("api-key", notices, limit=0)
+
+        self.assertEqual(summaries, {})
+        self.assertTrue(command._supply_enrichment_halted)
+        self.assertEqual(mock_fetch.call_count, 5)
+
     def test_supply_summary_seeds_temporary_unit_options_and_payment_schedules(self):
         notice = HousingNotice.objects.create(
             source_id="LH-SALE",

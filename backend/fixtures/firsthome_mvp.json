@@ -31215,14 +31215,1176 @@
       ]
     }
   ],
+  "loan_products": [
+    {
+      "id": 401,
+      "name": "주택도시기금 생애최초 내집마련 구입자금",
+      "provider": "주택도시기금",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "생애최초 주택 구입자의 계약 이후 잔금 계획을 검토하는 구입자금 후보입니다.",
+      "target": "무주택 생애최초 구입 예정자",
+      "rate": "연 2.65%대부터, 공식 심사 기준",
+      "limit": "최대 1억 8,000만원",
+      "limit_amount": 180000000,
+      "term": "최대 20년",
+      "term_years": 20,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 50000000,
+      "max_price": 400000000,
+      "max_area_m2": 60,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 402,
+      "name": "한국주택금융공사 공공분양 잔금 준비 대출",
+      "provider": "한국주택금융공사",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공분양 당첨 후 잔금과 입주 전 필요 금액을 검토하는 후보입니다.",
+      "target": "공공분양 당첨 예정 무주택 세대",
+      "rate": "연 2.77%대부터, 공식 심사 기준",
+      "limit": "최대 2억 2,000만원",
+      "limit_amount": 220000000,
+      "term": "최대 25년",
+      "term_years": 25,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 60000000,
+      "max_price": 400000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 403,
+      "name": "국민은행 신혼부부 주택구입 자금",
+      "provider": "국민은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "신혼부부 또는 예비 신혼부부의 첫 주택 구입 부담을 줄이기 위한 후보입니다.",
+      "target": "무주택 신혼부부 및 예비 신혼부부",
+      "rate": "연 2.89%대부터, 공식 심사 기준",
+      "limit": "최대 2억 5,000만원",
+      "limit_amount": 250000000,
+      "term": "최대 30년",
+      "term_years": 30,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 70000000,
+      "max_price": 500000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.kbstar.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 404,
+      "name": "신한은행 청년 첫 주택 구입 플랜",
+      "provider": "신한은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "청년 무주택자가 첫 집 구입 전에 한도와 상환 여력을 점검하는 후보입니다.",
+      "target": "만 19세 이상 무주택 청년",
+      "rate": "연 3.01%대부터, 공식 심사 기준",
+      "limit": "최대 3억 0만원",
+      "limit_amount": 300000000,
+      "term": "최대 35년",
+      "term_years": 35,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 85000000,
+      "max_price": 500000000,
+      "max_area_m2": 102,
+      "requires_homeless": true,
+      "source_url": "https://www.shinhan.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 405,
+      "name": "우리은행 장기 고정형 내집마련 대출",
+      "provider": "우리은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "장기 상환을 전제로 월 부담을 낮추는 구입자금 검토 후보입니다.",
+      "target": "소득 심사가 가능한 무주택 구입 예정자",
+      "rate": "연 3.13%대부터, 공식 심사 기준",
+      "limit": "최대 3억 5,000만원",
+      "limit_amount": 350000000,
+      "term": "최대 40년",
+      "term_years": 40,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 100000000,
+      "max_price": 600000000,
+      "max_area_m2": 120,
+      "requires_homeless": true,
+      "source_url": "https://www.wooribank.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 406,
+      "name": "하나은행 공공주택 입주자 구입자금",
+      "provider": "하나은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공주택 입주 예정자의 입주 전 자금 부족분을 검토하는 후보입니다.",
+      "target": "공공주택 입주 예정 무주택자",
+      "rate": "연 3.25%대부터, 공식 심사 기준",
+      "limit": "최대 4억 0만원",
+      "limit_amount": 400000000,
+      "term": "최대 20년",
+      "term_years": 20,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 120000000,
+      "max_price": 600000000,
+      "max_area_m2": 60,
+      "requires_homeless": true,
+      "source_url": "https://www.kebhana.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 407,
+      "name": "NH농협은행 보금자리형 구입자금",
+      "provider": "NH농협은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "중저가 주택 구입을 준비하는 무주택 실수요자용 후보입니다.",
+      "target": "무주택 또는 처분 조건 구입 예정자",
+      "rate": "연 3.37%대부터, 공식 심사 기준",
+      "limit": "최대 4억 5,000만원",
+      "limit_amount": 450000000,
+      "term": "최대 25년",
+      "term_years": 25,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 50000000,
+      "max_price": 700000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://banking.nonghyup.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 408,
+      "name": "IBK기업은행 중도금 이후 잔금 보완 대출",
+      "provider": "IBK기업은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "중도금 납부 이후 잔금 부족분을 중심으로 검토하는 후보입니다.",
+      "target": "공공분양 계약자 및 입주 예정자",
+      "rate": "연 3.49%대부터, 공식 심사 기준",
+      "limit": "최대 5억 0만원",
+      "limit_amount": 500000000,
+      "term": "최대 30년",
+      "term_years": 30,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 60000000,
+      "max_price": 700000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.ibk.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 409,
+      "name": "부산은행 생애최초 내집마련 구입자금",
+      "provider": "부산은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "생애최초 주택 구입자의 계약 이후 잔금 계획을 검토하는 구입자금 후보입니다.",
+      "target": "무주택 생애최초 구입 예정자",
+      "rate": "연 3.61%대부터, 공식 심사 기준",
+      "limit": "최대 1억 8,000만원",
+      "limit_amount": 180000000,
+      "term": "최대 35년",
+      "term_years": 35,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 70000000,
+      "max_price": 800000000,
+      "max_area_m2": 102,
+      "requires_homeless": true,
+      "source_url": "https://www.busanbank.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 410,
+      "name": "대구은행 공공분양 잔금 준비 대출",
+      "provider": "대구은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공분양 당첨 후 잔금과 입주 전 필요 금액을 검토하는 후보입니다.",
+      "target": "공공분양 당첨 예정 무주택 세대",
+      "rate": "연 2.65%대부터, 공식 심사 기준",
+      "limit": "최대 2억 2,000만원",
+      "limit_amount": 220000000,
+      "term": "최대 40년",
+      "term_years": 40,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 85000000,
+      "max_price": 800000000,
+      "max_area_m2": 120,
+      "requires_homeless": true,
+      "source_url": "https://www.dgb.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 411,
+      "name": "광주은행 신혼부부 주택구입 자금",
+      "provider": "광주은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "신혼부부 또는 예비 신혼부부의 첫 주택 구입 부담을 줄이기 위한 후보입니다.",
+      "target": "무주택 신혼부부 및 예비 신혼부부",
+      "rate": "연 2.77%대부터, 공식 심사 기준",
+      "limit": "최대 2억 5,000만원",
+      "limit_amount": 250000000,
+      "term": "최대 20년",
+      "term_years": 20,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 100000000,
+      "max_price": 900000000,
+      "max_area_m2": 60,
+      "requires_homeless": true,
+      "source_url": "https://www.kjbank.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 412,
+      "name": "전북은행 청년 첫 주택 구입 플랜",
+      "provider": "전북은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "청년 무주택자가 첫 집 구입 전에 한도와 상환 여력을 점검하는 후보입니다.",
+      "target": "만 19세 이상 무주택 청년",
+      "rate": "연 2.89%대부터, 공식 심사 기준",
+      "limit": "최대 3억 0만원",
+      "limit_amount": 300000000,
+      "term": "최대 25년",
+      "term_years": 25,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 120000000,
+      "max_price": 900000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.jbbank.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 413,
+      "name": "경남은행 장기 고정형 내집마련 대출",
+      "provider": "경남은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "장기 상환을 전제로 월 부담을 낮추는 구입자금 검토 후보입니다.",
+      "target": "소득 심사가 가능한 무주택 구입 예정자",
+      "rate": "연 3.01%대부터, 공식 심사 기준",
+      "limit": "최대 3억 5,000만원",
+      "limit_amount": 350000000,
+      "term": "최대 30년",
+      "term_years": 30,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 50000000,
+      "max_price": 400000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.knbank.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 414,
+      "name": "카카오뱅크 공공주택 입주자 구입자금",
+      "provider": "카카오뱅크",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공주택 입주 예정자의 입주 전 자금 부족분을 검토하는 후보입니다.",
+      "target": "공공주택 입주 예정 무주택자",
+      "rate": "연 3.13%대부터, 공식 심사 기준",
+      "limit": "최대 4억 0만원",
+      "limit_amount": 400000000,
+      "term": "최대 35년",
+      "term_years": 35,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 60000000,
+      "max_price": 400000000,
+      "max_area_m2": 102,
+      "requires_homeless": true,
+      "source_url": "https://www.kakaobank.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 415,
+      "name": "케이뱅크 보금자리형 구입자금",
+      "provider": "케이뱅크",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "중저가 주택 구입을 준비하는 무주택 실수요자용 후보입니다.",
+      "target": "무주택 또는 처분 조건 구입 예정자",
+      "rate": "연 3.25%대부터, 공식 심사 기준",
+      "limit": "최대 4억 5,000만원",
+      "limit_amount": 450000000,
+      "term": "최대 40년",
+      "term_years": 40,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 70000000,
+      "max_price": 500000000,
+      "max_area_m2": 120,
+      "requires_homeless": true,
+      "source_url": "https://www.kbanknow.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 416,
+      "name": "주택도시기금 중도금 이후 잔금 보완 대출",
+      "provider": "주택도시기금",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "중도금 납부 이후 잔금 부족분을 중심으로 검토하는 후보입니다.",
+      "target": "공공분양 계약자 및 입주 예정자",
+      "rate": "연 3.37%대부터, 공식 심사 기준",
+      "limit": "최대 5억 0만원",
+      "limit_amount": 500000000,
+      "term": "최대 20년",
+      "term_years": 20,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 85000000,
+      "max_price": 500000000,
+      "max_area_m2": 60,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 417,
+      "name": "한국주택금융공사 생애최초 내집마련 구입자금",
+      "provider": "한국주택금융공사",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "생애최초 주택 구입자의 계약 이후 잔금 계획을 검토하는 구입자금 후보입니다.",
+      "target": "무주택 생애최초 구입 예정자",
+      "rate": "연 3.49%대부터, 공식 심사 기준",
+      "limit": "최대 1억 8,000만원",
+      "limit_amount": 180000000,
+      "term": "최대 25년",
+      "term_years": 25,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 100000000,
+      "max_price": 600000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 418,
+      "name": "국민은행 공공분양 잔금 준비 대출",
+      "provider": "국민은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공분양 당첨 후 잔금과 입주 전 필요 금액을 검토하는 후보입니다.",
+      "target": "공공분양 당첨 예정 무주택 세대",
+      "rate": "연 3.61%대부터, 공식 심사 기준",
+      "limit": "최대 2억 2,000만원",
+      "limit_amount": 220000000,
+      "term": "최대 30년",
+      "term_years": 30,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 120000000,
+      "max_price": 600000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.kbstar.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 419,
+      "name": "신한은행 신혼부부 주택구입 자금",
+      "provider": "신한은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "신혼부부 또는 예비 신혼부부의 첫 주택 구입 부담을 줄이기 위한 후보입니다.",
+      "target": "무주택 신혼부부 및 예비 신혼부부",
+      "rate": "연 2.65%대부터, 공식 심사 기준",
+      "limit": "최대 2억 5,000만원",
+      "limit_amount": 250000000,
+      "term": "최대 35년",
+      "term_years": 35,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 50000000,
+      "max_price": 700000000,
+      "max_area_m2": 102,
+      "requires_homeless": true,
+      "source_url": "https://www.shinhan.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 420,
+      "name": "우리은행 청년 첫 주택 구입 플랜",
+      "provider": "우리은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "청년 무주택자가 첫 집 구입 전에 한도와 상환 여력을 점검하는 후보입니다.",
+      "target": "만 19세 이상 무주택 청년",
+      "rate": "연 2.77%대부터, 공식 심사 기준",
+      "limit": "최대 3억 0만원",
+      "limit_amount": 300000000,
+      "term": "최대 40년",
+      "term_years": 40,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 60000000,
+      "max_price": 700000000,
+      "max_area_m2": 120,
+      "requires_homeless": true,
+      "source_url": "https://www.wooribank.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 421,
+      "name": "하나은행 장기 고정형 내집마련 대출",
+      "provider": "하나은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "장기 상환을 전제로 월 부담을 낮추는 구입자금 검토 후보입니다.",
+      "target": "소득 심사가 가능한 무주택 구입 예정자",
+      "rate": "연 2.89%대부터, 공식 심사 기준",
+      "limit": "최대 3억 5,000만원",
+      "limit_amount": 350000000,
+      "term": "최대 20년",
+      "term_years": 20,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 70000000,
+      "max_price": 800000000,
+      "max_area_m2": 60,
+      "requires_homeless": true,
+      "source_url": "https://www.kebhana.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 422,
+      "name": "NH농협은행 공공주택 입주자 구입자금",
+      "provider": "NH농협은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공주택 입주 예정자의 입주 전 자금 부족분을 검토하는 후보입니다.",
+      "target": "공공주택 입주 예정 무주택자",
+      "rate": "연 3.01%대부터, 공식 심사 기준",
+      "limit": "최대 4억 0만원",
+      "limit_amount": 400000000,
+      "term": "최대 25년",
+      "term_years": 25,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 85000000,
+      "max_price": 800000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://banking.nonghyup.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 423,
+      "name": "IBK기업은행 보금자리형 구입자금",
+      "provider": "IBK기업은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "중저가 주택 구입을 준비하는 무주택 실수요자용 후보입니다.",
+      "target": "무주택 또는 처분 조건 구입 예정자",
+      "rate": "연 3.13%대부터, 공식 심사 기준",
+      "limit": "최대 4억 5,000만원",
+      "limit_amount": 450000000,
+      "term": "최대 30년",
+      "term_years": 30,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 100000000,
+      "max_price": 900000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.ibk.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 424,
+      "name": "부산은행 중도금 이후 잔금 보완 대출",
+      "provider": "부산은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "중도금 납부 이후 잔금 부족분을 중심으로 검토하는 후보입니다.",
+      "target": "공공분양 계약자 및 입주 예정자",
+      "rate": "연 3.25%대부터, 공식 심사 기준",
+      "limit": "최대 5억 0만원",
+      "limit_amount": 500000000,
+      "term": "최대 35년",
+      "term_years": 35,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 120000000,
+      "max_price": 900000000,
+      "max_area_m2": 102,
+      "requires_homeless": true,
+      "source_url": "https://www.busanbank.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 425,
+      "name": "대구은행 생애최초 내집마련 구입자금",
+      "provider": "대구은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "생애최초 주택 구입자의 계약 이후 잔금 계획을 검토하는 구입자금 후보입니다.",
+      "target": "무주택 생애최초 구입 예정자",
+      "rate": "연 3.37%대부터, 공식 심사 기준",
+      "limit": "최대 1억 8,000만원",
+      "limit_amount": 180000000,
+      "term": "최대 40년",
+      "term_years": 40,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 50000000,
+      "max_price": 400000000,
+      "max_area_m2": 120,
+      "requires_homeless": true,
+      "source_url": "https://www.dgb.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 426,
+      "name": "광주은행 공공분양 잔금 준비 대출",
+      "provider": "광주은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공분양 당첨 후 잔금과 입주 전 필요 금액을 검토하는 후보입니다.",
+      "target": "공공분양 당첨 예정 무주택 세대",
+      "rate": "연 3.49%대부터, 공식 심사 기준",
+      "limit": "최대 2억 2,000만원",
+      "limit_amount": 220000000,
+      "term": "최대 20년",
+      "term_years": 20,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 60000000,
+      "max_price": 400000000,
+      "max_area_m2": 60,
+      "requires_homeless": true,
+      "source_url": "https://www.kjbank.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 427,
+      "name": "전북은행 신혼부부 주택구입 자금",
+      "provider": "전북은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "신혼부부 또는 예비 신혼부부의 첫 주택 구입 부담을 줄이기 위한 후보입니다.",
+      "target": "무주택 신혼부부 및 예비 신혼부부",
+      "rate": "연 3.61%대부터, 공식 심사 기준",
+      "limit": "최대 2억 5,000만원",
+      "limit_amount": 250000000,
+      "term": "최대 25년",
+      "term_years": 25,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 70000000,
+      "max_price": 500000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.jbbank.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 428,
+      "name": "경남은행 청년 첫 주택 구입 플랜",
+      "provider": "경남은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "청년 무주택자가 첫 집 구입 전에 한도와 상환 여력을 점검하는 후보입니다.",
+      "target": "만 19세 이상 무주택 청년",
+      "rate": "연 2.65%대부터, 공식 심사 기준",
+      "limit": "최대 3억 0만원",
+      "limit_amount": 300000000,
+      "term": "최대 30년",
+      "term_years": 30,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 85000000,
+      "max_price": 500000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.knbank.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 429,
+      "name": "카카오뱅크 장기 고정형 내집마련 대출",
+      "provider": "카카오뱅크",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "장기 상환을 전제로 월 부담을 낮추는 구입자금 검토 후보입니다.",
+      "target": "소득 심사가 가능한 무주택 구입 예정자",
+      "rate": "연 2.77%대부터, 공식 심사 기준",
+      "limit": "최대 3억 5,000만원",
+      "limit_amount": 350000000,
+      "term": "최대 35년",
+      "term_years": 35,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 100000000,
+      "max_price": 600000000,
+      "max_area_m2": 102,
+      "requires_homeless": true,
+      "source_url": "https://www.kakaobank.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 430,
+      "name": "케이뱅크 공공주택 입주자 구입자금",
+      "provider": "케이뱅크",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공주택 입주 예정자의 입주 전 자금 부족분을 검토하는 후보입니다.",
+      "target": "공공주택 입주 예정 무주택자",
+      "rate": "연 2.89%대부터, 공식 심사 기준",
+      "limit": "최대 4억 0만원",
+      "limit_amount": 400000000,
+      "term": "최대 40년",
+      "term_years": 40,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 120000000,
+      "max_price": 600000000,
+      "max_area_m2": 120,
+      "requires_homeless": true,
+      "source_url": "https://www.kbanknow.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 431,
+      "name": "주택도시기금 보금자리형 구입자금",
+      "provider": "주택도시기금",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "중저가 주택 구입을 준비하는 무주택 실수요자용 후보입니다.",
+      "target": "무주택 또는 처분 조건 구입 예정자",
+      "rate": "연 3.01%대부터, 공식 심사 기준",
+      "limit": "최대 4억 5,000만원",
+      "limit_amount": 450000000,
+      "term": "최대 20년",
+      "term_years": 20,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 50000000,
+      "max_price": 700000000,
+      "max_area_m2": 60,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 432,
+      "name": "한국주택금융공사 중도금 이후 잔금 보완 대출",
+      "provider": "한국주택금융공사",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "중도금 납부 이후 잔금 부족분을 중심으로 검토하는 후보입니다.",
+      "target": "공공분양 계약자 및 입주 예정자",
+      "rate": "연 3.13%대부터, 공식 심사 기준",
+      "limit": "최대 5억 0만원",
+      "limit_amount": 500000000,
+      "term": "최대 25년",
+      "term_years": 25,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 60000000,
+      "max_price": 700000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 433,
+      "name": "국민은행 생애최초 내집마련 구입자금",
+      "provider": "국민은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "생애최초 주택 구입자의 계약 이후 잔금 계획을 검토하는 구입자금 후보입니다.",
+      "target": "무주택 생애최초 구입 예정자",
+      "rate": "연 3.25%대부터, 공식 심사 기준",
+      "limit": "최대 1억 8,000만원",
+      "limit_amount": 180000000,
+      "term": "최대 30년",
+      "term_years": 30,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 70000000,
+      "max_price": 800000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.kbstar.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 434,
+      "name": "신한은행 공공분양 잔금 준비 대출",
+      "provider": "신한은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공분양 당첨 후 잔금과 입주 전 필요 금액을 검토하는 후보입니다.",
+      "target": "공공분양 당첨 예정 무주택 세대",
+      "rate": "연 3.37%대부터, 공식 심사 기준",
+      "limit": "최대 2억 2,000만원",
+      "limit_amount": 220000000,
+      "term": "최대 35년",
+      "term_years": 35,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 85000000,
+      "max_price": 800000000,
+      "max_area_m2": 102,
+      "requires_homeless": true,
+      "source_url": "https://www.shinhan.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 435,
+      "name": "우리은행 신혼부부 주택구입 자금",
+      "provider": "우리은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "신혼부부 또는 예비 신혼부부의 첫 주택 구입 부담을 줄이기 위한 후보입니다.",
+      "target": "무주택 신혼부부 및 예비 신혼부부",
+      "rate": "연 3.49%대부터, 공식 심사 기준",
+      "limit": "최대 2억 5,000만원",
+      "limit_amount": 250000000,
+      "term": "최대 40년",
+      "term_years": 40,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 100000000,
+      "max_price": 900000000,
+      "max_area_m2": 120,
+      "requires_homeless": true,
+      "source_url": "https://www.wooribank.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 436,
+      "name": "하나은행 청년 첫 주택 구입 플랜",
+      "provider": "하나은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "first_home_purchase",
+      "description": "청년 무주택자가 첫 집 구입 전에 한도와 상환 여력을 점검하는 후보입니다.",
+      "target": "만 19세 이상 무주택 청년",
+      "rate": "연 3.61%대부터, 공식 심사 기준",
+      "limit": "최대 3억 0만원",
+      "limit_amount": 300000000,
+      "term": "최대 20년",
+      "term_years": 20,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 120000000,
+      "max_price": 900000000,
+      "max_area_m2": 60,
+      "requires_homeless": true,
+      "source_url": "https://www.kebhana.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 437,
+      "name": "NH농협은행 장기 고정형 내집마련 대출",
+      "provider": "NH농협은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "장기 상환을 전제로 월 부담을 낮추는 구입자금 검토 후보입니다.",
+      "target": "소득 심사가 가능한 무주택 구입 예정자",
+      "rate": "연 2.65%대부터, 공식 심사 기준",
+      "limit": "최대 3억 5,000만원",
+      "limit_amount": 350000000,
+      "term": "최대 25년",
+      "term_years": 25,
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 50000000,
+      "max_price": 400000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://banking.nonghyup.com",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 438,
+      "name": "IBK기업은행 공공주택 입주자 구입자금",
+      "provider": "IBK기업은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "공공주택 입주 예정자의 입주 전 자금 부족분을 검토하는 후보입니다.",
+      "target": "공공주택 입주 예정 무주택자",
+      "rate": "연 2.77%대부터, 공식 심사 기준",
+      "limit": "최대 4억 0만원",
+      "limit_amount": 400000000,
+      "term": "최대 30년",
+      "term_years": 30,
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 60000000,
+      "max_price": 400000000,
+      "max_area_m2": 85,
+      "requires_homeless": true,
+      "source_url": "https://www.ibk.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 439,
+      "name": "부산은행 보금자리형 구입자금",
+      "provider": "부산은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "purchase",
+      "description": "중저가 주택 구입을 준비하는 무주택 실수요자용 후보입니다.",
+      "target": "무주택 또는 처분 조건 구입 예정자",
+      "rate": "연 2.89%대부터, 공식 심사 기준",
+      "limit": "최대 4억 5,000만원",
+      "limit_amount": 450000000,
+      "term": "최대 35년",
+      "term_years": 35,
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 70000000,
+      "max_price": 500000000,
+      "max_area_m2": 102,
+      "requires_homeless": true,
+      "source_url": "https://www.busanbank.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 440,
+      "name": "대구은행 중도금 이후 잔금 보완 대출",
+      "provider": "대구은행",
+      "category": "구입자금 대출",
+      "loan_purpose": "public_purchase",
+      "description": "중도금 납부 이후 잔금 부족분을 중심으로 검토하는 후보입니다.",
+      "target": "공공분양 계약자 및 입주 예정자",
+      "rate": "연 3.01%대부터, 공식 심사 기준",
+      "limit": "최대 5억 0만원",
+      "limit_amount": 500000000,
+      "term": "최대 40년",
+      "term_years": 40,
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 85000000,
+      "max_price": 500000000,
+      "max_area_m2": 120,
+      "requires_homeless": true,
+      "source_url": "https://www.dgb.co.kr",
+      "reasons": [
+        "전세·월세 대출이 아니라 주택 구입 목적 대출 후보입니다.",
+        "분양가, 면적, 소득, 무주택 조건을 함께 확인해야 합니다."
+      ],
+      "caveats": [
+        "대출 가능 여부와 금리는 금융기관 심사 및 정책 기준에 따라 달라집니다.",
+        "융자금, 중도금 대출, 잔금 대출과 중복 가능 여부를 공식 기관에서 확인해야 합니다."
+      ]
+    }
+  ],
   "policies": [
     {
       "id": 301,
-      "name": "청년월세 한시 특별지원",
+      "name": "생애최초 공공분양 자격 사전점검",
       "provider": "국토교통부",
-      "target": "만 19~34세 무주택 청년",
-      "benefit": "월세 일부 지원",
-      "policy_category": "월세",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "생애최초 특별공급과 일반공급 자격을 신청 전 점검합니다.",
+      "policy_category": "청약",
       "regions": [
         "전국"
       ],
@@ -31232,180 +32394,2112 @@
       "requires_homeless": true,
       "source_url": "https://www.myhome.go.kr",
       "reasons": [
-        "청약 준비 기간의 주거비 부담을 낮추는 데 도움이 될 수 있습니다."
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
       ]
     },
     {
       "id": 302,
-      "name": "서울시 청년 주거상담",
+      "name": "무주택 세대구성원 판정 상담",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "주택 소유 여부와 세대 구성 기준을 신청 전에 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 303,
+      "name": "공공분양 청약통장 납입 인정 점검",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "청약통장 가입기간과 납입 인정 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 304,
+      "name": "신혼희망타운 신청 요건 안내",
+      "provider": "국토교통부",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "신혼희망타운 소득, 자산, 혼인 기간 기준을 점검합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 305,
+      "name": "공공분양 주택구입 자금 상담",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "계약금 이후 중도금과 잔금 자금 흐름을 상담합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 306,
+      "name": "청년 내집마련 자금계획 컨설팅",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "첫 주택 구입 전 월 저축 목표와 부족액을 점검합니다.",
+      "policy_category": "주거지원",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 34,
+      "max_income": 0,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 307,
+      "name": "공공분양 제출서류 발급 체크",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "주민등록, 가족관계, 소득 관련 서류 준비 순서를 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 39,
+      "max_income": 50000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 308,
+      "name": "주택도시기금 구입자금 안내",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "구입자금 대출 자격과 한도 확인 절차를 안내합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 45,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 309,
+      "name": "보금자리론 사전상담 안내",
+      "provider": "한국주택금융공사",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "장기 고정금리 구입자금 가능성을 사전 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 310,
+      "name": "생애최초 특별공급 소득기준 확인",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "생애최초 특별공급 소득 및 자산 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 70,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 311,
+      "name": "다자녀 특별공급 신청 조건 확인",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "다자녀 특별공급 자격과 우선순위 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 34,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 312,
+      "name": "노부모부양 특별공급 요건 확인",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "노부모부양 특별공급 세대 요건과 부양 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 39,
+      "max_income": 0,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 313,
+      "name": "기관추천 특별공급 절차 안내",
+      "provider": "국토교통부",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "기관추천 대상자 추천 절차와 제출 기한을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 50000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 314,
+      "name": "지역우선 공급 기준 상담",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "거주 기간과 지역우선 배정 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 55,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 315,
+      "name": "공공분양 계약금 준비 상담",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "계약금 마련 가능성과 납부 기한을 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 70,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 316,
+      "name": "중도금 납부계획 상담",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "중도금 회차별 납부 계획과 대출 가능성을 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 34,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 317,
+      "name": "잔금 및 입주자금 상담",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "잔금, 융자금, 입주 전 필요 금액을 구분해 확인합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 318,
+      "name": "신혼부부 공공분양 소득기준 안내",
+      "provider": "국토교통부",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득 및 자산 기준을 확인합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 0,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 319,
+      "name": "청년 주거금융 교육",
+      "provider": "금융감독원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "청약 이후 대출과 저축 계획의 기본 구조를 학습합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 50000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 320,
+      "name": "청약 부적격 예방 상담",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "부적격 당첨을 피하기 위한 주요 확인 항목을 점검합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 321,
+      "name": "생애최초 공공분양 자격 사전점검 2단계",
+      "provider": "국토교통부",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "생애최초 특별공급과 일반공급 자격을 신청 전 점검합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 34,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 322,
+      "name": "무주택 세대구성원 판정 상담 2단계",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "주택 소유 여부와 세대 구성 기준을 신청 전에 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 39,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 323,
+      "name": "공공분양 청약통장 납입 인정 점검 2단계",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "청약통장 가입기간과 납입 인정 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 45,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 324,
+      "name": "신혼희망타운 신청 요건 안내 2단계",
+      "provider": "국토교통부",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "신혼희망타운 소득, 자산, 혼인 기간 기준을 점검합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 55,
+      "max_income": 0,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 325,
+      "name": "공공분양 주택구입 자금 상담 2단계",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "계약금 이후 중도금과 잔금 자금 흐름을 상담합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 70,
+      "max_income": 50000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 326,
+      "name": "청년 내집마련 자금계획 컨설팅 2단계",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "첫 주택 구입 전 월 저축 목표와 부족액을 점검합니다.",
+      "policy_category": "주거지원",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 34,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 327,
+      "name": "공공분양 제출서류 발급 체크 2단계",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "주민등록, 가족관계, 소득 관련 서류 준비 순서를 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 39,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 328,
+      "name": "주택도시기금 구입자금 안내 2단계",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "구입자금 대출 자격과 한도 확인 절차를 안내합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 45,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 329,
+      "name": "보금자리론 사전상담 안내 2단계",
+      "provider": "한국주택금융공사",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "장기 고정금리 구입자금 가능성을 사전 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 55,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 330,
+      "name": "생애최초 특별공급 소득기준 확인 2단계",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "생애최초 특별공급 소득 및 자산 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 70,
+      "max_income": 0,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 331,
+      "name": "다자녀 특별공급 신청 조건 확인 2단계",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "다자녀 특별공급 자격과 우선순위 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 34,
+      "max_income": 50000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 332,
+      "name": "노부모부양 특별공급 요건 확인 2단계",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "노부모부양 특별공급 세대 요건과 부양 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 333,
+      "name": "기관추천 특별공급 절차 안내 2단계",
+      "provider": "국토교통부",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "기관추천 대상자 추천 절차와 제출 기한을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 334,
+      "name": "지역우선 공급 기준 상담 2단계",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "거주 기간과 지역우선 배정 기준을 확인합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 335,
+      "name": "공공분양 계약금 준비 상담 2단계",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "계약금 마련 가능성과 납부 기한을 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 336,
+      "name": "중도금 납부계획 상담 2단계",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "중도금 회차별 납부 계획과 대출 가능성을 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 34,
+      "max_income": 0,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 337,
+      "name": "잔금 및 입주자금 상담 2단계",
+      "provider": "주택도시기금",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "잔금, 융자금, 입주 전 필요 금액을 구분해 확인합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 50000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 338,
+      "name": "신혼부부 공공분양 소득기준 안내 2단계",
+      "provider": "국토교통부",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득 및 자산 기준을 확인합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://applyhome.co.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 339,
+      "name": "청년 주거금융 교육 2단계",
+      "provider": "금융감독원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "청약 이후 대출과 저축 계획의 기본 구조를 학습합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://nhuf.molit.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 340,
+      "name": "청약 부적격 예방 상담 2단계",
+      "provider": "한국부동산원",
+      "target": "무주택 청년, 신혼부부, 생애최초 주택 구입 예정자",
+      "benefit": "부적격 당첨을 피하기 위한 주요 확인 항목을 점검합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전국"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.hf.go.kr",
+      "reasons": [
+        "첫 집 청약 준비 과정에서 자격, 자금, 서류 확인에 활용할 수 있습니다."
+      ]
+    },
+    {
+      "id": 501,
+      "name": "서울 공공분양 청약 사전상담",
       "provider": "서울특별시",
-      "target": "서울 거주 또는 전입 예정 청년",
-      "benefit": "주거 정책 상담 및 정보 제공",
-      "policy_category": "상담",
+      "target": "서울 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
       "regions": [
         "서울"
       ],
       "age_min": 19,
       "age_max": 39,
       "max_income": 60000000,
-      "requires_homeless": false,
-      "source_url": "https://housing.seoul.go.kr",
-      "reasons": [
-        "서울 희망 지역 공고 확인과 신청 전 상담에 활용할 수 있습니다."
-      ]
-    },
-    {
-      "id": 303,
-      "name": "경기도 청년 전세보증금 반환보증 지원",
-      "provider": "경기도",
-      "target": "경기도 거주 청년 임차인",
-      "benefit": "반환보증 보증료 일부 지원",
-      "policy_category": "전세",
-      "regions": [
-        "경기 남부",
-        "경기 북부"
-      ],
-      "age_min": 19,
-      "age_max": 39,
-      "max_income": 55000000,
-      "requires_homeless": false,
-      "source_url": "https://www.gg.go.kr",
-      "reasons": [
-        "경기권 거주 중 청약을 준비하는 사용자에게 보조 정책으로 유용합니다."
-      ]
-    },
-    {
-      "id": 304,
-      "name": "인천 청년 주거비 지원",
-      "provider": "인천광역시",
-      "target": "인천 거주 청년",
-      "benefit": "월세 또는 주거비 일부 지원",
-      "policy_category": "월세",
-      "regions": [
-        "인천"
-      ],
-      "age_min": 19,
-      "age_max": 39,
-      "max_income": 50000000,
       "requires_homeless": true,
-      "source_url": "https://www.incheon.go.kr",
-      "reasons": [
-        "인천 공고를 희망하는 사용자에게 지역 정책 후보로 제시됩니다."
-      ]
-    },
-    {
-      "id": 305,
-      "name": "청년 주거급여 분리지급",
-      "provider": "국토교통부",
-      "target": "부모와 따로 거주하는 저소득 청년",
-      "benefit": "주거급여 분리 지급",
-      "policy_category": "주거지원",
-      "regions": [
-        "전국"
-      ],
-      "age_min": 19,
-      "age_max": 30,
-      "max_income": 36000000,
-      "requires_homeless": false,
       "source_url": "https://www.myhome.go.kr",
       "reasons": [
-        "소득 기준을 충족하는 청년에게 주거비 보조 후보가 될 수 있습니다."
+        "서울 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
       ]
     },
     {
-      "id": 306,
-      "name": "청년 전월세 보증금 대출이자 지원",
+      "id": 502,
+      "name": "서울 생애최초 주택구입 자금 상담",
       "provider": "서울특별시",
-      "target": "서울 거주 청년 임차인",
-      "benefit": "대출이자 일부 지원",
-      "policy_category": "전세",
+      "target": "서울 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
       "regions": [
         "서울"
       ],
-      "age_min": 19,
-      "age_max": 39,
-      "max_income": 52000000,
-      "requires_homeless": false,
-      "source_url": "https://housing.seoul.go.kr",
-      "reasons": [
-        "청약 전 임차 기간의 주거비 부담을 낮추는 정책 후보입니다."
-      ]
-    },
-    {
-      "id": 307,
-      "name": "경기 청년 공간 지원",
-      "provider": "경기도",
-      "target": "경기도 생활권 청년",
-      "benefit": "상담, 교육, 커뮤니티 공간 제공",
-      "policy_category": "공간",
-      "regions": [
-        "경기 남부",
-        "경기 북부"
-      ],
-      "age_min": 19,
-      "age_max": 39,
-      "max_income": 100000000,
-      "requires_homeless": false,
-      "source_url": "https://youth.gg.go.kr",
-      "reasons": [
-        "주거 상담과 청년 정책 정보를 함께 찾을 수 있습니다."
-      ]
-    },
-    {
-      "id": 308,
-      "name": "LH 청년 전세임대 상담",
-      "provider": "LH",
-      "target": "무주택 청년",
-      "benefit": "전세임대 신청 정보와 상담",
-      "policy_category": "상담",
-      "regions": [
-        "전국"
-      ],
-      "age_min": 19,
-      "age_max": 39,
-      "max_income": 50000000,
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
       "requires_homeless": true,
-      "source_url": "https://apply.lh.or.kr",
+      "source_url": "https://www.myhome.go.kr",
       "reasons": [
-        "청약과 병행해 임시 주거 선택지를 검토할 때 유용합니다."
+        "서울 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
       ]
     },
     {
-      "id": 309,
-      "name": "청년내일저축계좌 안내",
-      "provider": "보건복지부",
-      "target": "근로 중인 청년",
-      "benefit": "자산형성 지원",
-      "policy_category": "자산형성",
+      "id": 503,
+      "name": "서울 신혼부부 내집마련 준비 지원",
+      "provider": "서울특별시",
+      "target": "서울 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
       "regions": [
-        "전국"
+        "서울"
       ],
-      "age_min": 19,
-      "age_max": 34,
-      "max_income": 42000000,
-      "requires_homeless": false,
-      "source_url": "https://www.bokjiro.go.kr",
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
       "reasons": [
-        "계약금 준비와 별개로 자산형성 정책 후보를 확인할 수 있습니다."
+        "서울 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
       ]
     },
     {
-      "id": 310,
-      "name": "부산 청년 임차보증금 이자지원",
+      "id": 504,
+      "name": "서울 무주택 청년 주거금융 안내",
+      "provider": "서울특별시",
+      "target": "서울 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "서울"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "서울 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 505,
+      "name": "부산 공공분양 청약 사전상담",
       "provider": "부산광역시",
-      "target": "부산 거주 또는 전입 예정 청년",
-      "benefit": "임차보증금 대출이자 지원",
-      "policy_category": "전세",
+      "target": "부산 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
       "regions": [
         "부산"
       ],
       "age_min": 19,
       "age_max": 39,
-      "max_income": 50000000,
-      "requires_homeless": false,
-      "source_url": "https://www.busan.go.kr",
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
       "reasons": [
-        "부산 희망 사용자가 조건을 바꾸면 추천될 수 있는 지역 정책입니다."
+        "부산 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 506,
+      "name": "부산 생애최초 주택구입 자금 상담",
+      "provider": "부산광역시",
+      "target": "부산 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "부산"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "부산 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 507,
+      "name": "부산 신혼부부 내집마련 준비 지원",
+      "provider": "부산광역시",
+      "target": "부산 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "부산"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "부산 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 508,
+      "name": "부산 무주택 청년 주거금융 안내",
+      "provider": "부산광역시",
+      "target": "부산 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "부산"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "부산 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 509,
+      "name": "대구 공공분양 청약 사전상담",
+      "provider": "대구광역시",
+      "target": "대구 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "대구"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "대구 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 510,
+      "name": "대구 생애최초 주택구입 자금 상담",
+      "provider": "대구광역시",
+      "target": "대구 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "대구"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "대구 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 511,
+      "name": "대구 신혼부부 내집마련 준비 지원",
+      "provider": "대구광역시",
+      "target": "대구 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "대구"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "대구 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 512,
+      "name": "대구 무주택 청년 주거금융 안내",
+      "provider": "대구광역시",
+      "target": "대구 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "대구"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "대구 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 513,
+      "name": "인천 공공분양 청약 사전상담",
+      "provider": "인천광역시",
+      "target": "인천 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "인천"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "인천 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 514,
+      "name": "인천 생애최초 주택구입 자금 상담",
+      "provider": "인천광역시",
+      "target": "인천 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "인천"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "인천 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 515,
+      "name": "인천 신혼부부 내집마련 준비 지원",
+      "provider": "인천광역시",
+      "target": "인천 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "인천"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "인천 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 516,
+      "name": "인천 무주택 청년 주거금융 안내",
+      "provider": "인천광역시",
+      "target": "인천 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "인천"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "인천 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 517,
+      "name": "광주 공공분양 청약 사전상담",
+      "provider": "광주광역시",
+      "target": "광주 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "광주"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "광주 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 518,
+      "name": "광주 생애최초 주택구입 자금 상담",
+      "provider": "광주광역시",
+      "target": "광주 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "광주"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "광주 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 519,
+      "name": "광주 신혼부부 내집마련 준비 지원",
+      "provider": "광주광역시",
+      "target": "광주 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "광주"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "광주 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 520,
+      "name": "광주 무주택 청년 주거금융 안내",
+      "provider": "광주광역시",
+      "target": "광주 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "광주"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "광주 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 521,
+      "name": "대전 공공분양 청약 사전상담",
+      "provider": "대전광역시",
+      "target": "대전 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "대전"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "대전 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 522,
+      "name": "대전 생애최초 주택구입 자금 상담",
+      "provider": "대전광역시",
+      "target": "대전 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "대전"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "대전 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 523,
+      "name": "대전 신혼부부 내집마련 준비 지원",
+      "provider": "대전광역시",
+      "target": "대전 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "대전"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "대전 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 524,
+      "name": "대전 무주택 청년 주거금융 안내",
+      "provider": "대전광역시",
+      "target": "대전 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "대전"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "대전 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 525,
+      "name": "울산 공공분양 청약 사전상담",
+      "provider": "울산광역시",
+      "target": "울산 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "울산"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "울산 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 526,
+      "name": "울산 생애최초 주택구입 자금 상담",
+      "provider": "울산광역시",
+      "target": "울산 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "울산"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "울산 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 527,
+      "name": "울산 신혼부부 내집마련 준비 지원",
+      "provider": "울산광역시",
+      "target": "울산 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "울산"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "울산 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 528,
+      "name": "울산 무주택 청년 주거금융 안내",
+      "provider": "울산광역시",
+      "target": "울산 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "울산"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "울산 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 529,
+      "name": "세종 공공분양 청약 사전상담",
+      "provider": "세종특별자치시",
+      "target": "세종 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "세종"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "세종 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 530,
+      "name": "세종 생애최초 주택구입 자금 상담",
+      "provider": "세종특별자치시",
+      "target": "세종 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "세종"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "세종 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 531,
+      "name": "세종 신혼부부 내집마련 준비 지원",
+      "provider": "세종특별자치시",
+      "target": "세종 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "세종"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "세종 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 532,
+      "name": "세종 무주택 청년 주거금융 안내",
+      "provider": "세종특별자치시",
+      "target": "세종 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "세종"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "세종 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 533,
+      "name": "경기 공공분양 청약 사전상담",
+      "provider": "경기도",
+      "target": "경기 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "경기 남부",
+        "경기 북부"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경기 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 534,
+      "name": "경기 생애최초 주택구입 자금 상담",
+      "provider": "경기도",
+      "target": "경기 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "경기 남부",
+        "경기 북부"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경기 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 535,
+      "name": "경기 신혼부부 내집마련 준비 지원",
+      "provider": "경기도",
+      "target": "경기 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "경기 남부",
+        "경기 북부"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경기 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 536,
+      "name": "경기 무주택 청년 주거금융 안내",
+      "provider": "경기도",
+      "target": "경기 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "경기 남부",
+        "경기 북부"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경기 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 537,
+      "name": "강원 공공분양 청약 사전상담",
+      "provider": "강원특별자치도",
+      "target": "강원 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "강원"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "강원 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 538,
+      "name": "강원 생애최초 주택구입 자금 상담",
+      "provider": "강원특별자치도",
+      "target": "강원 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "강원"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "강원 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 539,
+      "name": "강원 신혼부부 내집마련 준비 지원",
+      "provider": "강원특별자치도",
+      "target": "강원 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "강원"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "강원 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 540,
+      "name": "강원 무주택 청년 주거금융 안내",
+      "provider": "강원특별자치도",
+      "target": "강원 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "강원"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "강원 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 541,
+      "name": "충북 공공분양 청약 사전상담",
+      "provider": "충청북도",
+      "target": "충북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "충북"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "충북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 542,
+      "name": "충북 생애최초 주택구입 자금 상담",
+      "provider": "충청북도",
+      "target": "충북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "충북"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "충북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 543,
+      "name": "충북 신혼부부 내집마련 준비 지원",
+      "provider": "충청북도",
+      "target": "충북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "충북"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "충북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 544,
+      "name": "충북 무주택 청년 주거금융 안내",
+      "provider": "충청북도",
+      "target": "충북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "충북"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "충북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 545,
+      "name": "충남 공공분양 청약 사전상담",
+      "provider": "충청남도",
+      "target": "충남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "충남"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "충남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 546,
+      "name": "충남 생애최초 주택구입 자금 상담",
+      "provider": "충청남도",
+      "target": "충남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "충남"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "충남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 547,
+      "name": "충남 신혼부부 내집마련 준비 지원",
+      "provider": "충청남도",
+      "target": "충남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "충남"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "충남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 548,
+      "name": "충남 무주택 청년 주거금융 안내",
+      "provider": "충청남도",
+      "target": "충남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "충남"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "충남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 549,
+      "name": "전북 공공분양 청약 사전상담",
+      "provider": "전북특별자치도",
+      "target": "전북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전북"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "전북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 550,
+      "name": "전북 생애최초 주택구입 자금 상담",
+      "provider": "전북특별자치도",
+      "target": "전북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전북"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "전북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 551,
+      "name": "전북 신혼부부 내집마련 준비 지원",
+      "provider": "전북특별자치도",
+      "target": "전북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "전북"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "전북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 552,
+      "name": "전북 무주택 청년 주거금융 안내",
+      "provider": "전북특별자치도",
+      "target": "전북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "전북"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "전북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 553,
+      "name": "전남 공공분양 청약 사전상담",
+      "provider": "전라남도",
+      "target": "전남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "전남"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "전남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 554,
+      "name": "전남 생애최초 주택구입 자금 상담",
+      "provider": "전라남도",
+      "target": "전남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "전남"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "전남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 555,
+      "name": "전남 신혼부부 내집마련 준비 지원",
+      "provider": "전라남도",
+      "target": "전남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "전남"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "전남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 556,
+      "name": "전남 무주택 청년 주거금융 안내",
+      "provider": "전라남도",
+      "target": "전남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "전남"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "전남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 557,
+      "name": "경북 공공분양 청약 사전상담",
+      "provider": "경상북도",
+      "target": "경북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "경북"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 558,
+      "name": "경북 생애최초 주택구입 자금 상담",
+      "provider": "경상북도",
+      "target": "경북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "경북"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 559,
+      "name": "경북 신혼부부 내집마련 준비 지원",
+      "provider": "경상북도",
+      "target": "경북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "경북"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 560,
+      "name": "경북 무주택 청년 주거금융 안내",
+      "provider": "경상북도",
+      "target": "경북 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "경북"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경북 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 561,
+      "name": "경남 공공분양 청약 사전상담",
+      "provider": "경상남도",
+      "target": "경남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "경남"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 562,
+      "name": "경남 생애최초 주택구입 자금 상담",
+      "provider": "경상남도",
+      "target": "경남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "경남"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 563,
+      "name": "경남 신혼부부 내집마련 준비 지원",
+      "provider": "경상남도",
+      "target": "경남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "경남"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 564,
+      "name": "경남 무주택 청년 주거금융 안내",
+      "provider": "경상남도",
+      "target": "경남 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "경남"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "경남 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 565,
+      "name": "제주 공공분양 청약 사전상담",
+      "provider": "제주특별자치도",
+      "target": "제주 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "지역 공공분양 공고의 거주 요건과 신청 일정을 안내합니다.",
+      "policy_category": "청약",
+      "regions": [
+        "제주"
+      ],
+      "age_min": 19,
+      "age_max": 39,
+      "max_income": 60000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "제주 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 566,
+      "name": "제주 생애최초 주택구입 자금 상담",
+      "provider": "제주특별자치도",
+      "target": "제주 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "계약금, 중도금, 잔금 준비 계획을 지역 상담 창구에서 점검합니다.",
+      "policy_category": "구입자금",
+      "regions": [
+        "제주"
+      ],
+      "age_min": 25,
+      "age_max": 45,
+      "max_income": 70000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "제주 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 567,
+      "name": "제주 신혼부부 내집마련 준비 지원",
+      "provider": "제주특별자치도",
+      "target": "제주 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "신혼부부 공급유형의 소득, 자산, 서류 준비를 안내합니다.",
+      "policy_category": "공공주택",
+      "regions": [
+        "제주"
+      ],
+      "age_min": 30,
+      "age_max": 55,
+      "max_income": 85000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "제주 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
+      ]
+    },
+    {
+      "id": 568,
+      "name": "제주 무주택 청년 주거금융 안내",
+      "provider": "제주특별자치도",
+      "target": "제주 지역 무주택 청약 준비자 및 첫 주택 구입 예정자",
+      "benefit": "무주택 청년의 청약 준비와 구입자금 계획을 함께 점검합니다.",
+      "policy_category": "주거금융",
+      "regions": [
+        "제주"
+      ],
+      "age_min": 35,
+      "age_max": 70,
+      "max_income": 100000000,
+      "requires_homeless": true,
+      "source_url": "https://www.myhome.go.kr",
+      "reasons": [
+        "제주 희망 지역 공공분양 또는 첫 주택 구입 준비에 활용할 수 있습니다.",
+        "실제 접수 가능 여부는 지자체와 공식 공고 기준으로 확인해야 합니다."
       ]
     }
   ]
