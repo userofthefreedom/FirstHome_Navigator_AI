@@ -1,6 +1,11 @@
 import axios from 'axios';
+function normalizeApiBaseUrl(value) {
+    const fallback = 'http://127.0.0.1:8000/api';
+    const raw = (value || fallback).replace(/\/$/, '');
+    return raw.endsWith('/api') ? raw : `${raw}/api`;
+}
 const api = axios.create({
-    baseURL: (import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api').replace(/\/$/, ''),
+    baseURL: normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL),
     timeout: 10000,
     withCredentials: true,
 });

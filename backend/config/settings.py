@@ -30,11 +30,15 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-+kh8+(+yt5%-io_upre
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 
+def env_list(name, default=""):
+    return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
+
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
     "testserver",
-    "webshots-heading-jul-chip.trycloudflare.com",
+    ".trycloudflare.com",
+    *env_list("DJANGO_ALLOWED_HOSTS"),
 ]
 
 EXTERNAL_API_KEYS = {
@@ -64,12 +68,22 @@ FIRSTHOME_FIXTURE_FALLBACK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    *env_list("CORS_ALLOWED_ORIGINS"),
+]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.trycloudflare\.com$",
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = (
     *default_headers,
     "x-firsthome-client-id",
 )
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://*.trycloudflare.com",
+    *env_list("CSRF_TRUSTED_ORIGINS"),
+]
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
 REST_FRAMEWORK = {
@@ -116,7 +130,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "false").lower() == "true"
 
 ROOT_URLCONF = 'config.urls'
 

@@ -1,10 +1,9 @@
 <script setup>
-import { computed, onBeforeUnmount, onBeforeUnmount, onMounted, ref, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { Bookmark, Bot, Building2, ChevronRight, CalendarClock, Home, LogOut, MapPinned, Search, UserRound, WalletCards, X } from 'lucide-vue-next';
+import { Bookmark, Bot, Building2, ChevronRight, Home, LogOut, MapPinned, Search, UserRound, WalletCards } from 'lucide-vue-next';
 import FloatingCoachChat from '../components/FloatingCoachChat.vue';
 import { fetchHousingRecommendations } from '../api/firsthome';
-import { fetchFavorites, fetchNotices, fetchPolicies } from '../api/firsthome';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
 import { formatMoney } from '../utils/format';
@@ -20,15 +19,6 @@ const searchOpen = ref(false);
 const searchLoading = ref(false);
 const searchError = ref('');
 const searchRecommendations = ref([]);
-const searchText = ref('');
-const searchOpen = ref(false);
-const notificationOpen = ref(false);
-const activeNotices = ref([]);
-const activePolicies = ref([]);
-const favorites = ref([]);
-const headerError = ref('');
-const searchBox = ref(null);
-const notificationBox = ref(null);
 const displayName = computed(() => {
     if (profileStore.profile.name)
         return profileStore.profile.name;
@@ -37,82 +27,6 @@ const displayName = computed(() => {
     return '게스트';
 });
 const profileStatus = computed(() => (authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중'));
-const isProfileReady = computed(() => {
-    const profile = profileStore.profile;
-    return Boolean(
-        profile.name
-        && profile.preferred_regions?.length
-        && Number(profile.asset || 0) > 0
-        && Number(profile.annual_income || 0) > 0,
-    );
-});
-const searchResults = computed(() => {
-    const keyword = searchText.value.trim().toLowerCase();
-    if (!keyword)
-        return [];
-    const noticeResults = activeNotices.value
-        .filter((notice) => [notice.title, notice.region, notice.district, notice.provider, notice.supply_type, notice.housing_type]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword)))
-        .map((notice) => ({ type: 'notice', id: `notice-${notice.id}`, item: notice }));
-    const policyResults = activePolicies.value
-        .filter((policy) => [policy.name, policy.provider, policy.target, policy.policy_category, policy.benefit]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(keyword)))
-        .map((policy) => ({ type: 'policy', id: `policy-${policy.id}`, item: policy }));
-    return [...noticeResults, ...policyResults].slice(0, 6);
-});
-const upcomingDeadlines = computed(() => activeNotices.value
-    .map((notice) => ({ ...notice, daysLeft: daysUntil(notice.application_deadline) }))
-    .filter((notice) => notice.daysLeft >= 0 && notice.daysLeft <= 7)
-    .sort((a, b) => a.daysLeft - b.daysLeft || String(a.title).localeCompare(String(b.title), 'ko'))
-    .slice(0, 5));
-const savedNoticeCount = computed(() => favorites.value.filter((favorite) => favorite.favorite_type === 'notice').length);
-const notifications = computed(() => {
-    const items = [];
-    if (!isProfileReady.value) {
-        items.push({
-            id: 'profile',
-            tone: 'blue',
-            icon: UserRound,
-            title: '조건 입력을 마무리해 주세요',
-            description: '자산, 소득, 희망 지역이 채워지면 추천 정확도가 올라갑니다.',
-            to: '/profile',
-        });
-    }
-    upcomingDeadlines.value.forEach((notice) => {
-        items.push({
-            id: `deadline-${notice.id}`,
-            tone: notice.daysLeft <= 2 ? 'rose' : 'amber',
-            icon: CalendarClock,
-            title: notice.daysLeft === 0 ? '오늘 접수 마감' : `${notice.daysLeft}일 후 접수 마감`,
-            description: notice.title,
-            to: `/notices/${notice.id}`,
-        });
-    });
-    if (savedNoticeCount.value > 0) {
-        items.push({
-            id: 'favorites',
-            tone: 'emerald',
-            icon: Bookmark,
-            title: `관심 공고 ${savedNoticeCount.value}건 저장됨`,
-            description: '저장한 후보를 관심목록에서 다시 비교할 수 있습니다.',
-            to: '/favorites',
-        });
-    }
-    if (headerError.value) {
-        items.push({
-            id: 'api-error',
-            tone: 'amber',
-            icon: Bell,
-            title: '일부 알림을 불러오지 못했습니다',
-            description: headerError.value,
-            to: route.fullPath,
-        });
-    }
-    return items;
-});
-const notificationCount = computed(() => notifications.value.length);
 const menus = [
     { label: '대시보드', shortLabel: '홈', path: '/', icon: Home },
     { label: '조건 입력', shortLabel: '조건', path: '/profile', icon: UserRound },
@@ -138,64 +52,6 @@ function isActive(path) {
     if (path === '/')
         return route.path === '/';
     return route.path.startsWith(path);
-}
-function parseDate(value) {
-    const date = new Date(`${value}T00:00:00`);
-    return Number.isNaN(date.getTime()) ? null : date;
-}
-function daysUntil(value) {
-    const date = parseDate(value);
-    if (!date)
-        return Number.POSITIVE_INFINITY;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return Math.ceil((date.getTime() - today.getTime()) / 86400000);
-}
-function deadlineLabel(value) {
-    const days = daysUntil(value);
-    if (!Number.isFinite(days))
-        return '마감일 확인 필요';
-    if (days === 0)
-        return '오늘 마감';
-    if (days > 0)
-        return `D-${days}`;
-    return '마감';
-}
-function selectSearchResult(result) {
-    if (result.type === 'policy') {
-        searchText.value = result.item.name;
-        searchOpen.value = false;
-        void router.push('/funding');
-        return;
-    }
-    searchText.value = result.item.title;
-    searchOpen.value = false;
-    void router.push(`/notices/${result.item.id}`);
-}
-function submitSearch() {
-    const firstResult = searchResults.value[0];
-    if (firstResult) {
-        selectSearchResult(firstResult);
-        return;
-    }
-    if (searchText.value.trim()) {
-        searchOpen.value = true;
-    }
-}
-function clearSearch() {
-    searchText.value = '';
-    searchOpen.value = false;
-}
-function openNotification(item) {
-    notificationOpen.value = false;
-    void router.push(item.to);
-}
-function handleDocumentClick(event) {
-    const target = event.target;
-    if (searchBox.value && !searchBox.value.contains(target))
-        searchOpen.value = false;
-    if (notificationBox.value && !notificationBox.value.contains(target))
-        notificationOpen.value = false;
 }
 async function handleLogout() {
     await authStore.logout();
@@ -250,26 +106,6 @@ function handleDocumentPointer(event) {
     if (searchBox.value && !searchBox.value.contains(event.target))
         closeSearch();
 }
-async function loadHeaderData() {
-    headerError.value = '';
-    const [noticeResult, policyResult, favoriteResult] = await Promise.allSettled([
-        fetchNotices({ active: '1' }),
-        fetchPolicies(),
-        fetchFavorites(),
-    ]);
-    if (noticeResult.status === 'fulfilled') {
-        activeNotices.value = noticeResult.value;
-    }
-    else {
-        headerError.value = '공고 데이터를 확인할 수 없습니다.';
-    }
-    if (policyResult.status === 'fulfilled') {
-        activePolicies.value = policyResult.value;
-    }
-    if (favoriteResult.status === 'fulfilled') {
-        favorites.value = favoriteResult.value;
-    }
-}
 onMounted(async () => {
     document.addEventListener('pointerdown', handleDocumentPointer);
     let session = null;
@@ -284,14 +120,6 @@ onMounted(async () => {
         await profileStore.hydrateProfile();
     }
     await syncCurrentSelectionWithAccount(session?.account_state);
-    await loadHeaderData();
-    document.addEventListener('click', handleDocumentClick);
-});
-onBeforeUnmount(() => {
-    document.removeEventListener('click', handleDocumentClick);
-});
-onBeforeUnmount(() => {
-    document.removeEventListener('pointerdown', handleDocumentPointer);
 });
 onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', handleDocumentPointer);

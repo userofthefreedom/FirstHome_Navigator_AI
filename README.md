@@ -117,6 +117,10 @@ cp .env.example .env
 ```env
 DJANGO_SECRET_KEY=change-me
 DJANGO_DEBUG=true
+DJANGO_ALLOWED_HOSTS=
+CORS_ALLOWED_ORIGINS=
+CSRF_TRUSTED_ORIGINS=
+CORS_ALLOW_ALL_ORIGINS=false
 
 DATA_GO_KR_SERVICE_KEY=
 FINLIFE_API_KEY=
@@ -155,6 +159,12 @@ VITE_KAKAO_MAP_JS_KEY=
 ```
 
 Vite에서는 브라우저 코드에서 사용할 환경 변수 이름이 `VITE_`로 시작해야 합니다.
+
+Cloudflare Tunnel로 공유할 때는 백엔드 터널 주소를 `VITE_API_BASE_URL`에 넣습니다. `/api`를 붙여도 되고 생략해도 됩니다.
+
+```env
+VITE_API_BASE_URL=https://your-backend-tunnel.trycloudflare.com
+```
 
 `VITE_KAKAO_MAP_JS_KEY`는 Kakao Map JavaScript SDK용 키입니다. Kakao Developers의 JavaScript 키 설정에는 프론트 접속 도메인을 등록합니다.
 
@@ -269,6 +279,171 @@ npm run dev -- --host 127.0.0.1
 ```
 
 프론트엔드는 기본적으로 `http://localhost:8000/api`를 호출합니다. 주소를 바꾸려면 `frontend/.env`의 `VITE_API_BASE_URL`을 수정한 뒤 프론트 서버를 재시작합니다.
+
+---
+
+## 7.1 Cloudflare Tunnel로 임시 공개
+
+발표나 외부 공유용으로 로컬 서버를 Cloudflare Tunnel에 연결할 수 있습니다. 이 프로젝트의 기본 터미널은 Git Bash 기준입니다.
+
+핵심만 먼저 정리하면 다음과 같습니다.
+
+| 터미널 | 실행할 것 | 용도 |
+|---|---|---|
+| 1 | Django 백엔드 | 로컬 API 서버 |
+| 2 | 백엔드 터널 | `frontend/.env`에 넣을 API 주소 생성 |
+| 3 | Vite 프론트 | 로컬 화면 서버 |
+| 4 | 프론트 터널 | 사람들에게 공유할 접속 주소 생성 |
+
+중요한 구분:
+
+- **백엔드 터널 주소**: `frontend/.env`의 `VITE_API_BASE_URL`에 넣습니다.
+- **프론트 터널 주소**: 외부 사용자에게 공유합니다.
+
+### 7.1.1 처음 한 번만 cloudflared 설치/인식 확인
+
+```bash
+cloudflared --version
+```
+
+정상적으로 버전이 나오면 바로 7.1.2로 넘어갑니다. `bash: cloudflared: command not found`가 나오면 아래 명령으로 설치합니다.
+
+```bash
+winget install --id Cloudflare.cloudflared --accept-package-agreements --accept-source-agreements
+```
+
+설치 후에는 Git Bash를 완전히 닫고 새로 연 뒤 다시 확인합니다.
+
+```bash
+cloudflared --version
+```
+
+`winget`으로 설치되어 있는데도 Git Bash에서 `cloudflared`를 못 찾는 경우가 있습니다. 설치된 실행 파일 위치를 찾아 직접 실행합니다.
+
+```bash
+find "/c/Program Files" "/c/Program Files (x86)" "/c/Users/$USERNAME/AppData/Local/Microsoft/WinGet/Packages" -iname "cloudflared.exe" 2>/dev/null
+```
+
+WinGet 설치 환경에서는 보통 다음과 비슷한 경로가 나옵니다.
+
+```text
+/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe
+```
+
+이 경우 백엔드 터널은 다음처럼 실행합니다.
+
+```bash
+"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe" tunnel --url http://localhost:8000
+```
+
+프론트 터널은 다음처럼 실행합니다.
+
+```bash
+"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe" tunnel --url http://localhost:5173
+```
+
+매번 긴 경로를 쓰기 싫으면 현재 Git Bash 세션에서만 alias를 잡습니다.
+
+```bash
+alias cloudflared='"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe"'
+```
+
+이후에는 `cloudflared tunnel --url ...` 형식으로 실행할 수 있습니다.
+
+### 7.1.2 백엔드 터널 주소 만들기
+
+1. 첫 번째 터미널에서 백엔드를 실행합니다.
+
+```bash
+cd backend
+python manage.py migrate
+python manage.py runserver localhost:8000
+```
+
+2. 두 번째 터미널에서 백엔드 터널을 실행합니다.
+
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+
+실행하면 아래처럼 `trycloudflare.com` 주소가 출력됩니다. 이 주소가 **백엔드 터널 주소**입니다.
+
+```text
+https://solution-isle-int-excessive.trycloudflare.com
+```
+
+위 주소는 예시입니다. 실제로는 본인 터미널에 출력된 주소를 사용합니다.
+
+3. 출력된 백엔드 터널 주소를 `frontend/.env`에 넣습니다.
+
+백엔드 터널 주소가 `https://solution-isle-int-excessive.trycloudflare.com`로 나왔다면 `frontend/.env`를 다음처럼 수정합니다. `/api`는 생략해도 프론트 API 클라이언트가 자동으로 붙입니다.
+
+```env
+VITE_API_BASE_URL=https://solution-isle-int-excessive.trycloudflare.com
+VITE_KAKAO_MAP_JS_KEY=본인_KAKAO_JAVASCRIPT_KEY
+```
+
+### 7.1.3 프론트 터널 주소 만들기
+
+4. 세 번째 터미널에서 프론트를 재시작합니다.
+
+```bash
+cd frontend
+npm run dev
+```
+
+5. 네 번째 터미널에서 프론트 터널을 실행합니다.
+
+```bash
+cloudflared tunnel --url http://localhost:5173
+```
+
+6. 출력된 프론트 터널 주소를 공유합니다.
+
+프론트 터널에서 아래처럼 주소가 출력되면 이 주소가 **사람들에게 공유할 서비스 주소**입니다.
+
+```text
+https://example-frontend.trycloudflare.com
+```
+
+7. Kakao Developers에 프론트 터널 주소를 등록합니다.
+
+청약 지도는 Kakao Map JavaScript SDK를 사용하므로, 프론트 터널 주소를 Kakao Developers의 JavaScript 키 허용 도메인에 반드시 추가해야 합니다.
+
+등록 위치:
+
+```text
+Kakao Developers > 내 애플리케이션 > 앱 설정 > 플랫폼 > Web > 사이트 도메인
+```
+
+예를 들어 프론트 터널 주소가 `https://example-frontend.trycloudflare.com`라면 사이트 도메인에 다음 값을 추가합니다.
+
+```text
+https://example-frontend.trycloudflare.com
+```
+
+등록 후 프론트 페이지를 새로고침합니다. Kakao 도메인 등록이 빠지면 서비스는 열려도 청약 지도 화면이 비어 있거나 Kakao 지도 로딩 오류가 날 수 있습니다.
+
+### 7.1.4 종료 방법
+
+공유를 끝낼 때는 열어둔 4개 터미널을 각각 종료합니다.
+
+| 터미널 | 종료 방법 |
+|---|---|
+| Django 백엔드 | `Ctrl + C` |
+| 백엔드 터널 | `Ctrl + C` |
+| Vite 프론트 | `Ctrl + C` |
+| 프론트 터널 | `Ctrl + C` |
+
+Cloudflare quick tunnel은 터미널을 종료하면 외부 주소도 더 이상 접속되지 않습니다. 다음에 다시 실행하면 백엔드/프론트 터널 주소가 새로 발급될 수 있으므로 `frontend/.env`와 Kakao Developers 사이트 도메인을 다시 확인합니다.
+
+주의할 점:
+
+- 백엔드 터널 주소는 서버를 다시 열 때마다 바뀔 수 있으므로 `frontend/.env`를 수정한 뒤 프론트를 반드시 재시작합니다.
+- 프론트 터널 주소도 서버를 다시 열 때마다 바뀔 수 있습니다.
+- Kakao Developers의 사이트 도메인은 프론트 터널 주소가 바뀔 때마다 다시 추가해야 합니다.
+- Django는 기본적으로 `*.trycloudflare.com` 호스트와 CORS/CSRF origin을 허용하도록 설정되어 있습니다. 별도 고정 도메인을 쓰면 `backend/.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 추가합니다.
+- 로그인이나 세션이 외부 주소에서 이상하게 동작하면 브라우저 쿠키 정책, HTTPS 여부, Django 세션/CSRF 쿠키 설정을 함께 확인해야 합니다.
 
 ---
 
@@ -551,9 +726,10 @@ pip install -r backend/requirements.txt
 확인할 것:
 
 - Django 서버가 `localhost:8000`에서 실행 중인지
-- `frontend/.env`의 `VITE_API_BASE_URL`이 맞는지
+- `frontend/.env`의 `VITE_API_BASE_URL`이 백엔드 주소를 가리키는지
 - 프론트 접속 주소가 `http://localhost:5173/` 또는 `http://127.0.0.1:5173/`인지
-- `backend/config/settings.py`의 `CORS_ALLOWED_ORIGINS`에 접속 주소가 포함되어 있는지
+- Cloudflare Tunnel을 쓰는 경우 백엔드 터널 주소를 바꾼 뒤 프론트 서버를 재시작했는지
+- 고정 배포 도메인을 쓰는 경우 `backend/.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 접속 주소가 포함되어 있는지
 - Django 서버를 CORS 설정 변경 후 재시작했는지
 
 ### 청약 지도 화면이 비어 있거나 Kakao 지도가 뜨지 않음

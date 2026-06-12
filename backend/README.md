@@ -101,6 +101,9 @@ cp .env.example .env
 |---|---|
 | `DJANGO_SECRET_KEY` | Django secret key |
 | `DJANGO_DEBUG` | local 개발은 `true`, 배포는 `false` |
+| `DJANGO_ALLOWED_HOSTS` | 고정 배포 도메인이나 별도 터널 호스트를 쉼표로 추가 |
+| `CORS_ALLOWED_ORIGINS` | 프론트 배포 origin을 쉼표로 추가 |
+| `CSRF_TRUSTED_ORIGINS` | 프론트 배포 origin을 쉼표로 추가 |
 | `DATA_GO_KR_SERVICE_KEY` | LH 공고 수집용 공공데이터포털 API 키 |
 | `FINLIFE_API_KEY` | 금융감독원 금융상품 API 키 |
 | `YOUTH_POLICY_API_KEY` | 온통청년 정책 API 키 |
@@ -120,6 +123,8 @@ AI_REQUEST_TIMEOUT=30
 ```
 
 HuggingFace/local model serving은 현재 단계에서 사용하지 않습니다.
+
+Cloudflare Tunnel 임시 공유에서는 `*.trycloudflare.com` 호스트와 origin을 기본 허용합니다. 고정 도메인을 쓰거나 Tunnel이 아닌 배포 환경에서는 `.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 실제 프론트/백엔드 주소를 추가합니다.
 
 ## Install
 

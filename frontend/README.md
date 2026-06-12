@@ -149,6 +149,12 @@ VITE_KAKAO_MAP_JS_KEY=
 
 Vite에서 브라우저 코드에 노출되는 환경 변수는 `VITE_` 접두사가 필요합니다.
 
+Cloudflare Tunnel로 공유할 때는 백엔드 터널 주소를 넣습니다. `/api`가 빠져 있어도 프론트 API client가 자동으로 붙입니다.
+
+```env
+VITE_API_BASE_URL=https://your-backend-tunnel.trycloudflare.com
+```
+
 Kakao Developers의 JavaScript 키 설정에는 개발 중 접속하는 도메인을 등록합니다.
 
 ```text
