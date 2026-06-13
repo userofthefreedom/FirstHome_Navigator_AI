@@ -1,0 +1,2048 @@
+{
+  "targetUrl": "https://bit-county-makers-utilize.trycloudflare.com",
+  "apiBase": "https://seeing-graduation-investigation-upgrading.trycloudflare.com/api",
+  "runStamp": "2026-06-13T18-02-23-417Z",
+  "concurrentUsers": 30,
+  "firstPick": {
+    "noticeId": 1,
+    "title": "e편한세상 분당 퍼스트빌리지(성남낙생 A-1BL) 신혼희망타운(공공분양) 입주자모집공고"
+  },
+  "browser": {
+    "steps": [
+      {
+        "label": "dashboard",
+        "ok": true,
+        "loadingGoneMs": 14,
+        "readyMs": 14,
+        "totalMs": 3196
+      },
+      {
+        "label": "profile input",
+        "ok": true,
+        "loadingGoneMs": 7,
+        "readyMs": 7,
+        "totalMs": 945
+      },
+      {
+        "label": "recommendations",
+        "ok": true,
+        "loadingGoneMs": 8,
+        "readyMs": 8,
+        "totalMs": 1262
+      },
+      {
+        "label": "notice detail",
+        "ok": true,
+        "loadingGoneMs": 9,
+        "readyMs": 9,
+        "totalMs": 1985
+      },
+      {
+        "label": "funding roadmap",
+        "ok": true,
+        "loadingGoneMs": 8,
+        "readyMs": 8,
+        "totalMs": 3764
+      },
+      {
+        "label": "ai coach",
+        "ok": true,
+        "loadingGoneMs": 8,
+        "readyMs": 8,
+        "totalMs": 1789
+      },
+      {
+        "label": "map",
+        "ok": true,
+        "loadingGoneMs": 7,
+        "readyMs": 7,
+        "totalMs": 2416
+      },
+      {
+        "label": "favorites",
+        "ok": true,
+        "loadingGoneMs": 6,
+        "readyMs": 6,
+        "totalMs": 964
+      },
+      {
+        "label": "signup/login screen",
+        "ok": true,
+        "readyMs": 990,
+        "totalMs": 990,
+        "note": "Auth page availability checked. Account mutation is intentionally not repeated in every load check."
+      },
+      {
+        "label": "chatbot open and response",
+        "ok": true,
+        "loadingGoneMs": 4,
+        "readyMs": 4,
+        "totalMs": 2105
+      }
+    ],
+    "browserIssues": []
+  },
+  "load": {
+    "totalMs": 125560,
+    "summary": {
+      "frontend:home": {
+        "total": 30,
+        "ok": 30,
+        "failed": 0,
+        "p50Ms": 390,
+        "p90Ms": 470,
+        "p95Ms": 490,
+        "maxMs": 510,
+        "failures": []
+      },
+      "api:housing": {
+        "total": 30,
+        "ok": 28,
+        "failed": 2,
+        "p50Ms": 12120,
+        "p90Ms": 105225,
+        "p95Ms": 107193,
+        "maxMs": 108452,
+        "failures": [
+          {
+            "label": "api:housing",
+            "ok": false,
+            "status": 429,
+            "ms": 499,
+            "bytes": 0,
+            "sample": ""
+          },
+          {
+            "label": "api:housing",
+            "ok": false,
+            "status": 429,
+            "ms": 498,
+            "bytes": 0,
+            "sample": ""
+          }
+        ]
+      },
+      "api:notices-active": {
+        "total": 30,
+        "ok": 29,
+        "failed": 1,
+        "p50Ms": 13578,
+        "p90Ms": 107526,
+        "p95Ms": 109426,
+        "maxMs": 119150,
+        "failures": [
+          {
+            "label": "api:notices-active",
+            "ok": false,
+            "status": 429,
+            "ms": 491,
+            "bytes": 0,
+            "sample": ""
+          }
+        ]
+      },
+      "api:map-notices": {
+        "total": 30,
+        "ok": 28,
+        "failed": 2,
+        "p50Ms": 10334,
+        "p90Ms": 107563,
+        "p95Ms": 108587,
+        "maxMs": 108816,
+        "failures": [
+          {
+            "label": "api:map-notices",
+            "ok": false,
+            "status": 429,
+            "ms": 758,
+            "bytes": 0,
+            "sample": ""
+          },
+          {
+            "label": "api:map-notices",
+            "ok": false,
+            "status": 429,
+            "ms": 759,
+            "bytes": 0,
+            "sample": ""
+          }
+        ]
+      },
+      "api:notice-detail": {
+        "total": 30,
+        "ok": 29,
+        "failed": 1,
+        "p50Ms": 12838,
+        "p90Ms": 107887,
+        "p95Ms": 108410,
+        "maxMs": 116170,
+        "failures": [
+          {
+            "label": "api:notice-detail",
+            "ok": false,
+            "status": 429,
+            "ms": 494,
+            "bytes": 0,
+            "sample": ""
+          }
+        ]
+      },
+      "api:funding": {
+        "total": 30,
+        "ok": 27,
+        "failed": 3,
+        "p50Ms": 12102,
+        "p90Ms": 105196,
+        "p95Ms": 107548,
+        "maxMs": 107894,
+        "failures": [
+          {
+            "label": "api:funding",
+            "ok": false,
+            "status": 524,
+            "ms": 125502,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:funding",
+            "ok": false,
+            "status": 429,
+            "ms": 793,
+            "bytes": 0,
+            "sample": ""
+          },
+          {
+            "label": "api:funding",
+            "ok": false,
+            "status": 429,
+            "ms": 789,
+            "bytes": 0,
+            "sample": ""
+          }
+        ]
+      },
+      "api:ai-coach": {
+        "total": 30,
+        "ok": 19,
+        "failed": 11,
+        "p50Ms": 112980,
+        "p90Ms": 124187,
+        "p95Ms": 125305,
+        "maxMs": 125305,
+        "failures": [
+          {
+            "label": "api:ai-coach",
+            "ok": false,
+            "status": 524,
+            "ms": 125470,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:ai-coach",
+            "ok": false,
+            "status": 524,
+            "ms": 125473,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:ai-coach",
+            "ok": false,
+            "status": 524,
+            "ms": 125477,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:ai-coach",
+            "ok": false,
+            "status": 524,
+            "ms": 125467,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:ai-coach",
+            "ok": false,
+            "status": 524,
+            "ms": 125446,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          }
+        ]
+      },
+      "api:chatbot": {
+        "total": 30,
+        "ok": 13,
+        "failed": 17,
+        "p50Ms": 110217,
+        "p90Ms": 121909,
+        "p95Ms": 122054,
+        "maxMs": 122054,
+        "failures": [
+          {
+            "label": "api:chatbot",
+            "ok": false,
+            "status": 524,
+            "ms": 125478,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:chatbot",
+            "ok": false,
+            "status": 524,
+            "ms": 125470,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:chatbot",
+            "ok": false,
+            "status": 524,
+            "ms": 125465,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:chatbot",
+            "ok": false,
+            "status": 524,
+            "ms": 125452,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          },
+          {
+            "label": "api:chatbot",
+            "ok": false,
+            "status": 524,
+            "ms": 125470,
+            "bytes": 963,
+            "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+          }
+        ]
+      }
+    },
+    "raw": [
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 403,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 533,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 6106,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 3484,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 1366,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 1885,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 98423,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 100254,
+        "bytes": 479
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 390,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 527,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 1021,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 3362,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 2489,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 3141,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 101535,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 107965,
+        "bytes": 513
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 388,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 1403,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 3143,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 3359,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 4991,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 3356,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 100029,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 106898,
+        "bytes": 473
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 385,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 3175,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 4266,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 3793,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 4610,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 6178,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 102254,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 103426,
+        "bytes": 519
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 382,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 8421,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 6857,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 4329,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 5726,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 5360,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 103705,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 100753,
+        "bytes": 467
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 379,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 5011,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 5341,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 6167,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 7602,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 4636,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 97326,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 108582,
+        "bytes": 504
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 377,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 5409,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 6462,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 5777,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 7199,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 6185,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 98730,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 110217,
+        "bytes": 509
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 374,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 6121,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 8764,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 7327,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 8369,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 6476,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 112173,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 114626,
+        "bytes": 543
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 371,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 7281,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 10248,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 7252,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 7987,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 9175,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 115552,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 116823,
+        "bytes": 503
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 368,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 8030,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 9105,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 7269,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 9467,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 9490,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 110921,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125478,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 451,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 9902,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 12093,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 9969,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 11748,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 8032,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 121704,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 118293,
+        "bytes": 494
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 363,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 9916,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 9856,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 9175,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 10647,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 9969,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 118307,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125470,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 361,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 9128,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 13265,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 10284,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 11027,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 12102,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 116628,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 114982,
+        "bytes": 460
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 359,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 12493,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 11386,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 10701,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 12448,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 11068,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 112980,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125465,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 357,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 12120,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 15040,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 10334,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 12838,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 15086,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 120260,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 121909,
+        "bytes": 458
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 355,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 12915,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 13578,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 15844,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 16159,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 13264,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 123885,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": true,
+        "status": 200,
+        "ms": 122054,
+        "bytes": 2137
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 353,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 15069,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 15794,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 12639,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 14307,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 15070,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125470,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125452,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 436,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": false,
+        "status": 429,
+        "ms": 499,
+        "bytes": 0,
+        "sample": ""
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 15427,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 13995,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 13926,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 13245,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 125305,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125470,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 434,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 14341,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 16525,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": false,
+        "status": 429,
+        "ms": 758,
+        "bytes": 0,
+        "sample": ""
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": false,
+        "status": 429,
+        "ms": 494,
+        "bytes": 0,
+        "sample": ""
+      },
+      {
+        "label": "api:funding",
+        "ok": false,
+        "status": 524,
+        "ms": 125502,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 120590,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125485,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 510,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": false,
+        "status": 429,
+        "ms": 498,
+        "bytes": 0,
+        "sample": ""
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 14664,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": false,
+        "status": 429,
+        "ms": 759,
+        "bytes": 0,
+        "sample": ""
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 16888,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": false,
+        "status": 429,
+        "ms": 793,
+        "bytes": 0,
+        "sample": ""
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": true,
+        "status": 200,
+        "ms": 124187,
+        "bytes": 5633
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125454,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 490,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 15476,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": false,
+        "status": 429,
+        "ms": 491,
+        "bytes": 0,
+        "sample": ""
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 15121,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 17063,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": false,
+        "status": 429,
+        "ms": 789,
+        "bytes": 0,
+        "sample": ""
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125473,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125497,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 476,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 103722,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 92331,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 16580,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 17390,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 91665,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125477,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125459,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 424,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 93842,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 17243,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 94071,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 95460,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 93142,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125467,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125458,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 470,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 16535,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 92564,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 94066,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 94422,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 93097,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125446,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125455,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 469,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 104596,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 105564,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 104886,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 104562,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 105196,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125451,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125470,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 467,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 105225,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 107190,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 104629,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 105190,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 104635,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125452,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125478,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 464,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 107193,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 109426,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 108587,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 107887,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 104705,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125468,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125458,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 462,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 105206,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 107526,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 107563,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 108410,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 107894,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125480,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125476,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 460,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 108452,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 119150,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 108816,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 116170,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 107548,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125454,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125445,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "frontend:home",
+        "ok": true,
+        "status": 200,
+        "ms": 408,
+        "bytes": 442
+      },
+      {
+        "label": "api:housing",
+        "ok": true,
+        "status": 200,
+        "ms": 93826,
+        "bytes": 65601
+      },
+      {
+        "label": "api:notices-active",
+        "ok": true,
+        "status": 200,
+        "ms": 96681,
+        "bytes": 118902
+      },
+      {
+        "label": "api:map-notices",
+        "ok": true,
+        "status": 200,
+        "ms": 102430,
+        "bytes": 861702
+      },
+      {
+        "label": "api:notice-detail",
+        "ok": true,
+        "status": 200,
+        "ms": 94745,
+        "bytes": 2627
+      },
+      {
+        "label": "api:funding",
+        "ok": true,
+        "status": 200,
+        "ms": 100193,
+        "bytes": 6576
+      },
+      {
+        "label": "api:ai-coach",
+        "ok": false,
+        "status": 524,
+        "ms": 125460,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      },
+      {
+        "label": "api:chatbot",
+        "ok": false,
+        "status": 524,
+        "ms": 125451,
+        "bytes": 963,
+        "sample": "{\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-524/\",\"title\":\"Error 524: A timeout occurred\",\"status\":524,\"detail\":\"The origin web server did not return a complete response within the 120-second Proxy Read Timeout window. The connecti"
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "targetUrl": "https://bit-county-makers-utilize.trycloudflare.com",
+  "runStamp": "2026-06-13T18-07-11-485Z",
+  "steps": [
+    {
+      "label": "open auth page",
+      "ok": true,
+      "ms": 2587
+    },
+    {
+      "label": "switch to register and submit",
+      "ok": false,
+      "ms": 610,
+      "error": "locator.click: Error: strict mode violation: locator('button[type=\"submit\"]') resolved to 2 elements:\n    1) <button type=\"submit\" class=\"mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60\">…</button> aka getByRole('button', { name: '로그인' })\n    2) <button disabled title=\"전송\" type=\"submit\" class=\"flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50\">…</button> aka getByRole('button', { name: '전송' })\n\nCall log:\n\u001b[2m  - waiting for locator('button[type=\"submit\"]')\u001b[22m\n"
+    },
+    {
+      "label": "logout if visible",
+      "ok": true,
+      "ms": 975
+    }
+  ],
+  "issues": [],
+  "logoutTextChanged": false
+}

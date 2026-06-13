@@ -1,0 +1,23 @@
+{
+  "targetUrl": "https://bit-county-makers-utilize.trycloudflare.com",
+  "runStamp": "2026-06-13T18-08-39-612Z",
+  "steps": [
+    {
+      "label": "open auth page",
+      "ok": true,
+      "ms": 2564
+    },
+    {
+      "label": "switch to register and submit",
+      "ok": true,
+      "ms": 1621
+    },
+    {
+      "label": "logout if visible",
+      "ok": true,
+      "ms": 2258
+    }
+  ],
+  "issues": [],
+  "logoutTextChanged": true
+}
