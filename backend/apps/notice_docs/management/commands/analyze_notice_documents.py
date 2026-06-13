@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 
 from apps.notice_docs.services import analyze_notice_document, notice_analysis_summary
 from apps.notices.models import HousingNotice
+from apps.rules.cache_service import clear_firsthome_cache
 
 
 class Command(BaseCommand):
@@ -104,6 +105,8 @@ class Command(BaseCommand):
             )
 
         self._write_reports(rows, options)
+        if analyzed:
+            clear_firsthome_cache()
         self.stdout.write(self.style.SUCCESS(f"Finished: {analyzed} analyzed, {failed} failed."))
 
     def _write_reports(self, rows: list[dict[str, Any]], options: dict[str, Any]) -> None:

@@ -198,8 +198,10 @@ DB를 준비하고 서버를 실행합니다.
 cd backend
 python manage.py check
 python manage.py migrate
-python manage.py runserver localhost:8000
+python manage.py runserver 127.0.0.1:8000
 ```
+
+위 명령은 개발용 실행입니다. Cloudflare Tunnel로 외부에 공유하거나 발표장에서 여러 명이 동시에 접속하는 경우에는 7.1의 `waitress` 실행 방식을 사용합니다.
 
 확인 URL:
 
@@ -290,7 +292,7 @@ npm run dev -- --host 127.0.0.1
 
 | 터미널 | 실행할 것 | 용도 |
 |---|---|---|
-| 1 | Django 백엔드 | 로컬 API 서버 |
+| 1 | Waitress 백엔드 | 발표용 로컬 API 서버 |
 | 2 | 백엔드 터널 | `frontend/.env`에 넣을 API 주소 생성 |
 | 3 | Vite 프론트 | 로컬 화면 서버 |
 | 4 | 프론트 터널 | 사람들에게 공유할 접속 주소 생성 |
@@ -333,7 +335,7 @@ WinGet 설치 환경에서는 보통 다음과 비슷한 경로가 나옵니다.
 이 경우 백엔드 터널은 다음처럼 실행합니다.
 
 ```bash
-"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe" tunnel --url http://localhost:8000
+"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe" tunnel --url http://127.0.0.1:8000
 ```
 
 프론트 터널은 다음처럼 실행합니다.
@@ -350,23 +352,38 @@ alias cloudflared='"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudf
 
 이후에는 `cloudflared tunnel --url ...` 형식으로 실행할 수 있습니다.
 
-### 7.1.2 백엔드 터널 주소 만들기
+### 7.1.2 발표용 백엔드 실행
 
-1. 첫 번째 터미널에서 백엔드를 실행합니다.
+Cloudflare Tunnel로 외부에 공유할 때는 Django 개발 서버(`runserver`)보다 WSGI 서버인 `waitress`로 백엔드를 실행합니다. `runserver`는 개발 편의를 위한 서버라 자동 리로드와 동시 요청 처리에서 발표용으로 불안정할 수 있습니다. `waitress`는 같은 Django 앱을 더 안정적으로 HTTP 요청에 연결해 줍니다.
+
+1. 첫 번째 터미널에서 가상환경을 켜고 백엔드를 실행합니다.
 
 ```bash
+source .venv/Scripts/activate
 cd backend
 python manage.py migrate
-python manage.py runserver localhost:8000
+waitress-serve --listen=127.0.0.1:8000 config.wsgi:application
 ```
 
-2. 두 번째 터미널에서 백엔드 터널을 실행합니다.
+`waitress-serve` 명령을 찾지 못하면 패키지를 다시 설치합니다.
 
 ```bash
-cloudflared tunnel --url http://localhost:8000
+pip install -r requirements.txt
 ```
 
-실행하면 아래처럼 `trycloudflare.com` 주소가 출력됩니다. 이 주소가 **백엔드 터널 주소**입니다.
+급하게 개발 서버로만 확인해야 한다면 아래처럼 자동 리로드를 끄고 실행합니다. 다만 발표용으로는 `waitress`를 우선 사용합니다.
+
+```bash
+python manage.py runserver 127.0.0.1:8000 --noreload
+```
+
+2. 두 번째 터미널에서 백엔드 터널을 실행합니다. 백엔드 터널은 `localhost` 대신 반드시 `127.0.0.1`을 사용합니다.
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:8000
+```
+
+실행하면 아래와 유사한 `trycloudflare.com` 주소가 출력됩니다. 이 주소가 **백엔드 터널 주소**입니다.
 
 ```text
 https://solution-isle-int-excessive.trycloudflare.com
@@ -424,13 +441,38 @@ https://example-frontend.trycloudflare.com
 
 등록 후 프론트 페이지를 새로고침합니다. Kakao 도메인 등록이 빠지면 서비스는 열려도 청약 지도 화면이 비어 있거나 Kakao 지도 로딩 오류가 날 수 있습니다.
 
-### 7.1.4 종료 방법
+### 7.1.4 Cloudflare 필수 backend/.env 설정
+
+Cloudflare Tunnel로 프론트와 백엔드를 서로 다른 `trycloudflare.com` 주소로 열면, 로그인/회원가입/세션 저장/CSRF 요청이 브라우저의 cross-site 쿠키 정책을 받습니다. 따라서 `backend/.env`에는 **프론트 터널 주소**를 기준으로 아래 값을 넣어야 합니다.
+
+예를 들어 사용자가 접속할 프론트 주소가 `https://plastics-lightweight-chorus-wellington.trycloudflare.com`이면 다음처럼 설정합니다.
+
+```env
+CORS_ALLOWED_ORIGINS=https://plastics-lightweight-chorus-wellington.trycloudflare.com
+CSRF_TRUSTED_ORIGINS=https://plastics-lightweight-chorus-wellington.trycloudflare.com
+SESSION_COOKIE_SAMESITE=None
+SESSION_COOKIE_SECURE=true
+CSRF_COOKIE_SAMESITE=None
+CSRF_COOKIE_SECURE=true
+```
+
+주의할 점:
+
+- `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에는 백엔드 터널 주소가 아니라 **브라우저에서 접속하는 프론트 터널 주소**를 넣습니다.
+- 위 값을 바꾼 뒤에는 백엔드 서버를 재시작해야 합니다.
+- 백엔드 터널은 `localhost` 대신 반드시 `127.0.0.1`로 실행합니다.
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:8000
+```
+
+### 7.1.5 종료 방법
 
 공유를 끝낼 때는 열어둔 4개 터미널을 각각 종료합니다.
 
 | 터미널 | 종료 방법 |
 |---|---|
-| Django 백엔드 | `Ctrl + C` |
+| Waitress 백엔드 | `Ctrl + C` |
 | 백엔드 터널 | `Ctrl + C` |
 | Vite 프론트 | `Ctrl + C` |
 | 프론트 터널 | `Ctrl + C` |
@@ -442,8 +484,8 @@ Cloudflare quick tunnel은 터미널을 종료하면 외부 주소도 더 이상
 - 백엔드 터널 주소는 서버를 다시 열 때마다 바뀔 수 있으므로 `frontend/.env`를 수정한 뒤 프론트를 반드시 재시작합니다.
 - 프론트 터널 주소도 서버를 다시 열 때마다 바뀔 수 있습니다.
 - Kakao Developers의 사이트 도메인은 프론트 터널 주소가 바뀔 때마다 다시 추가해야 합니다.
-- Django는 기본적으로 `*.trycloudflare.com` 호스트와 CORS/CSRF origin을 허용하도록 설정되어 있습니다. 별도 고정 도메인을 쓰면 `backend/.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 추가합니다.
-- 로그인이나 세션이 외부 주소에서 이상하게 동작하면 브라우저 쿠키 정책, HTTPS 여부, Django 세션/CSRF 쿠키 설정을 함께 확인해야 합니다.
+- 로그인/회원가입/세션 저장이 이상하면 `backend/.env`의 `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `SESSION_COOKIE_SAMESITE`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SAMESITE`, `CSRF_COOKIE_SECURE` 값을 먼저 확인합니다.
+- Cloudflare 공유 중에는 백엔드 터널을 `cloudflared tunnel --url http://127.0.0.1:8000`으로 실행합니다. `localhost`를 쓰면 환경에 따라 origin 연결이 불안정할 수 있습니다.
 
 ---
 
@@ -456,7 +498,15 @@ Cloudflare quick tunnel은 터미널을 종료하면 외부 주소도 더 이상
 ```bash
 source .venv/Scripts/activate
 cd backend
-python manage.py runserver localhost:8000
+python manage.py runserver 127.0.0.1:8000
+```
+
+Cloudflare로 발표/공유할 때는 백엔드를 다음처럼 실행합니다.
+
+```bash
+source .venv/Scripts/activate
+cd backend
+waitress-serve --listen=127.0.0.1:8000 config.wsgi:application
 ```
 
 프론트엔드:

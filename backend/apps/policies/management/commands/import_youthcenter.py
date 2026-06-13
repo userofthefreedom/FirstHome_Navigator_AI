@@ -9,6 +9,7 @@ from apps.policies.services.youthcenter import (
     fetch_youthcenter_payload,
     normalize_youthcenter_policies,
 )
+from apps.rules.cache_service import clear_firsthome_cache
 
 
 class Command(BaseCommand):
@@ -103,3 +104,4 @@ class Command(BaseCommand):
                 f"from {max_pages} page(s), display={display}."
             )
         )
+        clear_firsthome_cache()

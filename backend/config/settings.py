@@ -65,6 +65,24 @@ FIRSTHOME_FIXTURE_FALLBACK = {
     "MIN_SERVICE_NOTICES": int(os.getenv("FIRSTHOME_MIN_SERVICE_NOTICES", "5")),
 }
 
+FIRSTHOME_CACHE_TIMEOUTS = {
+    "RECOMMENDATIONS": int(os.getenv("FIRSTHOME_RECOMMENDATION_CACHE_SECONDS", "60")),
+    "MAP": int(os.getenv("FIRSTHOME_MAP_CACHE_SECONDS", "60")),
+    "FUNDING": int(os.getenv("FIRSTHOME_FUNDING_CACHE_SECONDS", "300")),
+    "MATCHERS": int(os.getenv("FIRSTHOME_MATCHER_CACHE_SECONDS", "300")),
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "firsthome-local-cache",
+        "OPTIONS": {
+            "MAX_ENTRIES": 1000,
+            "CULL_FREQUENCY": 3,
+        },
+    }
+}
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -84,7 +102,11 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.trycloudflare.com",
     *env_list("CSRF_TRUSTED_ORIGINS"),
 ]
-SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true"
+CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", SESSION_COOKIE_SAMESITE)
+CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", str(SESSION_COOKIE_SECURE)).lower() == "true"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",

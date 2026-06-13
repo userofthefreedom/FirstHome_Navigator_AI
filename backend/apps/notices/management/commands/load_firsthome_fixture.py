@@ -11,6 +11,7 @@ from apps.notices.services.classifier import classify_notice_payload
 from apps.notices.services.map_locations import resolve_notice_location
 from apps.policies.models import YouthPolicy
 from apps.products.models import FinancialProduct
+from apps.rules.cache_service import clear_firsthome_cache
 
 
 def parse_date(value: str | None):
@@ -110,3 +111,4 @@ class Command(BaseCommand):
                 " Fixture analysis data loaded for every notice."
             )
         )
+        clear_firsthome_cache()

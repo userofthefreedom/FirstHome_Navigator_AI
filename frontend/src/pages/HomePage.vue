@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { Bot, CalendarDays, ClipboardList, FileCheck2, MapPin, SearchCheck, Sparkles, Trophy, WalletCards } from 'lucide-vue-next';
+import { Bot, CalendarDays, ClipboardList, FileCheck2, MapPin, SearchCheck, ShieldAlert, Sparkles, Trophy, WalletCards } from 'lucide-vue-next';
 import { fetchDashboard, fetchFundingPlan, fetchNotices } from '../api/firsthome';
 import { formatMoney } from '../utils/format';
 import { saveCurrentSelection } from '../utils/selectionState';

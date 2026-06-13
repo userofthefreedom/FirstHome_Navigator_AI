@@ -5,6 +5,8 @@ from apps.fixture_store import current_notices, find_notice, notices
 from apps.notices.services.map_locations import offset_location, resolve_notice_location
 from apps.profiles.services import profile_from_request
 from apps.recommendations.services.ranking import calculate_score
+from apps.rules.cache_keys import cache_key, data_version, profile_hash
+from apps.rules.cache_service import get_or_set_locked
 from apps.rules.regions import canonical_region
 
 
@@ -35,6 +37,17 @@ def notice_map(request):
     include_excluded = request.query_params.get("include_excluded") in {"1", "true", "yes"}
     ownership_type = request.query_params.get("ownership_type") or None
     profile = profile_from_request(request)
+    key = cache_key("notice-map", data_version(), profile_hash(profile), include_excluded, ownership_type or "")
+    return Response(
+        get_or_set_locked(
+            key,
+            lambda: _notice_map_payload(profile, include_excluded=include_excluded, ownership_type=ownership_type),
+            timeout=60,
+        )
+    )
+
+
+def _notice_map_payload(profile, *, include_excluded: bool, ownership_type: str | None):
     raw_notices = [
         notice
         for notice in current_notices(include_excluded=include_excluded, ownership_type=ownership_type)
@@ -77,7 +90,7 @@ def notice_map(request):
             }
         )
     items.sort(key=lambda item: (item["total_score"], item["application_deadline"]), reverse=True)
-    return Response({"items": items, "count": len(items)})
+    return {"items": items, "count": len(items)}
 
 
 def _map_region(notice: dict) -> str:

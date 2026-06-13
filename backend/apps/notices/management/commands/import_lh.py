@@ -10,6 +10,7 @@ from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
 from apps.notices.models import HousingNotice
 from apps.notices.services.classifier import classify_notice_payload
 from apps.notices.services.lh import fetch_all_lh_notices, fetch_lh_supply_payload, supply_info_summary
+from apps.rules.cache_service import clear_firsthome_cache
 
 
 class Command(BaseCommand):
@@ -173,6 +174,7 @@ class Command(BaseCommand):
                 f"{skipped_count} skipped, {missing_price_count} need official price checks."
             )
         )
+        clear_firsthome_cache()
 
     def _fetch_supply_summaries(self, api_key, notices, limit):
         selected_notices = self._supply_target_order(notices)

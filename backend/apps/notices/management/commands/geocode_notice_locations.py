@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.notices.models import HousingNotice
 from apps.notices.services.map_locations import kakao_geocode
+from apps.rules.cache_service import clear_firsthome_cache
 
 
 class Command(BaseCommand):
@@ -53,6 +54,8 @@ class Command(BaseCommand):
             notice.save(update_fields=["latitude", "longitude", "location_label", "geocode_quality", "updated_at"])
             updated += 1
 
+        if updated:
+            clear_firsthome_cache()
         self.stdout.write(self.style.SUCCESS(f"Checked {checked} notices, updated {updated} locations."))
 
 

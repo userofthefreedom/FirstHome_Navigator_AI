@@ -7,6 +7,8 @@ from django.db import OperationalError, ProgrammingError
 
 from apps.fixture_store import current_notices, default_profile
 from apps.recommendations.services.scoring import score_detail, score_max, score_reasons
+from apps.rules.cache_keys import cache_key, data_version, profile_hash
+from apps.rules.cache_service import get_or_set_locked
 from apps.rules.regions import notice_matches_preferred_region
 from apps.rules.scoring import option_fit_reasons, option_fit_score, option_funding_insights, option_type_priority
 
@@ -290,6 +292,12 @@ def recommendation_candidate_notices(profile: dict[str, Any] | None = None) -> l
     return _filter_by_preferred_regions(_latest_notice_versions(current_notices()), profile)
 
 
+def cached_recommendation_candidate_count(profile: dict[str, Any] | None = None) -> int:
+    profile = profile or default_profile()
+    key = cache_key("recommendation-candidate-count", data_version(), profile_hash(profile))
+    return get_or_set_locked(key, lambda: len(recommendation_candidate_notices(profile)), timeout=60)
+
+
 def ranked_recommendations(profile: dict[str, Any] | None = None, limit: int = 3) -> list[dict[str, Any]]:
     profile = profile or default_profile()
     recommendations = sorted(
@@ -298,6 +306,12 @@ def ranked_recommendations(profile: dict[str, Any] | None = None, limit: int = 3
         reverse=True,
     )
     return recommendations[:limit]
+
+
+def cached_ranked_recommendations(profile: dict[str, Any] | None = None, limit: int = 3) -> list[dict[str, Any]]:
+    profile = profile or default_profile()
+    key = cache_key("ranked-recommendations", data_version(), profile_hash(profile), limit)
+    return get_or_set_locked(key, lambda: ranked_recommendations(profile, limit=limit), timeout=60)
 
 
 def _option_selection_factors(option: dict[str, Any]) -> list[dict[str, Any]]:

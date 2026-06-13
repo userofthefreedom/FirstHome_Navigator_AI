@@ -111,10 +111,11 @@ def profile_from_request(request) -> dict:
 
 
 def save_last_recommendations(request, recommendations: list[dict]) -> None:
+    snapshot = _recommendation_snapshot(recommendations)
     user = django_user(request)
     if user and user.is_authenticated:
         state = user_account_state(user)
-        state.last_recommendations = recommendations
+        state.last_recommendations = snapshot
         if recommendations and not state.current_notice_id:
             first = recommendations[0]
             state.current_notice_id = _positive_or_none(first.get("notice_id"))
@@ -124,10 +125,25 @@ def save_last_recommendations(request, recommendations: list[dict]) -> None:
         return
 
     session_state = account_state_payload(request.session.get("account_state", {}))
-    session_state["last_recommendations"] = recommendations
+    session_state["last_recommendations"] = snapshot
     if recommendations and not session_state.get("current_notice_id"):
         first = recommendations[0]
         session_state["current_notice_id"] = _positive_or_none(first.get("notice_id"))
         best_option = first.get("best_option") if isinstance(first.get("best_option"), dict) else {}
         session_state["current_option_id"] = _positive_or_none(best_option.get("option_id"))
     request.session["account_state"] = session_state
+
+
+def _recommendation_snapshot(recommendations: list[dict]) -> list[dict]:
+    snapshot = []
+    for item in recommendations[:6]:
+        best_option = item.get("best_option") if isinstance(item.get("best_option"), dict) else {}
+        snapshot.append(
+            {
+                "notice_id": _positive_or_none(item.get("notice_id")),
+                "option_id": _positive_or_none(best_option.get("option_id")),
+                "score": item.get("total_score"),
+                "title": item.get("title", ""),
+            }
+        )
+    return snapshot

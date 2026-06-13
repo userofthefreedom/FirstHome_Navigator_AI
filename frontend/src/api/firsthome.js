@@ -9,6 +9,57 @@ const api = axios.create({
     timeout: 10000,
     withCredentials: true,
 });
+const GET_CACHE_TTL_MS = 60 * 1000;
+const getCache = new Map();
+const pendingGetRequests = new Map();
+
+function stableParams(params) {
+    if (!params)
+        return '';
+    return JSON.stringify(
+        Object.entries(params)
+            .filter(([, value]) => value !== undefined && value !== null && value !== '')
+            .sort(([left], [right]) => left.localeCompare(right)),
+    );
+}
+
+function getCacheKey(url, config = {}) {
+    return `${url}?${stableParams(config.params)}`;
+}
+
+async function cachedGet(url, config = {}, options = {}) {
+    const ttl = options.ttl ?? GET_CACHE_TTL_MS;
+    const key = getCacheKey(url, config);
+    const now = Date.now();
+    const cached = getCache.get(key);
+    if (cached && cached.expiresAt > now)
+        return cached.data;
+    if (pendingGetRequests.has(key))
+        return pendingGetRequests.get(key);
+    const request = api
+        .get(url, config)
+        .then((response) => {
+            getCache.set(key, { data: response.data, expiresAt: Date.now() + ttl });
+            pendingGetRequests.delete(key);
+            return response.data;
+        })
+        .catch((error) => {
+            pendingGetRequests.delete(key);
+            throw error;
+        });
+    pendingGetRequests.set(key, request);
+    return request;
+}
+
+export function clearFirstHomeApiCache() {
+    getCache.clear();
+    pendingGetRequests.clear();
+}
+
+function invalidateFirstHomeApiCache() {
+    clearFirstHomeApiCache();
+}
+
 function firstHomeClientId() {
     const storageKey = 'firsthome_client_id';
     const existingId = window.localStorage.getItem(storageKey);
@@ -22,90 +73,81 @@ function favoriteHeaders() {
     return { 'X-FirstHome-Client-Id': firstHomeClientId() };
 }
 export async function fetchAuthSession() {
-    const response = await api.get('/auth/me');
-    return response.data;
+    return cachedGet('/auth/me');
 }
 export async function registerToApi(credentials) {
     const response = await api.post('/auth/register', credentials, { headers: favoriteHeaders() });
+    invalidateFirstHomeApiCache();
     return response.data;
 }
 export async function loginToApi(credentials) {
     const response = await api.post('/auth/login', credentials, { headers: favoriteHeaders() });
+    invalidateFirstHomeApiCache();
     return response.data;
 }
 export async function logoutFromApi() {
     const response = await api.post('/auth/logout');
+    invalidateFirstHomeApiCache();
     return response.data;
 }
 export async function saveProfileToApi(profile) {
     const response = await api.put('/profile', profile);
+    invalidateFirstHomeApiCache();
     return response.data;
 }
 export async function fetchProfile() {
-    const response = await api.get('/profile');
-    return response.data;
+    return cachedGet('/profile');
 }
 export async function fetchAccountState() {
-    const response = await api.get('/account-state');
-    return response.data;
+    return cachedGet('/account-state');
 }
 export async function saveAccountStateToApi(accountState) {
     const response = await api.put('/account-state', accountState);
+    invalidateFirstHomeApiCache();
     return response.data;
 }
 export async function fetchDashboard() {
-    const response = await api.get('/dashboard');
-    return response.data;
+    return cachedGet('/dashboard');
 }
 export async function fetchNotices(params) {
-    const response = await api.get('/notices', { params });
-    return response.data;
+    return cachedGet('/notices', { params });
 }
 export async function fetchMapNotices(params) {
-    const response = await api.get('/notices/map', { params });
-    return response.data;
+    return cachedGet('/notices/map', { params });
 }
 export async function fetchNotice(noticeId) {
-    const response = await api.get(`/notices/${noticeId}`);
-    return response.data;
+    return cachedGet(`/notices/${noticeId}`);
 }
 export async function fetchNoticeDocumentStatus(noticeId) {
-    const response = await api.get(`/notices/${noticeId}/documents/status`);
-    return response.data;
+    return cachedGet(`/notices/${noticeId}/documents/status`);
 }
 export async function analyzeNoticeDocument(noticeId) {
     const response = await api.post(`/notices/${noticeId}/documents/analyze`, undefined, { timeout: 90000 });
+    invalidateFirstHomeApiCache();
     return response.data;
 }
 export async function fetchNoticeUnitOptions(noticeId) {
-    const response = await api.get(`/notices/${noticeId}/unit-options`);
-    return response.data;
+    return cachedGet(`/notices/${noticeId}/unit-options`);
 }
 export async function fetchNoticeEligibilityChecklists(noticeId) {
-    const response = await api.get(`/notices/${noticeId}/eligibility-checklists`);
-    return response.data;
+    return cachedGet(`/notices/${noticeId}/eligibility-checklists`);
 }
 export async function fetchHousingRecommendations() {
-    const response = await api.get('/recommendations/housing');
-    return response.data;
+    return cachedGet('/recommendations/housing');
 }
 export async function fetchFundingPlan(noticeId, optionId) {
-    const response = await api.get(`/recommendations/funding/${noticeId}`, {
+    return cachedGet(`/recommendations/funding/${noticeId}`, {
         params: optionId ? { option_id: optionId } : undefined,
     });
-    return response.data;
 }
 export async function fetchProducts() {
-    const response = await api.get('/recommendations/products');
-    return response.data;
+    return cachedGet('/recommendations/products');
 }
 export async function fetchLoanProducts() {
-    const response = await api.get('/recommendations/loans');
-    return response.data;
+    return cachedGet('/recommendations/loans');
 }
 export async function fetchPolicies() {
-    const response = await api.get('/recommendations/policies');
-    return response.data;
+    return cachedGet('/recommendations/policies');
 }
 export async function fetchCoachSummary(noticeId, profile, optionId) {
     const response = await api.post('/ai/coach-summary', { notice_id: noticeId, option_id: optionId, profile }, { timeout: 90000 });
@@ -116,13 +158,14 @@ export async function askCoachChat(noticeId, message, profile, optionId, pageCon
     return response.data;
 }
 export async function fetchFavorites() {
-    const response = await api.get('/favorites', { headers: favoriteHeaders() });
-    return response.data;
+    return cachedGet('/favorites', { headers: favoriteHeaders() });
 }
 export async function addFavorite(favorite) {
     const response = await api.post('/favorites', favorite, { headers: favoriteHeaders() });
+    invalidateFirstHomeApiCache();
     return response.data;
 }
 export async function removeFavorite(favorite) {
     await api.delete('/favorites', { data: favorite, headers: favoriteHeaders() });
+    invalidateFirstHomeApiCache();
 }

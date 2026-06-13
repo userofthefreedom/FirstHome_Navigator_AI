@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.products.models import FinancialProduct, LoanProduct
 from apps.products.services.finlife import fetch_all_finlife_loans, fetch_all_finlife_products
+from apps.rules.cache_service import clear_firsthome_cache
 
 
 class Command(BaseCommand):
@@ -133,6 +134,7 @@ class Command(BaseCommand):
             )
         )
         self.stdout.write(self._summary_line(products, loans))
+        clear_firsthome_cache()
 
     def _product_kinds(self, kind: str) -> list[str]:
         if kind == "both":

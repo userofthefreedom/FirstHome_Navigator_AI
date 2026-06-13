@@ -1,0 +1,75 @@
+{
+  "frontendBase": "https://san-ultra-represents-pins.trycloudflare.com",
+  "apiBase": "https://dressed-wichita-aerospace-clay.trycloudflare.com",
+  "users": 10,
+  "startedAt": "2026-06-13T10:30:09.993Z",
+  "endedAt": "2026-06-13T10:30:27.852Z",
+  "durationMs": 17860,
+  "totalRequests": 80,
+  "successRequests": 80,
+  "failedRequests": 0,
+  "p50Ms": 189,
+  "p90Ms": 16673,
+  "p95Ms": 17234,
+  "maxMs": 17818,
+  "maxSetCookieBytes": 9023,
+  "failedSamples": [],
+  "perUrl": [
+    {
+      "url": "https://san-ultra-represents-pins.trycloudflare.com/",
+      "count": 10,
+      "failures": 0,
+      "maxMs": 189,
+      "maxSetCookieBytes": 0
+    },
+    {
+      "url": "https://san-ultra-represents-pins.trycloudflare.com/recommendations",
+      "count": 10,
+      "failures": 0,
+      "maxMs": 163,
+      "maxSetCookieBytes": 0
+    },
+    {
+      "url": "https://san-ultra-represents-pins.trycloudflare.com/map",
+      "count": 10,
+      "failures": 0,
+      "maxMs": 163,
+      "maxSetCookieBytes": 0
+    },
+    {
+      "url": "https://san-ultra-represents-pins.trycloudflare.com/funding/1?option_id=285",
+      "count": 10,
+      "failures": 0,
+      "maxMs": 163,
+      "maxSetCookieBytes": 0
+    },
+    {
+      "url": "https://dressed-wichita-aerospace-clay.trycloudflare.com/api/dashboard",
+      "count": 10,
+      "failures": 0,
+      "maxMs": 17818,
+      "maxSetCookieBytes": 9023
+    },
+    {
+      "url": "https://dressed-wichita-aerospace-clay.trycloudflare.com/api/notices?active=1",
+      "count": 10,
+      "failures": 0,
+      "maxMs": 16074,
+      "maxSetCookieBytes": 0
+    },
+    {
+      "url": "https://dressed-wichita-aerospace-clay.trycloudflare.com/api/recommendations/housing",
+      "count": 10,
+      "failures": 0,
+      "maxMs": 14483,
+      "maxSetCookieBytes": 9023
+    },
+    {
+      "url": "https://dressed-wichita-aerospace-clay.trycloudflare.com/api/recommendations/funding/1?option_id=285",
+      "count": 10,
+      "failures": 0,
+      "maxMs": 708,
+      "maxSetCookieBytes": 0
+    }
+  ]
+}

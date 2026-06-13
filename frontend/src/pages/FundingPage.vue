@@ -24,6 +24,7 @@ const selectedNotice = ref(null);
 const fundingPlan = ref(null);
 const unitOptions = ref([]);
 const optionFundingPlans = ref({});
+const loadingOptionPlanIds = ref(new Set());
 const activeOptionType = ref('');
 const financialProducts = ref([]);
 const policies = ref([]);
@@ -178,18 +179,48 @@ async function loadOptionFundingPlans(targetNoticeId, options, currentPlan) {
         optionFundingPlans.value = {};
         return;
     }
-    const entries = await Promise.all(options.map(async (option) => {
-        if (currentPlan.option_id === option.id)
-            return [option.id, currentPlan];
+    optionFundingPlans.value = {
+        ...optionFundingPlans.value,
+        [currentPlan.option_id]: currentPlan,
+    };
+    await loadFundingPlansForOptions(targetNoticeId, options);
+}
+
+async function loadFundingPlansForOptions(targetNoticeId, options) {
+    const missingOptions = options.filter((option) => {
+        if (!option?.id)
+            return false;
+        if (optionFundingPlans.value[option.id])
+            return false;
+        return !loadingOptionPlanIds.value.has(option.id);
+    });
+    if (!targetNoticeId || missingOptions.length === 0)
+        return;
+
+    loadingOptionPlanIds.value = new Set([...loadingOptionPlanIds.value, ...missingOptions.map((option) => option.id)]);
+    const entries = [];
+    for (const option of missingOptions) {
         try {
             const plan = await fetchFundingPlan(targetNoticeId, option.id);
-            return [option.id, plan];
+            entries.push([option.id, plan]);
         }
         catch {
-            return [option.id, undefined];
+            entries.push([option.id, undefined]);
         }
-    }));
-    optionFundingPlans.value = Object.fromEntries(entries.filter((entry) => Boolean(entry[1])));
+    }
+    const loadedIds = new Set(missingOptions.map((option) => option.id));
+    loadingOptionPlanIds.value = new Set([...loadingOptionPlanIds.value].filter((id) => !loadedIds.has(id)));
+    optionFundingPlans.value = {
+        ...optionFundingPlans.value,
+        ...Object.fromEntries(entries.filter((entry) => Boolean(entry[1]))),
+    };
+}
+
+async function loadVisibleOptionFundingPlans(targetNoticeId = selectedNotice.value?.id) {
+    if (!targetNoticeId)
+        return;
+    const visibleOptions = visibleOtherOptionRows.value.map(({ option }) => option);
+    await loadFundingPlansForOptions(targetNoticeId, visibleOptions);
 }
 
 async function loadFunding() {
@@ -215,8 +246,9 @@ async function loadFunding() {
         financialProducts.value = productsResponse;
         policies.value = policiesResponse;
         favorites.value = favoriteResponse;
-        await loadOptionFundingPlans(targetNoticeId, unitOptionResponse, fundingResponse);
+        optionFundingPlans.value = {};
         syncActiveOptionType(fundingResponse, unitOptionResponse);
+        await loadOptionFundingPlans(targetNoticeId, [selectedOption.value, ...visibleOtherOptionRows.value.map(({ option }) => option)].filter(Boolean), fundingResponse);
     }
     catch {
         error.value = '자금 로드맵 API에 연결하지 못했습니다. Django 서버 실행 상태를 확인해 주세요.';
@@ -344,8 +376,11 @@ function paymentTypeClass(type) {
 }
 
 watch([noticeId, selectedOptionId], loadFunding);
-watch([otherVisibleComparisons, () => fundingPlan.value?.option_id], () => {
+watch([activeOptionType, () => fundingPlan.value?.option_id], () => {
     otherOptionPage.value = 1;
+});
+watch([visibleOtherOptionRows, () => selectedNotice.value?.id], () => {
+    void loadVisibleOptionFundingPlans();
 });
 onMounted(loadFunding);
 </script>
