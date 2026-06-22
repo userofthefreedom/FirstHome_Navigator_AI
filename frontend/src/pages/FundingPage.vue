@@ -783,7 +783,7 @@ onMounted(loadFunding);
             <p v-if="financialProducts.length === 0" class="rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-600">
               조건에 맞는 상품 후보가 없습니다.
             </p>
-            <div v-for="product in financialProducts" :key="product.id" class="rounded-lg border border-slate-100 bg-slate-50 p-4">
+            <RouterLink v-for="product in financialProducts" :key="product.id" :to="`/finance/products/${product.id}`" class="block rounded-lg border border-slate-100 bg-slate-50 p-4 transition hover:border-blue-300 hover:bg-blue-50">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="font-bold text-slate-950">{{ product.name }}</p>
                 <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{{ product.category }}</span>
@@ -794,7 +794,7 @@ onMounted(loadFunding);
                 <span class="rounded-md bg-white px-2.5 py-1 text-slate-600">{{ productProtectionLabel(product) }}</span>
                 <span v-if="product.match_score !== undefined" class="rounded-md bg-blue-50 px-2.5 py-1 text-blue-700">적합도 {{ product.match_score }}점</span>
               </div>
-            </div>
+            </RouterLink>
           </div>
         </div>
 

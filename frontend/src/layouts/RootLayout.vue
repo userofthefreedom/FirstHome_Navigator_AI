@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { Bookmark, Bot, Building2, ChevronRight, Home, LogOut, MapPinned, Search, UserRound, WalletCards } from 'lucide-vue-next';
+import { Bookmark, Bot, Building2, ChevronDown, ChevronRight, Home, Landmark, LineChart, LogOut, MapPinned, MessageSquareText, PiggyBank, Search, UserRound, WalletCards } from 'lucide-vue-next';
 import FloatingCoachChat from '../components/FloatingCoachChat.vue';
 import { fetchHousingRecommendations } from '../api/firsthome';
 import { useAuthStore } from '../stores/authStore';
@@ -19,6 +19,7 @@ const searchOpen = ref(false);
 const searchLoading = ref(false);
 const searchError = ref('');
 const searchRecommendations = ref([]);
+const financeOpen = ref(route.path.startsWith('/finance'));
 const displayName = computed(() => {
     if (profileStore.profile.name)
         return profileStore.profile.name;
@@ -34,7 +35,18 @@ const menus = [
     { label: '청약 지도', shortLabel: '지도', path: '/map', icon: MapPinned },
     { label: '자금 로드맵', shortLabel: '자금', path: '/funding', to: currentSelectionRoute('/funding'), icon: WalletCards },
     { label: 'AI 코치', shortLabel: '코치', path: '/ai-coach', to: currentSelectionRoute('/ai-coach'), icon: Bot },
-    { label: '관심목록', shortLabel: '관심', path: '/favorites', icon: Bookmark },
+    {
+        label: '금융 광장',
+        shortLabel: '금융',
+        path: '/finance',
+        icon: Landmark,
+        children: [
+            { label: '금융상품', shortLabel: '상품', path: '/finance/products', icon: PiggyBank },
+            { label: '경제 NOW', shortLabel: 'NOW', path: '/finance/economy-now', icon: LineChart },
+            { label: '청약 아고라', shortLabel: '아고라', path: '/finance/agora', icon: MessageSquareText },
+        ],
+    },
+    { label: 'MY PAGE', shortLabel: 'MY', path: '/my-page', icon: Bookmark },
 ];
 const searchResults = computed(() => buildGlobalSearchResults({
     query: searchQuery.value,
@@ -42,11 +54,16 @@ const searchResults = computed(() => buildGlobalSearchResults({
     selection: readCurrentSelection(),
 }));
 function menuTo(menu) {
+    if (menu.children)
+        return menu.children[0].path;
     if (menu.path === '/funding')
         return currentSelectionRoute('/funding');
     if (menu.path === '/ai-coach')
         return currentSelectionRoute('/ai-coach');
     return menu.path;
+}
+function toggleFinanceMenu() {
+    financeOpen.value = !financeOpen.value;
 }
 function isActive(path) {
     if (path === '/')
@@ -121,6 +138,10 @@ onMounted(async () => {
     }
     await syncCurrentSelectionWithAccount(session?.account_state);
 });
+watch(() => route.path, (path) => {
+    if (path.startsWith('/finance'))
+        financeOpen.value = true;
+});
 onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', handleDocumentPointer);
 });
@@ -136,23 +157,49 @@ onBeforeUnmount(() => {
               <Home class="h-5 w-5" />
             </div>
             <div>
-              <p class="text-lg font-semibold text-white">FirstHome</p>
-              <p class="text-xs text-slate-400">Navigator AI</p>
+              <p class="text-lg font-semibold text-white">청약 네비</p>
+              <p class="text-xs text-slate-400">첫 집 준비 내비게이터</p>
             </div>
           </div>
         </div>
 
         <nav class="flex-1 space-y-1 px-3 py-4">
-          <RouterLink
-            v-for="menu in menus"
-            :key="menu.path"
-            :to="menuTo(menu)"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
-            :class="isActive(menu.path) ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-300 hover:bg-white/10 hover:text-white'"
-          >
-            <component :is="menu.icon" class="h-5 w-5" />
-            {{ menu.label }}
-          </RouterLink>
+          <template v-for="menu in menus" :key="menu.path">
+            <div v-if="menu.children">
+              <button
+                type="button"
+                class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                :class="isActive(menu.path) ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-300 hover:bg-white/10 hover:text-white'"
+                @click="toggleFinanceMenu"
+              >
+                <component :is="menu.icon" class="h-5 w-5" />
+                <span class="flex-1 text-left">{{ menu.label }}</span>
+                <ChevronDown v-if="financeOpen" class="h-4 w-4" />
+                <ChevronRight v-else class="h-4 w-4" />
+              </button>
+              <div v-if="financeOpen" class="mt-1 space-y-1 pl-5">
+                <RouterLink
+                  v-for="child in menu.children"
+                  :key="child.path"
+                  :to="child.path"
+                  class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition"
+                  :class="isActive(child.path) ? 'bg-white/12 text-white' : 'text-slate-400 hover:bg-white/10 hover:text-white'"
+                >
+                  <component :is="child.icon" class="h-4 w-4" />
+                  {{ child.label }}
+                </RouterLink>
+              </div>
+            </div>
+            <RouterLink
+              v-else
+              :to="menuTo(menu)"
+              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+              :class="isActive(menu.path) ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-300 hover:bg-white/10 hover:text-white'"
+            >
+              <component :is="menu.icon" class="h-5 w-5" />
+              {{ menu.label }}
+            </RouterLink>
+          </template>
         </nav>
 
       </div>
@@ -165,7 +212,7 @@ onBeforeUnmount(() => {
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/20">
               <Home class="h-4 w-4" />
             </div>
-            <span class="font-semibold">FirstHome</span>
+            <span class="font-semibold">청약 네비</span>
           </div>
 
           <div ref="searchBox" class="relative ml-auto hidden min-w-0 flex-1 md:block lg:ml-0">
@@ -261,7 +308,7 @@ onBeforeUnmount(() => {
 
     <FloatingCoachChat />
 
-    <nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-slate-200 bg-white lg:hidden">
+    <nav class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-8 border-t border-slate-200 bg-white lg:hidden">
       <RouterLink
         v-for="menu in menus"
         :key="menu.path"

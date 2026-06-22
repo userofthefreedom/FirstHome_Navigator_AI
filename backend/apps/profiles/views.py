@@ -1,5 +1,4 @@
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.db import IntegrityError
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -224,6 +223,7 @@ def register_view(request):
         return Response({"detail": "password must be at least 8 characters"}, status=400)
 
     try:
+        User = get_user_model()
         user = User.objects.create_user(username=username, email=email, password=password)
     except IntegrityError:
         return Response({"detail": "username already exists"}, status=400)

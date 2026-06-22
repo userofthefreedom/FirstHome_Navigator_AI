@@ -172,7 +172,7 @@ function contextLabel(ref) {
           </span>
           <div>
             <p class="flex items-center gap-1 text-sm font-bold text-white">
-              FirstHome 챗봇
+              청약 네비 챗봇
               <Sparkles class="h-3.5 w-3.5 text-amber-300" />
             </p>
             <p class="text-xs text-slate-300">화면 설명, 청약 질문, 이용 방법</p>
@@ -268,7 +268,7 @@ function contextLabel(ref) {
       v-else
       type="button"
       class="relative flex h-16 w-16 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700"
-      title="FirstHome 챗봇 열기"
+      title="청약 네비 챗봇 열기"
       @click="isOpen = true"
     >
       <span class="text-sm font-black leading-none">AI</span>

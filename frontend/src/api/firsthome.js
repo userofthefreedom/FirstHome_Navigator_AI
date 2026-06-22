@@ -146,6 +146,69 @@ export async function fetchFundingPlan(noticeId, optionId) {
 export async function fetchProducts() {
     return cachedGet('/recommendations/products');
 }
+export async function fetchFinancialProducts(params) {
+    return cachedGet('/products', { params });
+}
+export async function fetchFinancialProduct(productId) {
+    return cachedGet(`/products/${productId}`);
+}
+export async function joinFinancialProduct(productId, optionId, memo = '') {
+    const response = await api.post(`/products/${productId}/join`, { option_id: optionId, memo });
+    invalidateFirstHomeApiCache();
+    return response.data;
+}
+export async function fetchJoinedProducts() {
+    return cachedGet('/products/joined');
+}
+export async function fetchMarketAssets(params) {
+    return cachedGet('/market/assets', { params });
+}
+export async function fetchMarketSummary() {
+    return cachedGet('/market/summary');
+}
+export async function fetchDefaultVideos() {
+    return cachedGet('/videos/default');
+}
+export async function searchVideos(query) {
+    return cachedGet('/videos/search', { params: { q: query } });
+}
+export async function fetchAgoraPosts(params) {
+    return cachedGet('/agora/posts', { params });
+}
+export async function createAgoraPost(payload) {
+    const response = await api.post('/agora/posts', payload);
+    invalidateFirstHomeApiCache();
+    return response.data;
+}
+export async function updateAgoraPost(postId, payload) {
+    const response = await api.put(`/agora/posts/${postId}`, payload);
+    invalidateFirstHomeApiCache();
+    return response.data;
+}
+export async function deleteAgoraPost(postId) {
+    await api.delete(`/agora/posts/${postId}`);
+    invalidateFirstHomeApiCache();
+}
+export async function createAgoraComment(postId, payload) {
+    const response = await api.post(`/agora/posts/${postId}/comments`, payload);
+    invalidateFirstHomeApiCache();
+    return response.data;
+}
+export async function updateAgoraComment(commentId, payload) {
+    const response = await api.put(`/agora/comments/${commentId}`, payload);
+    invalidateFirstHomeApiCache();
+    return response.data;
+}
+export async function deleteAgoraComment(commentId) {
+    await api.delete(`/agora/comments/${commentId}`);
+    invalidateFirstHomeApiCache();
+}
+export async function searchPlaces(params) {
+    return cachedGet('/places/search', { params });
+}
+export async function fetchPlaceRoute(params) {
+    return cachedGet('/places/route', { params });
+}
 export async function fetchLoanProducts() {
     return cachedGet('/recommendations/loans');
 }

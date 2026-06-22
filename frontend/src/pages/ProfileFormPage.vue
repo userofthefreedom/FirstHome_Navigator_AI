@@ -320,13 +320,13 @@ watch(() => profileStore.profile, (profile) => applyProfile(profile), { deep: tr
       </div>
     </section>
 
-    <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 class="flex items-center gap-2 text-lg font-bold">
-        <MapPinned class="h-5 w-5 text-blue-700" />
-        희망 조건
-      </h2>
-      <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
-        <div>
+    <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.82fr)]">
+      <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="flex items-center gap-2 text-lg font-bold">
+          <MapPinned class="h-5 w-5 text-blue-700" />
+          희망 지역
+        </h2>
+        <div class="mt-5">
           <p class="text-sm font-medium text-slate-700">희망 지역</p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button
@@ -362,9 +362,15 @@ watch(() => profileStore.profile, (profile) => applyProfile(profile), { deep: tr
             </button>
           </div>
         </div>
+      </div>
 
-        <div class="rounded-lg border border-slate-200/80 bg-slate-50/70 p-4">
-          <p class="text-sm font-medium text-slate-700">공급 유형</p>
+      <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="flex items-center gap-2 text-lg font-bold">
+          <BadgeCheck class="h-5 w-5 text-blue-700" />
+          공급 유형
+        </h2>
+        <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <p class="text-sm font-medium text-slate-700">선호 공급 유형</p>
           <p class="mt-1 text-xs text-slate-500">추천은 소유형 공공분양 범위 안에서만 계산됩니다.</p>
           <div class="mt-3 flex flex-wrap gap-2">
             <button
@@ -382,15 +388,15 @@ watch(() => profileStore.profile, (profile) => applyProfile(profile), { deep: tr
       </div>
     </section>
 
-    <div class="sticky bottom-20 flex flex-wrap justify-end gap-3 lg:bottom-5">
+    <div class="sticky bottom-20 z-30 flex flex-col items-center gap-3 pt-2 lg:bottom-6">
       <p v-if="saved" class="rounded-lg bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
         저장 완료
       </p>
       <p v-if="saveError" class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
         {{ saveError }}
       </p>
-      <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700" :disabled="saving">
-        <Save class="h-4 w-4" />
+      <button type="submit" class="inline-flex min-h-14 min-w-[240px] items-center justify-center gap-2 rounded-lg bg-blue-600 px-8 py-4 text-base font-black text-white shadow-lg hover:bg-blue-700 disabled:opacity-60" :disabled="saving">
+        <Save class="h-5 w-5" />
         {{ saving ? '저장 중' : '저장하고 추천 보기' }}
       </button>
     </div>

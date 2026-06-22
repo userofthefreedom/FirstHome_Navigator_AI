@@ -2,7 +2,7 @@
 import tempfile
 from unittest.mock import Mock, patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
@@ -299,7 +299,7 @@ class AiCoachChatApiTests(TestCase):
     )
     @patch("apps.ai_coach.services.ai_client.requests.post")
     def test_llm_coach_summary_returns_action_plan(self, mock_post):
-        user = User.objects.create_user(username="coach-user", password="pw")
+        user = get_user_model().objects.create_user(username="coach-user", password="pw")
         self.client.force_login(user)
         raw_response = {
             "choices": [
@@ -421,7 +421,7 @@ class AiCoachChatApiTests(TestCase):
     )
     @patch("apps.ai_coach.services.ai_client.requests.post")
     def test_logged_in_coach_summary_reuses_cached_llm_plan_for_same_option(self, mock_post):
-        user = User.objects.create_user(username="cache-user", password="pw")
+        user = get_user_model().objects.create_user(username="cache-user", password="pw")
         self.client.force_login(user)
         raw_response = {
             "choices": [

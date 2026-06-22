@@ -49,6 +49,11 @@ EXTERNAL_API_KEYS = {
     "FINLIFE_API_KEY": os.getenv("FINLIFE_API_KEY", ""),
     "YOUTH_POLICY_API_KEY": os.getenv("YOUTH_POLICY_API_KEY", ""),
     "KAKAO_REST_API_KEY": os.getenv("KAKAO_REST_API_KEY", ""),
+    "YOUTUBE_API_KEY": os.getenv("YOUTUBE_API_KEY", ""),
+    "KOREAEXIM_API_KEY": os.getenv("KOREAEXIM_API_KEY", ""),
+    "METALS_DEV_API_KEY": os.getenv("METALS_DEV_API_KEY", ""),
+    "BOK_ECOS_API_KEY": os.getenv("BOK_ECOS_API_KEY", ""),
+    "KRX_API_KEY": os.getenv("KRX_API_KEY", ""),
 }
 
 AI_SETTINGS = {
@@ -149,6 +154,10 @@ INSTALLED_APPS = [
     "apps.products",
     "apps.policies",
     "apps.ai_coach",
+    "apps.market",
+    "apps.videos",
+    "apps.community",
+    "apps.places",
 ]
 
 MIDDLEWARE = [
@@ -239,3 +248,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = "profiles.CustomUser"
