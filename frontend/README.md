@@ -138,7 +138,7 @@ cp .env.example .env
 ```
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL=/api
 VITE_KAKAO_MAP_JS_KEY=
 ```
 
@@ -149,10 +149,10 @@ VITE_KAKAO_MAP_JS_KEY=
 
 Vite에서 브라우저 코드에 노출되는 환경 변수는 `VITE_` 접두사가 필요합니다.
 
-Cloudflare Tunnel로 공유할 때는 백엔드 터널 주소를 넣습니다. `/api`가 빠져 있어도 프론트 API client가 자동으로 붙입니다.
+로컬 개발과 ngrok 공유에서는 Vite dev server가 `/api` 요청을 `http://127.0.0.1:8000` 백엔드로 프록시합니다.
 
 ```env
-VITE_API_BASE_URL=https://your-backend-tunnel.trycloudflare.com
+VITE_API_BASE_URL=/api
 ```
 
 Kakao Developers의 JavaScript 키 설정에는 개발 중 접속하는 도메인을 등록합니다.

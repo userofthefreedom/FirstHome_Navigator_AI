@@ -154,16 +154,16 @@ cp .env.example .env
 `frontend/.env`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL=/api
 VITE_KAKAO_MAP_JS_KEY=
 ```
 
 Vite에서는 브라우저 코드에서 사용할 환경 변수 이름이 `VITE_`로 시작해야 합니다.
 
-Cloudflare Tunnel로 공유할 때는 백엔드 터널 주소를 `VITE_API_BASE_URL`에 넣습니다. `/api`를 붙여도 되고 생략해도 됩니다.
+로컬 개발과 ngrok 공유에서는 Vite dev server가 `/api` 요청을 `http://127.0.0.1:8000` 백엔드로 프록시합니다. 따라서 기본값은 `/api`를 유지합니다.
 
 ```env
-VITE_API_BASE_URL=https://your-backend-tunnel.trycloudflare.com
+VITE_API_BASE_URL=/api
 ```
 
 `VITE_KAKAO_MAP_JS_KEY`는 Kakao Map JavaScript SDK용 키입니다. Kakao Developers의 JavaScript 키 설정에는 프론트 접속 도메인을 등록합니다.
@@ -201,7 +201,7 @@ python manage.py migrate
 python manage.py runserver 127.0.0.1:8000
 ```
 
-위 명령은 개발용 실행입니다. Cloudflare Tunnel로 외부에 공유하거나 발표장에서 여러 명이 동시에 접속하는 경우에는 7.1의 `waitress` 실행 방식을 사용합니다.
+위 명령은 개발용 실행입니다. ngrok으로 외부에 공유하거나 발표장에서 여러 명이 동시에 접속하는 경우에는 7.1의 `waitress` 실행 방식을 사용합니다.
 
 확인 URL:
 
@@ -284,77 +284,64 @@ npm run dev -- --host 127.0.0.1
 
 ---
 
-## 7.1 Cloudflare Tunnel로 임시 공개
+## 7.1 ngrok으로 임시 공개
 
-발표나 외부 공유용으로 로컬 서버를 Cloudflare Tunnel에 연결할 수 있습니다. 이 프로젝트의 기본 터미널은 Git Bash 기준입니다.
+발표나 외부 공유용으로 로컬 서버를 ngrok에 연결할 수 있습니다. 이 프로젝트의 기본 터미널은 Git Bash 기준입니다.
 
 핵심만 먼저 정리하면 다음과 같습니다.
 
 | 터미널 | 실행할 것 | 용도 |
 |---|---|---|
 | 1 | Waitress 백엔드 | 발표용 로컬 API 서버 |
-| 2 | 백엔드 터널 | `frontend/.env`에 넣을 API 주소 생성 |
-| 3 | Vite 프론트 | 로컬 화면 서버 |
-| 4 | 프론트 터널 | 사람들에게 공유할 접속 주소 생성 |
+| 2 | Vite 프론트 | 로컬 화면 서버와 `/api` 프록시 |
+| 3 | 프론트 ngrok 터널 | 사람들에게 공유할 접속 주소 생성 |
 
 중요한 구분:
 
-- **백엔드 터널 주소**: `frontend/.env`의 `VITE_API_BASE_URL`에 넣습니다.
-- **프론트 터널 주소**: 외부 사용자에게 공유합니다.
+- **공유 주소**: 프론트 ngrok 주소 하나만 외부 사용자에게 공유합니다.
+- **API 주소**: `frontend/.env`의 `VITE_API_BASE_URL=/api`를 유지합니다.
+- ngrok 무료 주소는 실행할 때마다 바뀔 수 있습니다. 주소가 바뀌면 Kakao Developers 사이트 도메인을 다시 확인합니다.
 
-### 7.1.1 처음 한 번만 cloudflared 설치/인식 확인
+### 7.1.1 처음 한 번만 ngrok 설치/인식 확인
 
 ```bash
-cloudflared --version
+ngrok version
 ```
 
-정상적으로 버전이 나오면 바로 7.1.2로 넘어갑니다. `bash: cloudflared: command not found`가 나오면 아래 명령으로 설치합니다.
+정상적으로 버전이 나오면 버전을 확인합니다. 무료 계정은 ngrok agent 최소 버전 요구사항이 있을 수 있으므로 `3.20.0`보다 낮으면 먼저 업데이트합니다.
 
 ```bash
-winget install --id Cloudflare.cloudflared --accept-package-agreements --accept-source-agreements
+ngrok update
+ngrok version
+```
+
+`ngrok: command not found`가 나오면 아래 명령으로 설치합니다.
+
+```bash
+winget install --id Ngrok.Ngrok --accept-package-agreements --accept-source-agreements
 ```
 
 설치 후에는 Git Bash를 완전히 닫고 새로 연 뒤 다시 확인합니다.
 
 ```bash
-cloudflared --version
+ngrok version
 ```
 
-`winget`으로 설치되어 있는데도 Git Bash에서 `cloudflared`를 못 찾는 경우가 있습니다. 설치된 실행 파일 위치를 찾아 직접 실행합니다.
+ngrok 계정을 처음 쓰는 PC라면 ngrok 대시보드에서 받은 authtoken을 한 번 등록합니다.
 
 ```bash
-find "/c/Program Files" "/c/Program Files (x86)" "/c/Users/$USERNAME/AppData/Local/Microsoft/WinGet/Packages" -iname "cloudflared.exe" 2>/dev/null
+ngrok config add-authtoken 본인_NGROK_AUTHTOKEN
 ```
 
-WinGet 설치 환경에서는 보통 다음과 비슷한 경로가 나옵니다.
-
-```text
-/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe
-```
-
-이 경우 백엔드 터널은 다음처럼 실행합니다.
+`ngrok http`만 입력하면 터널이 열리지 않고 사용법 안내만 출력됩니다. 반드시 아래처럼 포트까지 붙여 실행합니다.
 
 ```bash
-"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe" tunnel --url http://127.0.0.1:8000
+ngrok http 5173
 ```
-
-프론트 터널은 다음처럼 실행합니다.
-
-```bash
-"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe" tunnel --url http://localhost:5173
-```
-
-매번 긴 경로를 쓰기 싫으면 현재 Git Bash 세션에서만 alias를 잡습니다.
-
-```bash
-alias cloudflared='"/c/Users/mypc/AppData/Local/Microsoft/WinGet/Packages/Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe/cloudflared.exe"'
-```
-
-이후에는 `cloudflared tunnel --url ...` 형식으로 실행할 수 있습니다.
 
 ### 7.1.2 발표용 백엔드 실행
 
-Cloudflare Tunnel로 외부에 공유할 때는 Django 개발 서버(`runserver`)보다 WSGI 서버인 `waitress`로 백엔드를 실행합니다. `runserver`는 개발 편의를 위한 서버라 자동 리로드와 동시 요청 처리에서 발표용으로 불안정할 수 있습니다. `waitress`는 같은 Django 앱을 더 안정적으로 HTTP 요청에 연결해 줍니다.
+ngrok으로 외부에 공유할 때는 Django 개발 서버(`runserver`)보다 WSGI 서버인 `waitress`로 백엔드를 실행합니다. `runserver`는 개발 편의를 위한 서버라 자동 리로드와 동시 요청 처리에서 발표용으로 불안정할 수 있습니다. `waitress`는 같은 Django 앱을 더 안정적으로 HTTP 요청에 연결해 줍니다.
 
 1. 첫 번째 터미널에서 가상환경을 켜고 백엔드를 실행합니다.
 
@@ -362,7 +349,7 @@ Cloudflare Tunnel로 외부에 공유할 때는 Django 개발 서버(`runserver`
 source .venv/Scripts/activate
 cd backend
 python manage.py migrate
-waitress-serve --listen=127.0.0.1:8000 config.wsgi:application
+waitress-serve --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
 ```
 
 `waitress-serve` 명령을 찾지 못하면 패키지를 다시 설치합니다.
@@ -377,55 +364,39 @@ pip install -r requirements.txt
 python manage.py runserver 127.0.0.1:8000 --noreload
 ```
 
-2. 두 번째 터미널에서 백엔드 터널을 실행합니다. 백엔드 터널은 `localhost` 대신 반드시 `127.0.0.1`을 사용합니다.
-
-```bash
-cloudflared tunnel --url http://127.0.0.1:8000
-```
-
-실행하면 아래와 유사한 `trycloudflare.com` 주소가 출력됩니다. 이 주소가 **백엔드 터널 주소**입니다.
-
-```text
-https://solution-isle-int-excessive.trycloudflare.com
-```
-
-위 주소는 예시입니다. 실제로는 본인 터미널에 출력된 주소를 사용합니다.
-
-3. 출력된 백엔드 터널 주소를 `frontend/.env`에 넣습니다.
-
-백엔드 터널 주소가 `https://solution-isle-int-excessive.trycloudflare.com`로 나왔다면 `frontend/.env`를 다음처럼 수정합니다. `/api`는 생략해도 프론트 API 클라이언트가 자동으로 붙입니다.
+2. `frontend/.env`는 다음 값을 유지합니다. 프론트 개발 서버가 `/api`를 로컬 백엔드로 프록시합니다.
 
 ```env
-VITE_API_BASE_URL=https://solution-isle-int-excessive.trycloudflare.com
+VITE_API_BASE_URL=/api
 VITE_KAKAO_MAP_JS_KEY=본인_KAKAO_JAVASCRIPT_KEY
 ```
 
-### 7.1.3 프론트 터널 주소 만들기
+### 7.1.3 프론트 ngrok 주소 만들기
 
-4. 세 번째 터미널에서 프론트를 재시작합니다.
+3. 두 번째 터미널에서 프론트를 실행합니다.
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-5. 네 번째 터미널에서 프론트 터널을 실행합니다.
+4. 세 번째 터미널에서 프론트 ngrok 터널을 실행합니다.
 
 ```bash
-cloudflared tunnel --url http://localhost:5173
+ngrok http 5173
 ```
 
-6. 출력된 프론트 터널 주소를 공유합니다.
+5. 출력된 프론트 ngrok 주소를 공유합니다.
 
-프론트 터널에서 아래처럼 주소가 출력되면 이 주소가 **사람들에게 공유할 서비스 주소**입니다.
+프론트 ngrok에서 아래처럼 주소가 출력되면 이 주소가 **사람들에게 공유할 서비스 주소**입니다.
 
 ```text
-https://example-frontend.trycloudflare.com
+https://xyz-789.ngrok-free.app
 ```
 
-7. Kakao Developers에 프론트 터널 주소를 등록합니다.
+6. Kakao Developers에 프론트 ngrok 주소를 등록합니다.
 
-청약 지도는 Kakao Map JavaScript SDK를 사용하므로, 프론트 터널 주소를 Kakao Developers의 JavaScript 키 허용 도메인에 반드시 추가해야 합니다.
+청약 지도는 Kakao Map JavaScript SDK를 사용하므로, 프론트 ngrok 주소를 Kakao Developers의 JavaScript 키 허용 도메인에 반드시 추가해야 합니다.
 
 등록 위치:
 
@@ -433,59 +404,50 @@ https://example-frontend.trycloudflare.com
 Kakao Developers > 내 애플리케이션 > 앱 설정 > 플랫폼 > Web > 사이트 도메인
 ```
 
-예를 들어 프론트 터널 주소가 `https://example-frontend.trycloudflare.com`라면 사이트 도메인에 다음 값을 추가합니다.
+예를 들어 프론트 ngrok 주소가 `https://xyz-789.ngrok-free.app`라면 사이트 도메인에 다음 값을 추가합니다.
 
 ```text
-https://example-frontend.trycloudflare.com
+https://xyz-789.ngrok-free.app
 ```
 
 등록 후 프론트 페이지를 새로고침합니다. Kakao 도메인 등록이 빠지면 서비스는 열려도 청약 지도 화면이 비어 있거나 Kakao 지도 로딩 오류가 날 수 있습니다.
 
-### 7.1.4 Cloudflare 필수 backend/.env 설정
+### 7.1.4 backend/.env 설정
 
-Cloudflare Tunnel로 프론트와 백엔드를 서로 다른 `trycloudflare.com` 주소로 열면, 로그인/회원가입/세션 저장/CSRF 요청이 브라우저의 cross-site 쿠키 정책을 받습니다. 따라서 `backend/.env`에는 **프론트 터널 주소**를 기준으로 아래 값을 넣어야 합니다.
+이 프로젝트는 ngrok을 프론트 하나만 열고 `/api`를 Vite 프록시로 처리합니다. 따라서 백엔드와 프론트가 브라우저 기준 같은 origin처럼 동작하므로, 로컬 기본 쿠키 설정을 사용할 수 있습니다. 여러 사용자가 같은 ngrok 주소에 접속해도 쿠키는 각 사용자 브라우저에 따로 저장되고, Django 세션 데이터는 서버 DB에 별도 세션으로 저장됩니다.
 
-예를 들어 사용자가 접속할 프론트 주소가 `https://plastics-lightweight-chorus-wellington.trycloudflare.com`이면 다음처럼 설정합니다.
+`backend/.env`의 쿠키 설정은 기본값을 권장합니다.
 
 ```env
-CORS_ALLOWED_ORIGINS=https://plastics-lightweight-chorus-wellington.trycloudflare.com
-CSRF_TRUSTED_ORIGINS=https://plastics-lightweight-chorus-wellington.trycloudflare.com
-SESSION_COOKIE_SAMESITE=None
-SESSION_COOKIE_SECURE=true
-CSRF_COOKIE_SAMESITE=None
-CSRF_COOKIE_SECURE=true
+SESSION_COOKIE_SAMESITE=Lax
+SESSION_COOKIE_SECURE=false
+CSRF_COOKIE_SAMESITE=Lax
+CSRF_COOKIE_SECURE=false
 ```
 
 주의할 점:
 
-- `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에는 백엔드 터널 주소가 아니라 **브라우저에서 접속하는 프론트 터널 주소**를 넣습니다.
-- 위 값을 바꾼 뒤에는 백엔드 서버를 재시작해야 합니다.
-- 백엔드 터널은 `localhost` 대신 반드시 `127.0.0.1`로 실행합니다.
-
-```bash
-cloudflared tunnel --url http://127.0.0.1:8000
-```
+- `frontend/.env`의 `VITE_API_BASE_URL`은 `/api`로 둡니다.
+- 백엔드와 프론트 서버는 모두 켜져 있어야 합니다.
+- 이 프로젝트는 ngrok 무료 경고 페이지 우회를 위해 API 요청에 `ngrok-skip-browser-warning` 헤더를 자동으로 붙입니다.
 
 ### 7.1.5 종료 방법
 
-공유를 끝낼 때는 열어둔 4개 터미널을 각각 종료합니다.
+공유를 끝낼 때는 열어둔 3개 터미널을 각각 종료합니다.
 
 | 터미널 | 종료 방법 |
 |---|---|
 | Waitress 백엔드 | `Ctrl + C` |
-| 백엔드 터널 | `Ctrl + C` |
 | Vite 프론트 | `Ctrl + C` |
-| 프론트 터널 | `Ctrl + C` |
+| 프론트 ngrok 터널 | `Ctrl + C` |
 
-Cloudflare quick tunnel은 터미널을 종료하면 외부 주소도 더 이상 접속되지 않습니다. 다음에 다시 실행하면 백엔드/프론트 터널 주소가 새로 발급될 수 있으므로 `frontend/.env`와 Kakao Developers 사이트 도메인을 다시 확인합니다.
+ngrok 터널은 터미널을 종료하면 외부 주소도 더 이상 접속되지 않습니다. 다음에 다시 실행하면 프론트 ngrok 주소가 새로 발급될 수 있으므로 Kakao Developers 사이트 도메인을 다시 확인합니다.
 
 주의할 점:
 
-- 백엔드 터널 주소는 서버를 다시 열 때마다 바뀔 수 있으므로 `frontend/.env`를 수정한 뒤 프론트를 반드시 재시작합니다.
-- 프론트 터널 주소도 서버를 다시 열 때마다 바뀔 수 있습니다.
-- Kakao Developers의 사이트 도메인은 프론트 터널 주소가 바뀔 때마다 다시 추가해야 합니다.
-- 로그인/회원가입/세션 저장이 이상하면 `backend/.env`의 `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `SESSION_COOKIE_SAMESITE`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SAMESITE`, `CSRF_COOKIE_SECURE` 값을 먼저 확인합니다.
-- Cloudflare 공유 중에는 백엔드 터널을 `cloudflared tunnel --url http://127.0.0.1:8000`으로 실행합니다. `localhost`를 쓰면 환경에 따라 origin 연결이 불안정할 수 있습니다.
+- 프론트 ngrok 주소도 서버를 다시 열 때마다 바뀔 수 있습니다.
+- Kakao Developers의 사이트 도메인은 프론트 ngrok 주소가 바뀔 때마다 다시 추가해야 합니다.
+- API가 실패하면 백엔드 `127.0.0.1:8000`, 프론트 `5173`, `frontend/.env`의 `VITE_API_BASE_URL=/api`를 먼저 확인합니다.
 
 ---
 
@@ -501,12 +463,12 @@ cd backend
 python manage.py runserver 127.0.0.1:8000
 ```
 
-Cloudflare로 발표/공유할 때는 백엔드를 다음처럼 실행합니다.
+ngrok으로 발표/공유할 때는 백엔드를 다음처럼 실행합니다.
 
 ```bash
 source .venv/Scripts/activate
 cd backend
-waitress-serve --listen=127.0.0.1:8000 config.wsgi:application
+waitress-serve --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
 ```
 
 프론트엔드:
@@ -778,7 +740,7 @@ pip install -r backend/requirements.txt
 - Django 서버가 `localhost:8000`에서 실행 중인지
 - `frontend/.env`의 `VITE_API_BASE_URL`이 백엔드 주소를 가리키는지
 - 프론트 접속 주소가 `http://localhost:5173/` 또는 `http://127.0.0.1:5173/`인지
-- Cloudflare Tunnel을 쓰는 경우 백엔드 터널 주소를 바꾼 뒤 프론트 서버를 재시작했는지
+- ngrok을 쓰는 경우 `frontend/.env`의 `VITE_API_BASE_URL=/api`인지
 - 고정 배포 도메인을 쓰는 경우 `backend/.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 접속 주소가 포함되어 있는지
 - Django 서버를 CORS 설정 변경 후 재시작했는지
 

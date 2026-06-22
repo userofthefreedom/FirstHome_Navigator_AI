@@ -1,6 +1,6 @@
 import axios from 'axios';
 function normalizeApiBaseUrl(value) {
-    const fallback = 'http://127.0.0.1:8000/api';
+    const fallback = '/api';
     const raw = (value || fallback).replace(/\/$/, '');
     return raw.endsWith('/api') ? raw : `${raw}/api`;
 }
@@ -8,6 +8,9 @@ const api = axios.create({
     baseURL: normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL),
     timeout: 10000,
     withCredentials: true,
+    headers: {
+        'ngrok-skip-browser-warning': 'true',
+    },
 });
 const GET_CACHE_TTL_MS = 60 * 1000;
 const getCache = new Map();

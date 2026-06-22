@@ -38,6 +38,9 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "testserver",
     ".trycloudflare.com",
+    ".ngrok-free.app",
+    ".ngrok.app",
+    ".ngrok.io",
     *env_list("DJANGO_ALLOWED_HOSTS"),
 ]
 
@@ -90,16 +93,23 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.trycloudflare\.com$",
+    r"^https://.*\.ngrok-free\.app$",
+    r"^https://.*\.ngrok\.app$",
+    r"^https://.*\.ngrok\.io$",
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = (
     *default_headers,
     "x-firsthome-client-id",
+    "ngrok-skip-browser-warning",
 )
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://*.trycloudflare.com",
+    "https://*.ngrok-free.app",
+    "https://*.ngrok.app",
+    "https://*.ngrok.io",
     *env_list("CSRF_TRUSTED_ORIGINS"),
 ]
 SESSION_ENGINE = "django.contrib.sessions.backends.db"

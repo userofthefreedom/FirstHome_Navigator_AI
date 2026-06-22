@@ -124,7 +124,7 @@ AI_REQUEST_TIMEOUT=30
 
 HuggingFace/local model serving은 현재 단계에서 사용하지 않습니다.
 
-Cloudflare Tunnel 임시 공유에서는 `*.trycloudflare.com` 호스트와 origin을 기본 허용합니다. 고정 도메인을 쓰거나 Tunnel이 아닌 배포 환경에서는 `.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 실제 프론트/백엔드 주소를 추가합니다.
+ngrok 임시 공유는 프론트 ngrok 주소 하나만 열고 Vite dev server의 `/api` 프록시를 사용합니다. 고정 도메인을 쓰거나 Vite 프록시가 아닌 배포 환경에서는 `.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 실제 프론트/백엔드 주소를 추가합니다.
 
 ## Install
 
