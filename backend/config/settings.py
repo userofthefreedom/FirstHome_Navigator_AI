@@ -49,6 +49,7 @@ EXTERNAL_API_KEYS = {
     "FINLIFE_API_KEY": os.getenv("FINLIFE_API_KEY", ""),
     "YOUTH_POLICY_API_KEY": os.getenv("YOUTH_POLICY_API_KEY", ""),
     "KAKAO_REST_API_KEY": os.getenv("KAKAO_REST_API_KEY", ""),
+    "KAKAO_MOBILITY_API_KEY": os.getenv("KAKAO_MOBILITY_API_KEY", ""),
     "YOUTUBE_API_KEY": os.getenv("YOUTUBE_API_KEY", ""),
     "KOREAEXIM_API_KEY": os.getenv("KOREAEXIM_API_KEY", ""),
     "METALS_DEV_API_KEY": os.getenv("METALS_DEV_API_KEY", ""),

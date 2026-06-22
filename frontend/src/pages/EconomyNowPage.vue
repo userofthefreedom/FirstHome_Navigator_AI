@@ -1,20 +1,19 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { fetchMarketAssets, fetchMarketSummary } from '../api/firsthome';
 
-const today = new Date();
-const twoYearsAgo = new Date(today);
-twoYearsAgo.setFullYear(today.getFullYear() - 2);
-
 const asset = ref('estate_apt_trade_avg');
-const start = ref(twoYearsAgo.toISOString().slice(0, 10));
-const end = ref(today.toISOString().slice(0, 10));
+const start = ref('');
+const end = ref('');
 const rows = ref([]);
 const summary = ref([]);
 const latest = ref({});
 const assetMeta = ref({ label: '부동산 거래', unit: '만원' });
+const marketStats = ref([]);
 const error = ref('');
 const loading = ref(false);
+const estateProvince = ref('');
+const estateRegion = ref('');
 
 const chartOptions = [
   { value: 'estate_apt_trade_avg', label: '부동산 거래' },
@@ -26,37 +25,155 @@ const chartOptions = [
   { value: 'silver', label: '은' },
 ];
 
-const watchedAssets = ['usd_krw', 'jpy_krw', 'eur_krw', 'cnh_krw', 'kosdaq'];
+const watchedAssets = ['usd_krw', 'jpy_krw', 'eur_krw', 'cnh_krw', 'gbp_krw', 'kosdaq'];
+const estateRegionGroups = [
+  { label: '서울', prefix: '11', districts: [
+    { code: '11110', name: '종로구' },
+    { code: '11530', name: '구로구' },
+    { code: '11650', name: '서초구' },
+    { code: '11680', name: '강남구' },
+    { code: '11710', name: '송파구' },
+  ] },
+  { label: '부산', prefix: '26', districts: [
+    { code: '26230', name: '부산진구' },
+    { code: '26350', name: '해운대구' },
+    { code: '26500', name: '수영구' },
+  ] },
+  { label: '인천', prefix: '28', districts: [
+    { code: '28185', name: '연수구' },
+    { code: '28237', name: '부평구' },
+    { code: '28260', name: '서구' },
+  ] },
+  { label: '대구', prefix: '27', districts: [
+    { code: '27110', name: '중구' },
+    { code: '27260', name: '수성구' },
+  ] },
+  { label: '광주', prefix: '29', districts: [{ code: '29140', name: '서구' }] },
+  { label: '대전', prefix: '30', districts: [{ code: '30170', name: '서구' }] },
+  { label: '울산', prefix: '31', districts: [{ code: '31140', name: '남구' }] },
+  { label: '세종', prefix: '36', districts: [{ code: '36110', name: '세종시' }] },
+  { label: '경기', prefix: '41', districts: [
+    { code: '41110', name: '수원시' },
+    { code: '41130', name: '성남시' },
+    { code: '41170', name: '안양시' },
+    { code: '41280', name: '고양시' },
+    { code: '41450', name: '하남시' },
+  ] },
+  { label: '강원', prefix: '51', districts: [{ code: '51110', name: '춘천시' }] },
+  { label: '충북', prefix: '43', districts: [{ code: '43110', name: '청주시' }] },
+  { label: '충남', prefix: '44', districts: [{ code: '44130', name: '천안시' }] },
+  { label: '전북', prefix: '52', districts: [{ code: '52110', name: '전주시' }] },
+  { label: '전남', prefix: '46', districts: [{ code: '46110', name: '목포시' }] },
+  { label: '경북', prefix: '47', districts: [{ code: '47110', name: '포항시' }] },
+  { label: '경남', prefix: '48', districts: [{ code: '48120', name: '창원시' }] },
+  { label: '제주', prefix: '50', districts: [{ code: '50110', name: '제주시' }] },
+];
 
 const summaryByAsset = computed(() => Object.fromEntries(summary.value.map((card) => [card.asset, card])));
+const statsByAsset = computed(() => Object.fromEntries(marketStats.value.map((card) => [card.asset, card])));
 const estateCard = computed(() => summaryByAsset.value.estate_apt_trade_avg ?? emptyCard('estate_apt_trade_avg', '부동산 거래'));
 const baseRateCard = computed(() => summaryByAsset.value.base_rate ?? emptyCard('base_rate', '기준금리'));
 const usdCard = computed(() => summaryByAsset.value.usd_krw ?? emptyCard('usd_krw', '원/달러 환율'));
 const kospiCard = computed(() => summaryByAsset.value.kospi ?? emptyCard('kospi', 'KOSPI'));
-const metals = computed(() => [
-  summaryByAsset.value.gold ?? emptyCard('gold', '금 가격'),
-  summaryByAsset.value.silver ?? emptyCard('silver', '은 가격'),
-]);
 const exchangeCards = computed(() => [
   { label: 'USD', row: latest.value.usd_krw, fallback: usdCard.value },
   { label: 'JPY(100)', row: latest.value.jpy_krw },
   { label: 'EUR', row: latest.value.eur_krw },
   { label: 'CNH', row: latest.value.cnh_krw },
+  { label: 'GBP', row: latest.value.gbp_krw },
 ]);
 const kosdaqLatest = computed(() => latest.value.kosdaq);
+const metals = computed(() => [
+  {
+    asset: 'gold',
+    label: '금 가격',
+    value: summaryByAsset.value.gold?.value ?? '수집 필요',
+    description: summaryByAsset.value.gold?.description ?? 'KRX 금시장 기준',
+  },
+  {
+    asset: 'silver',
+    label: '은 가격',
+    value: summaryByAsset.value.silver?.value ?? '수집 필요',
+    description: summaryByAsset.value.silver?.description ?? 'Metals.dev 현물 기준',
+  },
+]);
+const estatePriceManwon = computed(() => parseLocalizedNumber(estateCard.value.value));
+const estimatedDeposit = computed(() => Math.round(estatePriceManwon.value * 0.1));
+const monthlySavingTarget = computed(() => Math.round(estimatedDeposit.value / 24));
+const indexCards = computed(() => [
+  {
+    asset: 'kospi',
+    label: 'KOSPI',
+    value: kospiCard.value.value,
+    caption: `전일 대비 ${changeLabel(kospiCard.value.change_rate)}`,
+  },
+  {
+    asset: 'kosdaq',
+    label: 'KOSDAQ',
+    value: kosdaqLatest.value ? formatValue(kosdaqLatest.value.price, kosdaqLatest.value.unit) : '수집 필요',
+    caption: kosdaqLatest.value ? `전일 대비 ${changeLabel(kosdaqLatest.value.change_rate)}` : '데이터 수집 후 표시됩니다.',
+  },
+]);
+const selectedEstateGroup = computed(() => estateRegionGroups.find((group) => group.prefix === estateProvince.value));
+const estateDistricts = computed(() => selectedEstateGroup.value?.districts ?? []);
+const isEstateAsset = computed(() => asset.value === 'estate_apt_trade_avg');
+const uniqueValueCount = computed(() => new Set(rows.value.map((row) => Number(row.price || 0))).size);
+const hasTrend = computed(() => rows.value.length >= 2 && uniqueValueCount.value >= 2);
+const isFlatTrend = computed(() => rows.value.length >= 2 && uniqueValueCount.value === 1);
+const chartStatus = computed(() => {
+  if (!rows.value.length) return '수집된 데이터가 없습니다.';
+  if (rows.value.length === 1) return '현재 선택 조건은 관측값 1건만 있어 추세선 대신 최신값을 강조합니다.';
+  if (isFlatTrend.value) return '선택 기간 동안 값이 변하지 않아 수평선으로 표시됩니다.';
+  return `${rows.value.length}개 관측값으로 추세를 표시합니다.`;
+});
+const decisionCards = computed(() => {
+  return [
+    { label: '예상 계약금', value: estimatedDeposit.value ? `${estimatedDeposit.value.toLocaleString()}만원` : '계산 필요', caption: '평균 실거래가 10% 기준' },
+    { label: '월 저축 기준', value: monthlySavingTarget.value ? `${monthlySavingTarget.value.toLocaleString()}만원` : '계산 필요', caption: '24개월 분할 준비 기준' },
+    { label: '원/달러', value: usdCard.value.value, caption: '수입 물가와 금리 부담 신호' },
+    { label: 'KOSDAQ', value: kosdaqLatest.value ? formatValue(kosdaqLatest.value.price, kosdaqLatest.value.unit) : '수집 필요', caption: kosdaqLatest.value ? `전일 대비 ${changeLabel(kosdaqLatest.value.change_rate)}` : '보조 시장 심리 지표' },
+  ];
+});
 
+const chartValues = computed(() => rows.value.map((row) => Number(row.price || 0)));
+const chartMin = computed(() => chartValues.value.length ? Math.min(...chartValues.value) : 0);
+const chartMax = computed(() => chartValues.value.length ? Math.max(...chartValues.value) : 0);
+const chartRange = computed(() => Math.max(1, chartMax.value - chartMin.value));
+const chartPadding = computed(() => Math.max(chartRange.value * 0.18, Math.abs(chartMax.value || 1) * 0.015));
+const chartMinBound = computed(() => Math.max(0, chartMin.value - chartPadding.value));
+const chartMaxBound = computed(() => chartMax.value + chartPadding.value);
+const chartMid = computed(() => chartValues.value.length ? (chartMinBound.value + chartMaxBound.value) / 2 : 0);
 const points = computed(() => {
   if (!rows.value.length)
     return '';
-  const values = rows.value.map((row) => Number(row.price || 0));
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = Math.max(1, max - min);
   return rows.value.map((row, index) => {
-    const x = rows.value.length === 1 ? 50 : (index / (rows.value.length - 1)) * 100;
-    const y = 88 - ((Number(row.price || 0) - min) / span) * 74;
+    const { x, y } = pointForRow(row, index);
     return `${x},${y}`;
   }).join(' ');
+});
+const highPoint = computed(() => extremumPoint('max'));
+const lowPoint = computed(() => extremumPoint('min'));
+const latestPoint = computed(() => {
+  if (!latestRow.value || !rows.value.length) return null;
+  return {
+    ...pointForRow(latestRow.value, rows.value.length - 1),
+    row: latestRow.value,
+    value: formatValue(latestRow.value.price, latestRow.value.unit || assetMeta.value.unit),
+  };
+});
+const yAxisTicks = computed(() => [
+  { label: formatValue(chartMaxBound.value, assetMeta.value.unit), position: 8 },
+  { label: formatValue(chartMid.value, assetMeta.value.unit), position: 50 },
+  { label: formatValue(chartMinBound.value, assetMeta.value.unit), position: 92 },
+]);
+const xAxisTicks = computed(() => {
+  if (!rows.value.length) return [];
+  const middleIndex = Math.floor((rows.value.length - 1) / 2);
+  return [
+    { label: formatShortDate(rows.value[0].date), position: 0 },
+    { label: formatShortDate(rows.value[middleIndex].date), position: 50 },
+    { label: formatShortDate(rows.value.at(-1).date), position: 100 },
+  ];
 });
 
 const latestRow = computed(() => rows.value.at(-1));
@@ -71,12 +188,21 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
+    const assetParams = { asset: asset.value, start: start.value, end: end.value };
+    if (isEstateAsset.value) {
+      if (estateRegion.value) {
+        assetParams.region = estateRegion.value;
+      } else if (estateProvince.value) {
+        assetParams.region_prefix = estateProvince.value;
+      }
+    }
     const [assetResponse, summaryResponse, ...latestResponses] = await Promise.all([
-      fetchMarketAssets({ asset: asset.value, start: start.value, end: end.value }),
+      fetchMarketAssets(assetParams),
       fetchMarketSummary(),
       ...watchedAssets.map((item) => fetchMarketAssets({ asset: item })),
     ]);
     rows.value = assetResponse.items ?? [];
+    syncDateRangeToRows();
     assetMeta.value = {
       label: assetResponse.label ?? selectedAssetLabel(asset.value),
       unit: assetResponse.unit ?? '',
@@ -84,6 +210,7 @@ async function load() {
       source: assetResponse.source ?? '',
     };
     summary.value = summaryResponse.cards ?? [];
+    marketStats.value = summaryResponse.stats ?? [];
     latest.value = Object.fromEntries(watchedAssets.map((item, index) => [item, latestResponses[index]?.items?.at(-1) ?? null]));
   } catch (event) {
     error.value = event?.response?.data?.detail ?? '시장 데이터를 불러오지 못했습니다.';
@@ -109,6 +236,17 @@ function formatValue(value, unit = '') {
   return `${Math.round(numericValue).toLocaleString()}${unit}`;
 }
 
+function parseLocalizedNumber(value) {
+  const match = String(value || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function formatShortDate(value) {
+  if (!value) return '';
+  const [year, month, day] = value.split('-');
+  return `${year.slice(2)}.${month}.${day}`;
+}
+
 function changeLabel(value) {
   const numericValue = Number(value || 0);
   if (!numericValue)
@@ -116,7 +254,100 @@ function changeLabel(value) {
   return `${numericValue > 0 ? '+' : ''}${numericValue.toFixed(2)}%`;
 }
 
+function pointForRow(row, index) {
+  const span = Math.max(1, chartMaxBound.value - chartMinBound.value);
+  return {
+    x: rows.value.length === 1 ? 50 : (index / (rows.value.length - 1)) * 100,
+    y: uniqueValueCount.value === 1 ? 50 : 92 - ((Number(row.price || 0) - chartMinBound.value) / span) * 84,
+  };
+}
+
+function chartDotStyle(point) {
+  if (!point) return {};
+  return {
+    left: `${point.x}%`,
+    top: `${point.y}%`,
+    transform: 'translate(-50%, -50%)',
+  };
+}
+
+function chartBadgeStyle(point, side = 'above') {
+  if (!point) return {};
+  const top = badgeTop(point, side);
+  return {
+    left: `${badgeLeft(point)}%`,
+    top: `${top}%`,
+    transform: 'translate(-50%, -50%)',
+  };
+}
+
+function chartConnector(point, side = 'above') {
+  if (!point) return {};
+  return {
+    x: badgeLeft(point),
+    y: badgeTop(point, side),
+  };
+}
+
+function badgeLeft(point) {
+  return Math.min(86, Math.max(14, point.x));
+}
+
+function badgeTop(point, side) {
+  const offset = side === 'above' ? -18 : 18;
+  return Math.min(88, Math.max(8, point.y + offset));
+}
+
+function latestAxisLabelStyle(point) {
+  if (!point) return {};
+  return {
+    top: `${Math.min(90, Math.max(8, point.y))}%`,
+    transform: 'translateY(-50%)',
+  };
+}
+
+function extremumPoint(type) {
+  if (!rows.value.length) return null;
+  const target = type === 'max' ? chartMax.value : chartMin.value;
+  const index = rows.value.findIndex((row) => Number(row.price || 0) === target);
+  if (index < 0) return null;
+  const row = rows.value[index];
+  return {
+    ...pointForRow(row, index),
+    row,
+    value: formatValue(row.price, row.unit || assetMeta.value.unit),
+    label: type === 'max' ? '최고' : '최저',
+  };
+}
+
+function syncDateRangeToRows() {
+  if (!rows.value.length) return;
+  start.value = rows.value[0].date;
+  end.value = rows.value.at(-1).date;
+}
+
+function applyKnownRange(assetName = asset.value) {
+  const stat = statsByAsset.value[assetName];
+  if (!stat?.first || !stat?.last) return;
+  start.value = stat.first;
+  end.value = stat.last;
+}
+
+function selectAsset(assetName) {
+  asset.value = assetName;
+  applyKnownRange(assetName);
+  load();
+}
+
 onMounted(load);
+
+watch(asset, (nextAsset) => {
+  applyKnownRange(nextAsset);
+});
+
+watch(estateProvince, () => {
+  estateRegion.value = '';
+});
 </script>
 
 <template>
@@ -135,7 +366,7 @@ onMounted(load);
             <h2 class="text-3xl font-black text-slate-950">{{ estateCard.value }}</h2>
             <p class="mt-2 text-sm leading-6 text-slate-500">{{ estateCard.description }}</p>
           </div>
-          <button type="button" class="h-11 rounded-lg bg-blue-600 px-5 text-sm font-black text-white" @click="asset = 'estate_apt_trade_avg'; load()">
+          <button type="button" class="h-11 rounded-lg bg-blue-600 px-5 text-sm font-black text-white" @click="selectAsset('estate_apt_trade_avg')">
             거래 추이 보기
           </button>
         </div>
@@ -156,21 +387,22 @@ onMounted(load);
             <p class="mt-1 text-xs text-slate-500">{{ changeLabel(kospiCard.change_rate) }}</p>
           </div>
         </div>
-      </div>
-
-      <aside class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="text-lg font-black text-slate-950">환율 상세</h2>
-        <p class="mt-1 text-sm text-slate-500">수입 물가와 금리 환경을 함께 보기 위한 보조 지표입니다.</p>
-        <div class="mt-4 grid gap-2">
-          <div v-for="item in exchangeCards" :key="item.label" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p class="text-sm font-bold text-slate-500">{{ item.label }}</p>
-            <p class="text-base font-black text-slate-950">{{ item.row ? formatValue(item.row.price, item.row.unit) : item.fallback?.value ?? '수집 필요' }}</p>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div v-for="item in decisionCards" :key="item.label" class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <p class="text-xs font-bold text-slate-500">{{ item.label }}</p>
+            <p class="mt-1 text-lg font-black text-slate-950">{{ item.value }}</p>
+            <p class="mt-1 truncate text-xs font-semibold text-slate-500">{{ item.caption }}</p>
           </div>
         </div>
-        <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-          <div class="flex items-center justify-between gap-3">
-            <p class="text-sm font-bold text-slate-500">KOSDAQ</p>
-            <p class="text-base font-black text-slate-950">{{ kosdaqLatest ? formatValue(kosdaqLatest.price, kosdaqLatest.unit) : '수집 필요' }}</p>
+      </div>
+
+      <aside class="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="text-lg font-black text-slate-950">환율 상세</h2>
+        <p class="mt-1 text-sm text-slate-500">수입 물가와 금리 환경을 함께 보기 위한 보조 지표입니다.</p>
+        <div class="mt-4 grid flex-1 grid-rows-5 gap-2">
+          <div v-for="item in exchangeCards" :key="item.label" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4">
+            <p class="text-sm font-bold text-slate-500">{{ item.label }}</p>
+            <p class="text-base font-black text-slate-950">{{ item.row ? formatValue(item.row.price, item.row.unit) : item.fallback?.value ?? '수집 필요' }}</p>
           </div>
         </div>
       </aside>
@@ -186,6 +418,14 @@ onMounted(load);
           <select v-model="asset" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-bold">
             <option v-for="option in chartOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
           </select>
+          <select v-if="isEstateAsset" v-model="estateProvince" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-bold">
+            <option value="">전국</option>
+            <option v-for="group in estateRegionGroups" :key="group.prefix" :value="group.prefix">{{ group.label }}</option>
+          </select>
+          <select v-if="isEstateAsset" v-model="estateRegion" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-bold" :disabled="!estateProvince">
+            <option value="">전체 시군구</option>
+            <option v-for="district in estateDistricts" :key="district.code" :value="district.code">{{ district.name }}</option>
+          </select>
           <input v-model="start" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-bold" type="date" />
           <input v-model="end" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-bold" type="date" />
           <button type="button" :disabled="loading" class="h-10 rounded-lg bg-blue-600 px-4 text-sm font-black text-white disabled:opacity-60" @click="load">
@@ -197,15 +437,112 @@ onMounted(load);
       <p v-if="error" class="mt-4 rounded-lg bg-amber-50 p-3 text-sm font-bold text-amber-800">{{ error }}</p>
       <p v-else-if="assetMeta.detail && !rows.length" class="mt-4 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600">{{ assetMeta.detail }}</p>
 
-      <div class="mt-5 aspect-[16/6] rounded-lg bg-slate-950 p-5">
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-full w-full">
-          <line x1="0" y1="88" x2="100" y2="88" stroke="#334155" stroke-width="0.8" vector-effect="non-scaling-stroke" />
-          <polyline v-if="points" :points="points" fill="none" stroke="#2dd4bf" stroke-width="2.5" vector-effect="non-scaling-stroke" />
-          <circle v-if="rows.length === 1" cx="50" cy="50" r="2.5" fill="#2dd4bf" vector-effect="non-scaling-stroke" />
-        </svg>
-      </div>
-      <div class="mt-4 grid gap-2 text-xs font-bold text-slate-500 sm:grid-cols-3">
-        <span v-for="row in rows.slice(-3)" :key="row.date" class="rounded-md bg-slate-50 px-3 py-2">{{ row.date }} · {{ formatValue(row.price, row.unit || assetMeta.unit) }}</span>
+      <div class="mt-5 rounded-lg bg-slate-950 p-5">
+        <div class="grid h-[420px] grid-cols-[82px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_34px] gap-x-3">
+          <div class="flex flex-col justify-between py-2 text-right text-xs font-bold text-slate-400">
+            <span v-for="tick in yAxisTicks" :key="tick.position">{{ tick.label }}</span>
+          </div>
+          <div class="relative min-w-0">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-full w-full overflow-visible">
+              <line x1="0" y1="92" x2="100" y2="92" stroke="#334155" stroke-width="0.8" vector-effect="non-scaling-stroke" />
+              <line x1="0" y1="50" x2="100" y2="50" stroke="#1e293b" stroke-width="0.6" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" />
+              <line x1="0" y1="8" x2="100" y2="8" stroke="#1e293b" stroke-width="0.6" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" />
+              <line
+                v-if="latestPoint"
+                x1="0"
+                :x2="latestPoint.x"
+                :y1="latestPoint.y"
+                :y2="latestPoint.y"
+                stroke="#fb7185"
+                stroke-width="1"
+                stroke-dasharray="2 5"
+                vector-effect="non-scaling-stroke"
+              />
+              <polyline v-if="points" :points="points" fill="none" stroke="#2dd4bf" stroke-width="2.5" vector-effect="non-scaling-stroke" />
+              <line
+                v-if="highPoint"
+                :x1="highPoint.x"
+                :y1="highPoint.y"
+                :x2="chartConnector(highPoint, 'above').x"
+                :y2="chartConnector(highPoint, 'above').y"
+                stroke="#38bdf8"
+                stroke-width="1"
+                vector-effect="non-scaling-stroke"
+              />
+              <line
+                v-if="lowPoint"
+                :x1="lowPoint.x"
+                :y1="lowPoint.y"
+                :x2="chartConnector(lowPoint, 'below').x"
+                :y2="chartConnector(lowPoint, 'below').y"
+                stroke="#f59e0b"
+                stroke-width="1"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
+            <span
+              v-if="highPoint"
+              class="pointer-events-none absolute h-2 w-2 rounded-full bg-sky-300 shadow-[0_0_0_3px_rgba(15,23,42,0.9),0_0_12px_rgba(56,189,248,0.55)]"
+              :style="chartDotStyle(highPoint)"
+            ></span>
+            <span
+              v-if="lowPoint"
+              class="pointer-events-none absolute h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_0_3px_rgba(15,23,42,0.9),0_0_12px_rgba(245,158,11,0.5)]"
+              :style="chartDotStyle(lowPoint)"
+            ></span>
+            <span
+              v-if="latestPoint"
+              class="pointer-events-none absolute h-2 w-2 rounded-full bg-rose-300 shadow-[0_0_0_3px_rgba(15,23,42,0.9),0_0_12px_rgba(251,113,133,0.45)]"
+              :style="chartDotStyle(latestPoint)"
+            ></span>
+            <div
+              v-if="highPoint"
+              class="pointer-events-none absolute z-20 whitespace-nowrap rounded-full border border-sky-300/40 bg-slate-950/95 px-3 py-1.5 text-xs font-black text-sky-100 shadow-lg shadow-sky-950/30"
+              :style="chartBadgeStyle(highPoint, 'above')"
+            >
+              <span class="mr-1 inline-block h-2 w-2 rounded-full bg-sky-300"></span>
+              최고 {{ highPoint.value }}
+            </div>
+            <div
+              v-if="lowPoint"
+              class="pointer-events-none absolute z-20 whitespace-nowrap rounded-full border border-amber-300/40 bg-slate-950/95 px-3 py-1.5 text-xs font-black text-amber-100 shadow-lg shadow-amber-950/30"
+              :style="chartBadgeStyle(lowPoint, 'below')"
+            >
+              <span class="mr-1 inline-block h-2 w-2 rounded-full bg-amber-300"></span>
+              최저 {{ lowPoint.value }}
+            </div>
+            <div
+              v-if="latestPoint"
+              class="pointer-events-none absolute right-full mr-3 rounded-md border border-rose-300/40 bg-rose-400/10 px-2 py-1 text-right text-xs font-black text-rose-100"
+              :style="latestAxisLabelStyle(latestPoint)"
+            >
+              현재 {{ latestPoint.value }}
+            </div>
+            <div v-if="!hasTrend" class="absolute inset-x-4 top-4 max-w-xl rounded-lg border border-slate-700 bg-slate-900/90 p-4">
+              <p class="text-sm font-black text-white">{{ chartStatus }}</p>
+              <p class="mt-2 text-sm font-semibold text-slate-300">
+                최신값 {{ latestValue }} · {{ rows.length }}건 · {{ assetMeta.source || 'database' }}
+              </p>
+            </div>
+          </div>
+          <div></div>
+          <div class="relative text-xs font-bold text-slate-400">
+            <span
+              v-for="tick in xAxisTicks"
+              :key="`${tick.position}-${tick.label}`"
+              class="absolute top-2"
+              :style="{ left: `${tick.position}%`, transform: tick.position === 0 ? 'translateX(0)' : tick.position === 100 ? 'translateX(-100%)' : 'translateX(-50%)' }"
+            >
+              {{ tick.label }}
+            </span>
+          </div>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-3 text-xs font-bold text-slate-400">
+          <span>{{ chartStatus }}</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <span>기간 {{ start || '-' }} ~ {{ end || '-' }}</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -217,7 +554,7 @@ onMounted(load);
         </div>
       </div>
       <div class="mt-4 grid gap-3 md:grid-cols-2">
-        <button v-for="item in metals" :key="item.asset" type="button" class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-blue-50" @click="asset = item.asset; load()">
+        <button v-for="item in metals" :key="item.asset" type="button" class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition hover:bg-blue-50" @click="selectAsset(item.asset)">
           <p class="text-sm font-bold text-slate-500">{{ item.label }}</p>
           <p class="mt-2 text-2xl font-black text-slate-950">{{ item.value }}</p>
           <p class="mt-1 text-xs text-slate-500">{{ item.description }}</p>

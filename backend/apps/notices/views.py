@@ -62,6 +62,7 @@ def _notice_map_payload(profile, *, include_excluded: bool, ownership_type: str 
         index = marker_counts.get(key, 0)
         marker_counts[key] = index + 1
         scored = calculate_score(notice, profile)
+        representative_price = int(notice.get("price") or 0) or _representative_option_price(scored)
         items.append(
             {
                 "notice_id": notice["id"],
@@ -73,7 +74,7 @@ def _notice_map_payload(profile, *, include_excluded: bool, ownership_type: str 
                 "supply_type": notice["supply_type"],
                 "housing_type": notice["housing_type"],
                 "area": notice.get("area", ""),
-                "price": notice.get("price", 0),
+                "price": representative_price,
                 "application_deadline": notice.get("application_deadline", ""),
                 "data_source": notice.get("data_source", ""),
                 "source_url": notice.get("source_url", ""),
@@ -91,6 +92,17 @@ def _notice_map_payload(profile, *, include_excluded: bool, ownership_type: str 
         )
     items.sort(key=lambda item: (item["total_score"], item["application_deadline"]), reverse=True)
     return {"items": items, "count": len(items)}
+
+
+def _representative_option_price(scored: dict) -> int:
+    best_option = scored.get("best_option") or {}
+    if int(best_option.get("base_price") or 0) > 0:
+        return int(best_option.get("base_price") or 0)
+    for option in scored.get("top_options", []):
+        price = int(option.get("base_price") or 0)
+        if price > 0:
+            return price
+    return 0
 
 
 def _map_region(notice: dict) -> str:

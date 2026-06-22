@@ -4,6 +4,8 @@ from django.db import models
 class MarketAssetPrice(models.Model):
     asset_type = models.CharField(max_length=40, db_index=True)
     base_date = models.DateField(db_index=True)
+    region_code = models.CharField(max_length=10, blank=True, db_index=True)
+    region_name = models.CharField(max_length=80, blank=True)
     price = models.FloatField(default=0)
     change_rate = models.FloatField(default=0)
     source = models.CharField(max_length=80, blank=True)
@@ -11,7 +13,7 @@ class MarketAssetPrice(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["asset_type", "base_date"], name="unique_market_asset_price")
+            models.UniqueConstraint(fields=["asset_type", "base_date", "region_code"], name="unique_market_asset_price")
         ]
         ordering = ["base_date"]
 

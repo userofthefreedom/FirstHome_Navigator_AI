@@ -31,7 +31,7 @@ def _youtube_response(query: str):
                 "part": "snippet",
                 "q": query,
                 "type": "video",
-                "maxResults": 6,
+                "maxResults": 3,
                 "key": api_key,
                 "safeSearch": "moderate",
                 "relevanceLanguage": "ko",

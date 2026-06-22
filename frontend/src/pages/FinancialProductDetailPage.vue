@@ -18,6 +18,11 @@ const joinedMessage = ref('');
 const isLoggedIn = computed(() => Boolean(session.value?.user?.is_authenticated));
 const bestOptionId = computed(() => product.value?.best_option?.id ?? product.value?.options?.[0]?.id ?? null);
 
+function displayRate(value) {
+  if (value === null || value === undefined || value === '') return '확인 필요';
+  return `${Number(value).toFixed(2).replace(/\.?0+$/, '')}%`;
+}
+
 async function loadDetail() {
   loading.value = true;
   error.value = '';
@@ -84,11 +89,11 @@ onMounted(loadDetail);
       <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <h2 class="text-lg font-black text-slate-950">기간별 금리 옵션</h2>
         <div class="mt-4 overflow-hidden rounded-lg border border-slate-200">
-          <label v-for="option in product.options ?? []" :key="option.id" class="grid cursor-pointer gap-3 border-b border-slate-100 p-4 last:border-b-0 md:grid-cols-[40px_1fr_1fr_1fr]">
+          <label v-for="(option, index) in product.options ?? []" :key="option.id ?? `single-${index}`" class="grid cursor-pointer gap-3 border-b border-slate-100 p-4 last:border-b-0 md:grid-cols-[40px_1fr_1fr_1fr]">
             <input v-model="selectedOptionId" type="radio" :value="option.id" />
             <span class="font-bold text-slate-950">{{ option.save_trm }}개월</span>
-            <span class="text-sm font-semibold text-slate-600">기본 {{ option.intr_rate }}%</span>
-            <span class="text-sm font-black text-blue-700">최고 {{ option.intr_rate2 }}%</span>
+            <span class="text-sm font-semibold text-slate-600">기본 {{ displayRate(option.intr_rate) }}</span>
+            <span class="text-sm font-black text-blue-700">최고 {{ displayRate(option.intr_rate2) }}</span>
           </label>
           <p v-if="!(product.options ?? []).length" class="p-4 text-sm font-bold text-slate-500">옵션 데이터가 없습니다.</p>
         </div>

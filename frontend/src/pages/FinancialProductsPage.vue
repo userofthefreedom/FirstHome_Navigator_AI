@@ -13,6 +13,11 @@ const form = ref({ category: 'all', provider: '', term_months: '', q: '', orderi
 const categoryLabels = { all: '전체', deposit: '정기예금', saving: '적금', 예금: '예금', 적금: '적금' };
 const visibleProviders = computed(() => filters.value.providers ?? []);
 
+function optionLabel(product) {
+  const count = Number(product.option_count ?? 0);
+  return count > 0 ? `${count}개` : '단일';
+}
+
 async function loadProducts() {
   loading.value = true;
   error.value = '';
@@ -85,7 +90,12 @@ onMounted(loadProducts);
             <p class="text-sm font-bold text-blue-700">{{ product.provider }}</p>
             <h2 class="mt-1 line-clamp-2 text-lg font-black text-slate-950">{{ product.name }}</h2>
           </div>
-          <span class="shrink-0 rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">{{ categoryLabels[product.category] ?? product.category }}</span>
+          <div class="flex shrink-0 flex-col items-end gap-1">
+            <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">{{ categoryLabels[product.category] ?? product.category }}</span>
+            <span v-if="form.ordering === 'fit' && product.match_score" class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
+              적합도 {{ product.match_score }}점
+            </span>
+          </div>
         </div>
         <div class="mt-4 grid grid-cols-3 gap-2 text-sm">
           <div class="rounded-lg bg-slate-50 p-3">
@@ -97,8 +107,8 @@ onMounted(loadProducts);
             <p class="mt-1 font-black text-slate-950">{{ product.term_months || product.best_option?.save_trm || '-' }}개월</p>
           </div>
           <div class="rounded-lg bg-slate-50 p-3">
-            <p class="text-xs font-bold text-slate-500">옵션</p>
-            <p class="mt-1 font-black text-slate-950">{{ product.option_count ?? 0 }}개</p>
+            <p class="text-xs font-bold text-slate-500">구성</p>
+            <p class="mt-1 font-black text-slate-950">{{ optionLabel(product) }}</p>
           </div>
         </div>
       </RouterLink>

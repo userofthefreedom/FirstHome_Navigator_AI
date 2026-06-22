@@ -190,7 +190,14 @@ def fetch_krx_index_rows(api_key: str, *, target_date: date, timeout: int = 30) 
     return rows
 
 
-def fetch_estate_trade_rows(api_key: str, *, month: date, lawd_cd: str = "11110", timeout: int = 30) -> list[MarketPriceRow]:
+def fetch_estate_trade_rows(
+    api_key: str,
+    *,
+    month: date,
+    lawd_cd: str = "11110",
+    region_name: str = "서울 종로구",
+    timeout: int = 30,
+) -> list[MarketPriceRow]:
     payload = _request_text(
         MOLIT_APT_TRADE_URL,
         params={
@@ -223,8 +230,9 @@ def fetch_estate_trade_rows(api_key: str, *, month: date, lawd_cd: str = "11110"
             source_meta={
                 "unit": "만원",
                 "lawd_cd": lawd_cd,
+                "region_name": region_name,
                 "deal_count": len(amounts),
-                "label": "서울 종로구 아파트 평균 실거래가",
+                "label": f"{region_name} 아파트 평균 실거래가",
             },
         )
     ]
@@ -296,7 +304,15 @@ def _select_representative_index(items: list[dict[str, Any]], asset_type: str) -
 def _normalize_exchange_payload(payload: Any, base_date: date) -> list[MarketPriceRow]:
     if not isinstance(payload, list):
         return []
-    wanted = {"USD": "usd_krw", "JPY(100)": "jpy_krw", "EUR": "eur_krw", "CNH": "cnh_krw"}
+    wanted = {
+        "USD": "usd_krw",
+        "JPY(100)": "jpy_krw",
+        "EUR": "eur_krw",
+        "CNH": "cnh_krw",
+        "GBP": "gbp_krw",
+        "AUD": "aud_krw",
+        "CAD": "cad_krw",
+    }
     rows = []
     for item in payload:
         unit = str(item.get("cur_unit") or "").strip()

@@ -160,6 +160,10 @@ export async function joinFinancialProduct(productId, optionId, memo = '') {
 export async function fetchJoinedProducts() {
     return cachedGet('/products/joined');
 }
+export async function deleteJoinedProduct(joinedId) {
+    await api.delete(`/products/joined/${joinedId}`);
+    invalidateFirstHomeApiCache();
+}
 export async function fetchMarketAssets(params) {
     return cachedGet('/market/assets', { params });
 }

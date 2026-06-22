@@ -2,25 +2,52 @@
 import { computed, onMounted, ref } from 'vue';
 import { createAgoraComment, createAgoraPost, deleteAgoraComment, deleteAgoraPost, fetchAgoraPosts, fetchAuthSession, fetchDefaultVideos, searchVideos } from '../api/firsthome';
 
+const boardTabs = [
+  { value: 'all', label: '전체' },
+  { value: 'notice', label: '청약' },
+  { value: 'product', label: '금융상품' },
+  { value: 'funding', label: '자금준비' },
+  { value: 'free', label: '자유 게시판' },
+];
+
+const categoryLabels = {
+  notice: '청약',
+  product: '금융상품',
+  funding: '자금준비',
+  free: '자유',
+};
+
 const session = ref(null);
 const videoQuery = ref('청약 공공분양');
 const videos = ref([]);
 const videoMessage = ref('');
 const selectedVideo = ref(null);
 const posts = ref([]);
+const activeBoard = ref('all');
 const postForm = ref({ title: '', content: '', category: 'notice' });
 const commentInputs = ref({});
 const error = ref('');
 const isLoggedIn = computed(() => Boolean(session.value?.user?.is_authenticated));
+const isAllBoard = computed(() => activeBoard.value === 'all');
+const boardTitle = computed(() => boardTabs.find((tab) => tab.value === activeBoard.value)?.label ?? '전체');
 
 async function loadVideos(useSearch = false) {
   const response = useSearch ? await searchVideos(videoQuery.value) : await fetchDefaultVideos();
-  videos.value = response.items ?? [];
+  videos.value = (response.items ?? []).slice(0, 3);
   videoMessage.value = response.fallback_reason ?? '';
 }
 
 async function loadPosts() {
-  posts.value = await fetchAgoraPosts();
+  const params = isAllBoard.value ? undefined : { category: activeBoard.value };
+  posts.value = await fetchAgoraPosts(params);
+}
+
+async function selectBoard(board) {
+  activeBoard.value = board;
+  if (!isAllBoard.value) {
+    postForm.value = { ...postForm.value, category: board };
+  }
+  await loadPosts();
 }
 
 async function submitPost() {
@@ -28,8 +55,9 @@ async function submitPost() {
     error.value = '로그인 후 글을 작성할 수 있습니다.';
     return;
   }
-  await createAgoraPost(postForm.value);
-  postForm.value = { title: '', content: '', category: 'notice' };
+  const category = isAllBoard.value ? postForm.value.category : activeBoard.value;
+  await createAgoraPost({ ...postForm.value, category });
+  postForm.value = { title: '', content: '', category: isAllBoard.value ? postForm.value.category : activeBoard.value };
   await loadPosts();
 }
 
@@ -87,16 +115,36 @@ onMounted(async () => {
     </section>
 
     <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 class="text-lg font-black text-slate-950">커뮤니티</h2>
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 class="text-lg font-black text-slate-950">커뮤니티</h2>
+          <p class="mt-1 text-sm font-bold text-slate-500">{{ boardTitle }} 게시글을 확인합니다.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="tab in boardTabs"
+            :key="tab.value"
+            type="button"
+            class="h-10 rounded-lg border px-4 text-sm font-black transition"
+            :class="activeBoard === tab.value ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-blue-50'"
+            @click="selectBoard(tab.value)"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
       <p v-if="error" class="mt-2 text-sm font-bold text-amber-700">{{ error }}</p>
       <div class="mt-4 grid gap-3 md:grid-cols-[160px_1fr]">
-        <select v-model="postForm.category" class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-bold">
+        <select v-if="isAllBoard" v-model="postForm.category" class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-bold">
           <option value="notice">청약</option>
           <option value="product">금융상품</option>
           <option value="funding">자금준비</option>
           <option value="free">자유</option>
         </select>
-        <input v-model="postForm.title" class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-bold" placeholder="제목" />
+        <div v-else class="flex h-11 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-black text-blue-700">
+          {{ categoryLabels[activeBoard] }}
+        </div>
+        <input v-model="postForm.title" class="h-11 rounded-lg border border-slate-200 px-3 text-sm font-bold" :placeholder="`${boardTitle} 글 제목`" />
         <textarea v-model="postForm.content" class="min-h-24 rounded-lg border border-slate-200 p-3 text-sm font-bold md:col-span-2" placeholder="내용"></textarea>
         <button type="button" class="h-11 rounded-lg bg-slate-950 px-4 text-sm font-black text-white md:col-span-2" @click="submitPost">
           {{ isLoggedIn ? '글쓰기' : '로그인 후 글쓰기' }}
@@ -107,7 +155,7 @@ onMounted(async () => {
         <article v-for="post in posts" :key="post.id" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-xs font-black text-blue-700">{{ post.category }} · {{ post.author_username }}</p>
+              <p class="text-xs font-black text-blue-700">{{ categoryLabels[post.category] ?? post.category }} · {{ post.author_username }} · 댓글 {{ post.comment_count }}</p>
               <h3 class="mt-1 text-lg font-black text-slate-950">{{ post.title }}</h3>
               <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">{{ post.content }}</p>
             </div>

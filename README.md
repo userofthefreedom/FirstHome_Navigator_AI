@@ -23,25 +23,6 @@
 | F1309 금융 상품 추천 | `/api/recommendations/products`, 자금 로드맵 추천상품 상세 연결 |
 | F1311 생성형 AI 활용 | AI 코치, 전역 챗봇, LLM 보조 PDF 분석 유지 |
 
-추가 환경변수:
-
-```env
-YOUTUBE_API_KEY=
-KOREAEXIM_API_KEY=
-METALS_DEV_API_KEY=
-BOK_ECOS_API_KEY=
-KRX_API_KEY=
-```
-
-대표 수집 명령:
-
-```bash
-cd backend
-python manage.py import_finlife --dry-run
-python manage.py import_finlife
-python manage.py import_market_data --dry-run
-python manage.py import_market_data
-```
 
 팀 터미널 기본값은 bash이므로 모든 명령은 bash 기준입니다.
 
@@ -281,6 +262,7 @@ http://localhost:8000/api/recommendations/housing
 | 특정 광역시·도 활성 소유형 공고가 5개 미만 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true`이면 부족분만 fixture로 DB에 보충 |
 | 실제 DB만 확인하고 싶음 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=false` 설정 후 Django 서버 재시작 |
 | 발표용 fixture를 DB에 직접 넣고 싶음 | `load_firsthome_fixture`로 85개 fixture 공고와 분석 결과를 로드 |
+| 청약 아고라 시연 글/댓글이 필요함 | `seed_agora`로 게시판별 6~10개 글과 0~4개 댓글을 로드 |
 
 fixture 보충 기준은 `backend/.env`에서 조정합니다.
 
@@ -294,6 +276,13 @@ FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5
 ```bash
 cd backend
 python manage.py load_firsthome_fixture
+```
+
+청약 아고라 커뮤니티만 시연용 글과 댓글로 채우려면 아래 명령을 사용합니다. 기존 `agora_seed_` 작성자 글은 지우고 다시 채우므로 반복 실행해도 중복이 쌓이지 않습니다.
+
+```bash
+cd backend
+python manage.py seed_agora
 ```
 
 실제 DB 데이터만 확인하고 싶으면 `backend/.env`에서 아래처럼 바꾼 뒤 Django 서버를 재시작합니다.

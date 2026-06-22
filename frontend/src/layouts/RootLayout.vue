@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
     <aside class="hidden bg-slate-950 text-white lg:block">
       <div class="sticky top-0 flex h-screen flex-col lg:relative lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:top-16 lg:after:w-px lg:after:bg-white/10">
         <div class="flex h-16 items-center border-b border-white/10 px-6">
-          <div class="flex items-center gap-3">
+          <RouterLink to="/" class="flex min-w-0 items-center gap-3 rounded-lg transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-300">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-500/25">
               <Home class="h-5 w-5" />
             </div>
@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
               <p class="text-lg font-semibold text-white">청약 네비</p>
               <p class="text-xs text-slate-400">첫 집 준비 내비게이터</p>
             </div>
-          </div>
+          </RouterLink>
         </div>
 
         <nav class="flex-1 space-y-1 px-3 py-4">
@@ -208,12 +208,12 @@ onBeforeUnmount(() => {
     <main class="flex min-h-screen min-w-0 flex-col">
       <header class="sticky top-0 z-30 h-16 border-b border-slate-200 bg-slate-950">
         <div class="flex h-full items-center gap-3 px-4 sm:px-6">
-          <div class="flex items-center gap-2 lg:hidden">
+          <RouterLink to="/" class="flex items-center gap-2 rounded-lg text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-300 lg:hidden">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/20">
               <Home class="h-4 w-4" />
             </div>
             <span class="font-semibold">청약 네비</span>
-          </div>
+          </RouterLink>
 
           <div ref="searchBox" class="relative ml-auto hidden min-w-0 flex-1 md:block lg:ml-0">
             <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
