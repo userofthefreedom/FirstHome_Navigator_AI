@@ -66,7 +66,7 @@ def search_places_view(request):
 @extend_schema(
     tags=[TAGS["places"]],
     summary="지도 경로 조회",
-    description="멀티캠퍼스 역삼 기준 선택 지점까지 Kakao Mobility 경로 polyline과 길찾기 URL을 반환합니다.",
+    description="멀티캠퍼스 역삼 기준 선택 지점까지 Kakao REST API 키로 조회한 길찾기 polyline과 Kakao Map 길찾기 URL을 반환합니다.",
     parameters=[
         OpenApiParameter("lat", float, OpenApiParameter.QUERY, required=True, description="목적지 위도"),
         OpenApiParameter("lng", float, OpenApiParameter.QUERY, required=True, description="목적지 경도"),
@@ -81,9 +81,9 @@ def route_view(request):
         return Response({"detail": "lat and lng are required"}, status=400)
 
     destination = {"lat": float(lat), "lng": float(lng)}
-    api_key = settings.EXTERNAL_API_KEYS.get("KAKAO_MOBILITY_API_KEY") or settings.EXTERNAL_API_KEYS.get("KAKAO_REST_API_KEY", "")
+    api_key = settings.EXTERNAL_API_KEYS.get("KAKAO_REST_API_KEY", "")
     if not api_key:
-        return Response(_fallback_route(destination, "Kakao Mobility 키가 없어 지도 경로를 표시할 수 없습니다."))
+        return Response(_fallback_route(destination, "Kakao REST API 키가 없어 지도 경로를 표시할 수 없습니다."))
 
     params = {
         "origin": f"{DEFAULT_ORIGIN['lng']},{DEFAULT_ORIGIN['lat']}",
@@ -102,11 +102,11 @@ def route_view(request):
         payload = response.json()
         route = (payload.get("routes") or [{}])[0]
         if route.get("result_code") not in {None, 0}:
-            result_message = route.get("result_msg") or "Kakao Mobility 경로 응답이 성공이 아닙니다."
+            result_message = route.get("result_msg") or "Kakao 길찾기 응답이 성공이 아닙니다."
             return Response(_fallback_route(destination, result_message))
         polyline = _extract_polyline(route)
         if len(polyline) < 2:
-            return Response(_fallback_route(destination, "Kakao Mobility 경로 좌표가 없어 지도 경로를 표시할 수 없습니다."))
+            return Response(_fallback_route(destination, "Kakao 길찾기 경로 좌표가 없어 지도 경로를 표시할 수 없습니다."))
         summary = route.get("summary") or {}
         return Response(
             {
@@ -116,14 +116,14 @@ def route_view(request):
                 "polyline": polyline,
                 "distance": summary.get("distance"),
                 "duration": summary.get("duration"),
-                "message": "Kakao Mobility 경로를 지도에 표시했습니다.",
+                "message": "Kakao 길찾기 경로를 지도에 표시했습니다.",
             }
         )
     except requests.HTTPError as exc:
         detail = _response_error_message(exc.response)
-        return Response(_fallback_route(destination, f"Kakao Mobility 호출 실패: {detail}"))
+        return Response(_fallback_route(destination, f"Kakao 길찾기 호출 실패: {detail}"))
     except Exception:
-        return Response(_fallback_route(destination, "Kakao Mobility 경로 호출에 실패해 지도 경로를 표시할 수 없습니다."))
+        return Response(_fallback_route(destination, "Kakao 길찾기 경로 호출에 실패해 지도 경로를 표시할 수 없습니다."))
 
 
 def _category_group_code(place_type: str) -> str:

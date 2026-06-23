@@ -223,6 +223,14 @@ export async function fetchCoachSummary(noticeId, profile, optionId) {
     const response = await api.post('/ai/coach-summary', { notice_id: noticeId, option_id: optionId, profile }, { timeout: 90000 });
     return response.data;
 }
+export async function fetchLatestCoachSummary(noticeId, optionId) {
+    const params = { notice_id: noticeId };
+    if (optionId) {
+        params.option_id = optionId;
+    }
+    const response = await api.get('/ai/coach-summary/latest', { params });
+    return response.data;
+}
 export async function askCoachChat(noticeId, message, profile, optionId, pageContext = {}) {
     const response = await api.post('/ai/chat', { notice_id: noticeId, option_id: optionId, message, profile, page_context: pageContext });
     return response.data;

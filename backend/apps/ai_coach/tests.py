@@ -590,6 +590,31 @@ class AiCoachChatApiTests(TestCase):
         self.assertEqual(mock_post.call_count, 1)
         self.assertEqual(AiCoachPlan.objects.count(), 1)
 
+    def test_latest_coach_summary_falls_back_to_same_notice_when_option_differs(self):
+        user = get_user_model().objects.create_user(username="latest-cache-user", password="pw")
+        self.client.force_login(user)
+        AiCoachPlan.objects.create(
+            user=user,
+            notice_id=101,
+            option_id=12,
+            input_hash="cached-input",
+            provider="llm",
+            payload={
+                "source": "llm",
+                "summary": "저장된 AI 코치 요약입니다.",
+                "todo_this_week": ["공식 조건을 확인하세요."],
+                "decision_points": [{"title": "자금 계획", "body": "월 목표를 다시 확인하세요."}],
+            },
+        )
+
+        response = self.client.get("/api/ai/coach-summary/latest", {"notice_id": 101, "option_id": 999})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["exists"])
+        self.assertEqual(payload["source"], "cached_llm")
+        self.assertEqual(payload["option_id"], 12)
+
     def test_coach_summary_accepts_option_id_for_selected_option_context(self):
         notice = HousingNotice.objects.create(
             title="Option specific public sale notice",

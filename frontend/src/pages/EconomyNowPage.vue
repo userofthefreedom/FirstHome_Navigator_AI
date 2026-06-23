@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { fetchMarketAssets, fetchMarketSummary } from '../api/firsthome';
+import { formatMoney } from '../utils/format';
 
 const asset = ref('estate_apt_trade_avg');
 const start = ref('');
@@ -14,6 +15,7 @@ const error = ref('');
 const loading = ref(false);
 const estateProvince = ref('');
 const estateRegion = ref('');
+const estateRegionOptions = ref([]);
 
 const chartOptions = [
   { value: 'estate_apt_trade_avg', label: '부동산 거래' },
@@ -26,48 +28,25 @@ const chartOptions = [
 ];
 
 const watchedAssets = ['usd_krw', 'jpy_krw', 'eur_krw', 'cnh_krw', 'gbp_krw', 'kosdaq'];
-const estateRegionGroups = [
-  { label: '서울', prefix: '11', districts: [
-    { code: '11110', name: '종로구' },
-    { code: '11530', name: '구로구' },
-    { code: '11650', name: '서초구' },
-    { code: '11680', name: '강남구' },
-    { code: '11710', name: '송파구' },
-  ] },
-  { label: '부산', prefix: '26', districts: [
-    { code: '26230', name: '부산진구' },
-    { code: '26350', name: '해운대구' },
-    { code: '26500', name: '수영구' },
-  ] },
-  { label: '인천', prefix: '28', districts: [
-    { code: '28185', name: '연수구' },
-    { code: '28237', name: '부평구' },
-    { code: '28260', name: '서구' },
-  ] },
-  { label: '대구', prefix: '27', districts: [
-    { code: '27110', name: '중구' },
-    { code: '27260', name: '수성구' },
-  ] },
-  { label: '광주', prefix: '29', districts: [{ code: '29140', name: '서구' }] },
-  { label: '대전', prefix: '30', districts: [{ code: '30170', name: '서구' }] },
-  { label: '울산', prefix: '31', districts: [{ code: '31140', name: '남구' }] },
-  { label: '세종', prefix: '36', districts: [{ code: '36110', name: '세종시' }] },
-  { label: '경기', prefix: '41', districts: [
-    { code: '41110', name: '수원시' },
-    { code: '41130', name: '성남시' },
-    { code: '41170', name: '안양시' },
-    { code: '41280', name: '고양시' },
-    { code: '41450', name: '하남시' },
-  ] },
-  { label: '강원', prefix: '51', districts: [{ code: '51110', name: '춘천시' }] },
-  { label: '충북', prefix: '43', districts: [{ code: '43110', name: '청주시' }] },
-  { label: '충남', prefix: '44', districts: [{ code: '44130', name: '천안시' }] },
-  { label: '전북', prefix: '52', districts: [{ code: '52110', name: '전주시' }] },
-  { label: '전남', prefix: '46', districts: [{ code: '46110', name: '목포시' }] },
-  { label: '경북', prefix: '47', districts: [{ code: '47110', name: '포항시' }] },
-  { label: '경남', prefix: '48', districts: [{ code: '48120', name: '창원시' }] },
-  { label: '제주', prefix: '50', districts: [{ code: '50110', name: '제주시' }] },
-];
+const estateProvinceLabels = {
+  11: '서울',
+  26: '부산',
+  27: '대구',
+  28: '인천',
+  29: '광주',
+  30: '대전',
+  31: '울산',
+  36: '세종',
+  41: '경기',
+  43: '충북',
+  44: '충남',
+  46: '전남',
+  47: '경북',
+  48: '경남',
+  50: '제주',
+  51: '강원',
+  52: '전북',
+};
 
 const summaryByAsset = computed(() => Object.fromEntries(summary.value.map((card) => [card.asset, card])));
 const statsByAsset = computed(() => Object.fromEntries(marketStats.value.map((card) => [card.asset, card])));
@@ -98,6 +77,7 @@ const metals = computed(() => [
   },
 ]);
 const estatePriceManwon = computed(() => parseLocalizedNumber(estateCard.value.value));
+const estateDisplayValue = computed(() => estatePriceManwon.value ? formatMoney(estatePriceManwon.value * 10000) : estateCard.value.value);
 const estimatedDeposit = computed(() => Math.round(estatePriceManwon.value * 0.1));
 const monthlySavingTarget = computed(() => Math.round(estimatedDeposit.value / 24));
 const indexCards = computed(() => [
@@ -114,7 +94,30 @@ const indexCards = computed(() => [
     caption: kosdaqLatest.value ? `전일 대비 ${changeLabel(kosdaqLatest.value.change_rate)}` : '데이터 수집 후 표시됩니다.',
   },
 ]);
-const selectedEstateGroup = computed(() => estateRegionGroups.find((group) => group.prefix === estateProvince.value));
+const estateRegionGroups = computed(() => {
+  const groups = new Map();
+  for (const option of estateRegionOptions.value) {
+    const code = String(option.code || '');
+    if (!code)
+      continue;
+    const prefix = code.slice(0, 2);
+    const label = estateProvinceLabels[prefix] || option.name.split(' ')[0] || prefix;
+    if (!groups.has(prefix)) {
+      groups.set(prefix, { label, prefix, districts: [] });
+    }
+    groups.get(prefix).districts.push({
+      code,
+      name: districtLabel(option.name, label),
+    });
+  }
+  return [...groups.values()]
+    .map((group) => ({
+      ...group,
+      districts: group.districts.sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+});
+const selectedEstateGroup = computed(() => estateRegionGroups.value.find((group) => group.prefix === estateProvince.value));
 const estateDistricts = computed(() => selectedEstateGroup.value?.districts ?? []);
 const isEstateAsset = computed(() => asset.value === 'estate_apt_trade_avg');
 const uniqueValueCount = computed(() => new Set(rows.value.map((row) => Number(row.price || 0))).size);
@@ -128,8 +131,8 @@ const chartStatus = computed(() => {
 });
 const decisionCards = computed(() => {
   return [
-    { label: '예상 계약금', value: estimatedDeposit.value ? `${estimatedDeposit.value.toLocaleString()}만원` : '계산 필요', caption: '평균 실거래가 10% 기준' },
-    { label: '월 저축 기준', value: monthlySavingTarget.value ? `${monthlySavingTarget.value.toLocaleString()}만원` : '계산 필요', caption: '24개월 분할 준비 기준' },
+    { label: '예상 계약금', value: estimatedDeposit.value ? formatMoney(estimatedDeposit.value * 10000) : '계산 필요', caption: '평균 실거래가 10% 기준' },
+    { label: '월 저축 기준', value: monthlySavingTarget.value ? formatMoney(monthlySavingTarget.value * 10000) : '계산 필요', caption: '24개월 분할 준비 기준' },
     { label: '원/달러', value: usdCard.value.value, caption: '수입 물가와 금리 부담 신호' },
     { label: 'KOSDAQ', value: kosdaqLatest.value ? formatValue(kosdaqLatest.value.price, kosdaqLatest.value.unit) : '수집 필요', caption: kosdaqLatest.value ? `전일 대비 ${changeLabel(kosdaqLatest.value.change_rate)}` : '보조 시장 심리 지표' },
   ];
@@ -201,6 +204,9 @@ async function load() {
       fetchMarketSummary(),
       ...watchedAssets.map((item) => fetchMarketAssets({ asset: item })),
     ]);
+    if (Array.isArray(assetResponse.regions)) {
+      estateRegionOptions.value = assetResponse.regions;
+    }
     rows.value = assetResponse.items ?? [];
     syncDateRangeToRows();
     assetMeta.value = {
@@ -223,6 +229,17 @@ function selectedAssetLabel(value) {
   return chartOptions.find((item) => item.value === value)?.label ?? value;
 }
 
+function districtLabel(name, provinceLabel) {
+  const text = String(name || '').trim();
+  if (!text)
+    return '지역';
+  if (text.startsWith(`${provinceLabel} `))
+    return text.slice(provinceLabel.length + 1).trim() || text;
+  if (text.startsWith(provinceLabel))
+    return text.slice(provinceLabel.length).trim() || text;
+  return text;
+}
+
 function emptyCard(assetName, label) {
   return { asset: assetName, label, value: '수집 필요', description: '데이터 수집 후 표시됩니다.', change_rate: 0 };
 }
@@ -231,6 +248,8 @@ function formatValue(value, unit = '') {
   const numericValue = Number(value || 0);
   if (unit === '%')
     return `${numericValue.toFixed(2)}${unit}`;
+  if (unit === '만원')
+    return formatMoney(numericValue * 10000);
   if (unit === 'USD/toz' || unit === 'pt')
     return `${numericValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}${unit}`;
   return `${Math.round(numericValue).toLocaleString()}${unit}`;
@@ -298,10 +317,13 @@ function badgeTop(point, side) {
   return Math.min(88, Math.max(8, point.y + offset));
 }
 
-function latestAxisLabelStyle(point) {
+function latestValueBadgeStyle(point) {
   if (!point) return {};
+  const shouldPlaceBelow = point.y < 18;
+  const offset = shouldPlaceBelow ? 10 : -10;
   return {
-    top: `${Math.min(90, Math.max(8, point.y))}%`,
+    left: '1rem',
+    top: `${Math.min(88, Math.max(12, point.y + offset))}%`,
     transform: 'translateY(-50%)',
   };
 }
@@ -363,7 +385,7 @@ watch(estateProvince, () => {
         <p class="text-sm font-bold text-blue-700">주거 시장 핵심</p>
         <div class="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 class="text-3xl font-black text-slate-950">{{ estateCard.value }}</h2>
+            <h2 class="text-3xl font-black text-slate-950">{{ estateDisplayValue }}</h2>
             <p class="mt-2 text-sm leading-6 text-slate-500">{{ estateCard.description }}</p>
           </div>
           <button type="button" class="h-11 rounded-lg bg-blue-600 px-5 text-sm font-black text-white" @click="selectAsset('estate_apt_trade_avg')">
@@ -422,7 +444,7 @@ watch(estateProvince, () => {
             <option value="">전국</option>
             <option v-for="group in estateRegionGroups" :key="group.prefix" :value="group.prefix">{{ group.label }}</option>
           </select>
-          <select v-if="isEstateAsset" v-model="estateRegion" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-bold" :disabled="!estateProvince">
+          <select v-if="isEstateAsset && estateDistricts.length > 1" v-model="estateRegion" class="h-10 rounded-lg border border-slate-200 px-3 text-sm font-bold" :disabled="!estateProvince">
             <option value="">전체 시군구</option>
             <option v-for="district in estateDistricts" :key="district.code" :value="district.code">{{ district.name }}</option>
           </select>
@@ -438,7 +460,7 @@ watch(estateProvince, () => {
       <p v-else-if="assetMeta.detail && !rows.length" class="mt-4 rounded-lg bg-slate-50 p-3 text-sm font-bold text-slate-600">{{ assetMeta.detail }}</p>
 
       <div class="mt-5 rounded-lg bg-slate-950 p-5">
-        <div class="grid h-[420px] grid-cols-[82px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_34px] gap-x-3">
+        <div v-if="rows.length" class="grid h-[420px] grid-cols-[112px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_34px] gap-x-3">
           <div class="flex flex-col justify-between py-2 text-right text-xs font-bold text-slate-400">
             <span v-for="tick in yAxisTicks" :key="tick.position">{{ tick.label }}</span>
           </div>
@@ -513,10 +535,11 @@ watch(estateProvince, () => {
             </div>
             <div
               v-if="latestPoint"
-              class="pointer-events-none absolute right-full mr-3 rounded-md border border-rose-300/40 bg-rose-400/10 px-2 py-1 text-right text-xs font-black text-rose-100"
-              :style="latestAxisLabelStyle(latestPoint)"
+              class="pointer-events-none absolute z-10 rounded-md border border-rose-300/40 bg-slate-950/95 px-2.5 py-1 text-xs font-black leading-tight text-rose-100 shadow-lg shadow-slate-950/30"
+              :style="latestValueBadgeStyle(latestPoint)"
             >
-              현재 {{ latestPoint.value }}
+              <span class="block text-rose-200">현재</span>
+              <span class="block">{{ latestPoint.value }}</span>
             </div>
             <div v-if="!hasTrend" class="absolute inset-x-4 top-4 max-w-xl rounded-lg border border-slate-700 bg-slate-900/90 p-4">
               <p class="text-sm font-black text-white">{{ chartStatus }}</p>
@@ -535,6 +558,14 @@ watch(estateProvince, () => {
             >
               {{ tick.label }}
             </span>
+          </div>
+        </div>
+        <div v-else class="flex h-[420px] items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-center">
+          <div class="max-w-md">
+            <p class="text-base font-black text-white">선택한 조건의 수집 데이터가 없습니다.</p>
+            <p class="mt-2 text-sm font-semibold text-slate-400">
+              부동산 거래는 현재 수집된 지역만 필터에 표시되며, 추가 지역은 수집 후 그래프로 확인할 수 있습니다.
+            </p>
           </div>
         </div>
         <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-3 text-xs font-bold text-slate-400">

@@ -24,7 +24,7 @@ import {
     fetchNotice,
     removeFavorite,
 } from '../api/firsthome';
-import { formatMoney } from '../utils/format';
+import { formatMoney, formatMoneyText } from '../utils/format';
 import { readCurrentSelection, saveCurrentSelection } from '../utils/selectionState';
 import { useProfileStore } from '../stores/profileStore';
 import { useAuthStore } from '../stores/authStore';
@@ -201,10 +201,10 @@ const decisionPoints = computed(() => {
     const llmPoints = aiCoach.value?.decision_points ?? [];
     if (llmPoints.length) {
         return llmPoints.slice(0, 3).map((point) => ({
-            title: point.title,
-            body: point.body,
+            title: formatMoneyText(point.title),
+            body: formatMoneyText(point.body),
             to: decisionPointRoute(point, fundingPath, noticePath),
-            cta: point.cta || '자세히 보기',
+            cta: formatMoneyText(point.cta || '자세히 보기'),
         }));
     }
     const points = [
@@ -256,9 +256,9 @@ const weeklyTasks = computed(() => {
             '지역우선, 특별공급, 선택품목, 감액 조건처럼 본인에게 적용될 공고문 세부 항목을 표시하세요.',
         ];
     if (aiCoach.value?.source === 'llm' && fromCoach.length) {
-        return [...new Set([...fromCoach, ...base])].slice(0, 5);
+        return [...new Set([...fromCoach, ...base])].slice(0, 5).map(formatMoneyText);
     }
-    return [...new Set([...base, ...fromCoach])].slice(0, 5);
+    return [...new Set([...base, ...fromCoach])].slice(0, 5).map(formatMoneyText);
 });
 
 const officialChecklist = computed(() => {
@@ -280,7 +280,12 @@ const officialSectionDescription = computed(() => (
 const deepReviewItems = computed(() => {
     const items = aiCoach.value?.deep_review_items ?? [];
     if (items.length)
-        return items.slice(0, 6);
+        return items.slice(0, 6).map((item) => ({
+            ...item,
+            title: formatMoneyText(item.title),
+            body: formatMoneyText(item.body),
+            why_it_matters: formatMoneyText(item.why_it_matters),
+        }));
     return [
         {
             title: '지역우선 및 거주기간 기준',

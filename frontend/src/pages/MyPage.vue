@@ -458,14 +458,15 @@ onMounted(load);
               <div class="flex flex-col justify-between pb-7 pt-2 text-right text-xs font-black text-sky-100/80">
                 <span v-for="tick in chartTicks" :key="tick.label">{{ tick.label }}</span>
               </div>
-              <div class="relative min-w-0 overflow-x-auto border-b border-slate-700">
+              <div class="relative min-w-0 overflow-x-auto">
                 <div class="pointer-events-none absolute inset-x-0 top-2 border-t border-dashed border-slate-800"></div>
                 <div class="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-slate-800"></div>
-                <div class="flex h-full items-end gap-4 pb-7 pt-5" :style="chartTrackStyle">
+                <div class="pointer-events-none absolute inset-x-0 bottom-7 border-b border-slate-700"></div>
+                <div class="flex h-full items-end gap-4 pt-5" :style="chartTrackStyle">
                   <div
                     v-for="item in chartBars"
                     :key="item.id"
-                    class="relative flex h-full min-w-0 flex-col justify-end pt-12"
+                    class="relative grid h-full min-w-0 grid-rows-[minmax(0,1fr)_28px] pt-12"
                     :class="chartNeedsScroll ? 'w-20 shrink-0' : 'flex-1'"
                   >
                     <div
@@ -479,11 +480,11 @@ onMounted(load);
                       class="absolute bottom-7 z-0 w-px -translate-x-1/2 bg-sky-400/70"
                       :style="selectedConnectorStyle(item)"
                     ></div>
-                    <div class="flex h-full items-end justify-center gap-1">
+                    <div class="flex min-h-0 items-end justify-center gap-1">
                       <div
                         v-for="option in item.optionBars"
                         :key="option.id"
-                        class="relative rounded-t-md transition"
+                        class="relative -mb-px rounded-t-md transition"
                         :class="option.selected ? 'z-10 w-7 overflow-visible bg-gradient-to-t from-blue-600 to-sky-300 shadow-[0_0_18px_rgba(96,165,250,0.25)]' : 'z-10 w-3 bg-sky-300/30'"
                         :style="optionBarStyle(option)"
                         :title="`${option.term || '-'}개월 ${option.rate.toFixed(2)}%`"
@@ -496,7 +497,7 @@ onMounted(load);
                         </span>
                       </div>
                     </div>
-                    <p class="mt-2 text-center text-xs font-black text-slate-400">{{ item.index }}</p>
+                    <p class="flex h-7 items-center justify-center text-center text-xs font-black text-slate-400">{{ item.index }}</p>
                   </div>
                 </div>
               </div>

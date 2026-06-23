@@ -77,8 +77,6 @@
 - Axios
 - Tailwind CSS v4
 
-> 이 프로젝트는 Vue 3 + JavaScript를 Vite로 실행합니다. TypeScript는 사용하지 않습니다.
-
 ---
 
 ## 3. 폴더 구조
@@ -176,7 +174,7 @@ OPENAI_CHAT_PATH=/chat/completions
 
 API Key는 개인 정보이므로 Git, ZIP, 팀 채팅방, 문서에 공유하지 않습니다.
 
-`KAKAO_REST_API_KEY`는 지도 화면을 직접 띄우는 키가 아니라 백엔드에서 공고 위치를 좌표로 보강할 때 사용하는 REST API 키입니다. Kakao Developers에서 REST API 키의 호출 허용 IP를 제한하는 경우 `http://localhost:5173` 같은 URL은 넣을 수 없습니다. 로컬 개발 중에는 IP 제한을 비워두거나 현재 PC의 외부 IPv4 주소를 등록합니다.
+`KAKAO_REST_API_KEY`는 지도 화면을 직접 띄우는 JavaScript 키가 아니라, 백엔드에서 공고 위치 좌표 보강, 주변 은행/부동산 검색, 지도 경로 조회에 사용하는 REST API 키입니다. Kakao Developers에서 REST API 키의 호출 허용 IP를 제한하는 경우 `http://localhost:5173` 같은 URL은 넣을 수 없습니다. 로컬 개발 중에는 IP 제한을 비워두거나 현재 PC의 외부 IPv4 주소를 등록합니다.
 
 ### Frontend
 

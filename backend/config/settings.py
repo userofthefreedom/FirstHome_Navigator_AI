@@ -149,7 +149,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "AI Coach", "description": "SSAFY GMS/OpenAI-compatible LLM 기반 AI 코치와 전역 챗봇 API입니다."},
         {"name": "Financial Products", "description": "금융상품 목록/상세, 가입상품 저장과 해제 API입니다."},
         {"name": "Market", "description": "Economy NOW 시장 지표와 주거 시장 보조 지표 API입니다."},
-        {"name": "Map / Places", "description": "Kakao Local/Mobility 기반 주변 은행, 부동산, 경로 API입니다."},
+        {"name": "Map / Places", "description": "Kakao Local REST API와 Kakao 길찾기 기반 주변 은행, 부동산, 경로 API입니다."},
         {"name": "Community", "description": "청약 아고라 게시글과 댓글 API입니다."},
         {"name": "Videos", "description": "YouTube 기반 청약 관련 영상 검색 API입니다."},
     ],

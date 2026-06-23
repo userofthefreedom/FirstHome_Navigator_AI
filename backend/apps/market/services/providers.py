@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from time import sleep
 from typing import Any
 from xml.etree import ElementTree
 
@@ -38,6 +39,15 @@ class MarketDataError(ValueError):
 
 
 def fetch_gold_rows(api_key: str, *, start: date, end: date, timeout: int = 30) -> list[MarketPriceRow]:
+    if (end - start).days > 180:
+        rows: list[MarketPriceRow] = []
+        chunk_start = start
+        while chunk_start <= end:
+            chunk_end = min(end, chunk_start + timedelta(days=180))
+            rows.extend(fetch_gold_rows(api_key, start=chunk_start, end=chunk_end, timeout=timeout))
+            chunk_start = chunk_end + timedelta(days=1)
+        return _unique_market_rows(rows)
+
     payload = _request_json(
         DATA_GO_GOLD_URL,
         params={
@@ -51,6 +61,10 @@ def fetch_gold_rows(api_key: str, *, start: date, end: date, timeout: int = 30) 
         timeout=timeout,
     )
     body = payload.get("response", {}).get("body", {})
+    header = payload.get("response", {}).get("header", {})
+    result_code = str(header.get("resultCode") or "")
+    if result_code and result_code != "00":
+        raise MarketDataError(header.get("resultMsg") or f"Gold API error {result_code}")
     items = _ensure_list(body.get("items", {}).get("item"))
     rows: list[MarketPriceRow] = []
     seen_dates: set[date] = set()
@@ -361,15 +375,50 @@ def _with_computed_change(rows: list[MarketPriceRow]) -> list[MarketPriceRow]:
 
 
 def _request_json(url: str, *, params: dict[str, Any] | None = None, headers: dict[str, str] | None = None, timeout: int = 30) -> Any:
-    response = requests.get(url, params=params, headers=headers, timeout=timeout)
+    response = _request_with_retry(url, params=params, headers=headers, timeout=timeout)
     response.raise_for_status()
     return response.json()
 
 
 def _request_text(url: str, *, params: dict[str, Any], timeout: int = 30) -> str:
-    response = requests.get(url, params=params, timeout=timeout)
+    response = _request_with_retry(url, params=params, timeout=timeout)
     response.raise_for_status()
     return response.text
+
+
+def _request_with_retry(
+    url: str,
+    *,
+    params: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
+    timeout: int = 30,
+    retries: int = 2,
+) -> requests.Response:
+    last_error: requests.RequestException | None = None
+    for attempt in range(retries + 1):
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=timeout)
+            if response.status_code in {429, 500, 502, 503, 504} and attempt < retries:
+                sleep(0.8 * (attempt + 1))
+                continue
+            return response
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            last_error = exc
+            if attempt >= retries:
+                raise
+            sleep(0.8 * (attempt + 1))
+    if last_error:
+        raise last_error
+    raise MarketDataError("External API request failed.")
+
+
+def _unique_market_rows(rows: list[MarketPriceRow]) -> list[MarketPriceRow]:
+    unique: dict[tuple[str, date, str], MarketPriceRow] = {}
+    for row in rows:
+        meta = row.source_meta or {}
+        region_code = str(meta.get("lawd_cd") or meta.get("region_code") or "")
+        unique[(row.asset_type, row.base_date, region_code)] = row
+    return sorted(unique.values(), key=lambda row: (row.asset_type, row.base_date))
 
 
 def _ensure_list(value: Any) -> list[dict[str, Any]]:
