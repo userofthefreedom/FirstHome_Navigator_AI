@@ -5,7 +5,7 @@ import { ArrowLeft, Bookmark, Bot, CalendarDays, CheckCircle2, ExternalLink, Fil
 import { addFavorite, analyzeNoticeDocument, fetchFavorites, fetchFundingPlan, fetchHousingRecommendations, fetchNotice, fetchNoticeDocumentStatus, fetchNoticeEligibilityChecklists, fetchNoticeUnitOptions, removeFavorite } from '../api/firsthome';
 import { analysisBadgeClass, analysisSummary } from '../utils/analysisStatus';
 import { formatMoney } from '../utils/format';
-import { readCurrentSelection, saveCurrentSelection } from '../utils/selectionState';
+import { clearCurrentSelection, readCurrentSelection, saveCurrentSelection } from '../utils/selectionState';
 
 const route = useRoute();
 const router = useRouter();
@@ -206,6 +206,29 @@ async function resolveNoticeId() {
     return recommendations[0]?.notice_id ?? 101;
 }
 
+function isNotFoundError(error) {
+    return error?.response?.status === 404;
+}
+
+function recommendationOptionId(item) {
+    return item?.best_option?.option_id ?? item?.top_options?.[0]?.option_id ?? null;
+}
+
+async function redirectToFallbackNotice(missingNoticeId) {
+    clearCurrentSelection();
+    const recommendations = await fetchHousingRecommendations();
+    const fallback = recommendations.find((item) => item.notice_id !== missingNoticeId) ?? recommendations[0];
+    if (!fallback?.notice_id)
+        return false;
+    const optionId = recommendationOptionId(fallback);
+    saveCurrentSelection(fallback.notice_id, optionId);
+    await router.replace({
+        path: `/notices/${fallback.notice_id}`,
+        query: optionId ? { option_id: optionId } : {},
+    });
+    return true;
+}
+
 async function loadDetail() {
     loading.value = true;
     error.value = '';
@@ -213,8 +236,16 @@ async function loadDetail() {
     activeOptionType.value = '';
     try {
         const targetNoticeId = await resolveNoticeId();
-        const [noticeResponse, favoriteResponse, recommendations] = await Promise.all([
-            fetchNotice(targetNoticeId),
+        let noticeResponse = null;
+        try {
+            noticeResponse = await fetchNotice(targetNoticeId);
+        }
+        catch (noticeError) {
+            if (isNotFoundError(noticeError) && await redirectToFallbackNotice(targetNoticeId))
+                return;
+            throw noticeError;
+        }
+        const [favoriteResponse, recommendations] = await Promise.all([
             fetchFavorites(),
             fetchHousingRecommendations(),
         ]);
@@ -225,8 +256,10 @@ async function loadDetail() {
         syncActiveOptionType();
         await refreshFundingPlan(targetNoticeId);
     }
-    catch {
-        error.value = '공고 상세 API에 연결하지 못했습니다. Django 서버 실행 상태를 확인해 주세요.';
+    catch (loadError) {
+        error.value = isNotFoundError(loadError)
+            ? '선택한 공고를 찾을 수 없습니다. 추천 청약에서 다시 선택해 주세요.'
+            : '공고 상세 API에 연결하지 못했습니다. Django 서버 실행 상태를 확인해 주세요.';
     }
     finally {
         loading.value = false;
