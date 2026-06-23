@@ -30,6 +30,7 @@ const bankBrand = ref('');
 const notices = ref([]);
 const places = ref([]);
 const selectedItem = ref(null);
+const selectedNoticeContext = ref(null);
 const loading = ref(true);
 const routeLoading = ref(false);
 const routeMessage = ref('');
@@ -172,6 +173,7 @@ async function loadNotices() {
       address: [item.region, item.district].filter(Boolean).join(' '),
     }));
     selectedItem.value = filteredNotices.value[0] ?? notices.value[0] ?? null;
+    updateSelectedNoticeContext(selectedItem.value);
   } catch {
     error.value = '청약 지도 데이터를 불러오지 못했습니다.';
   } finally {
@@ -188,12 +190,13 @@ async function loadPlaces() {
   clearRoute();
   try {
     const placeQuery = searchTerm.value.trim() || selectedPlaceRegion.value;
+    const center = placeSearchCenter();
     const response = await searchPlaces({
       type: mode.value,
       query: placeQuery,
       bank_brand: mode.value === 'bank' ? bankBrand.value : '',
-      lat: DEFAULT_CENTER.lat,
-      lng: DEFAULT_CENTER.lng,
+      lat: center.lat,
+      lng: center.lng,
       radius: placeQuery ? 20000 : 3000,
     });
     places.value = response.items ?? [];
@@ -230,12 +233,38 @@ function renderMarkers() {
   }
 }
 
-function selectItem(item, marker = null) {
+function isNoticeItem(item) {
+  return Boolean(item?.notice_id || item?.application_deadline || item?.supply_type);
+}
+
+function updateSelectedNoticeContext(item) {
+  if (!isNoticeItem(item) || !item?.lat || !item?.lng)
+    return;
+  selectedNoticeContext.value = item;
+}
+
+function placeSearchCenter() {
+  return {
+    lat: Number(selectedNoticeContext.value?.lat || DEFAULT_CENTER.lat),
+    lng: Number(selectedNoticeContext.value?.lng || DEFAULT_CENTER.lng),
+  };
+}
+
+function selectItem(item, marker = null, options = {}) {
+  const shouldFocus = options.focus ?? true;
   selectedItem.value = item;
+  updateSelectedNoticeContext(item);
   routeMessage.value = '';
   clearRoute();
   if (!map.value || !window.kakao?.maps || !item.lat || !item.lng)
     return;
+  const position = new window.kakao.maps.LatLng(item.lat, item.lng);
+  if (shouldFocus) {
+    map.value.panTo(position);
+    const targetLevel = isNoticeItem(item) ? 5 : 4;
+    if (map.value.getLevel() > targetLevel)
+      map.value.setLevel(targetLevel);
+  }
   const subtitle = item.address || item.road_address || item.provider || '';
   const content = `
     <div style="width:280px;padding:13px 14px;background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 16px 36px rgba(15,23,42,.2);font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
@@ -249,7 +278,7 @@ function selectItem(item, marker = null) {
   if (marker) {
     infoWindow.value?.open(map.value, marker);
   } else {
-    infoWindow.value?.setPosition(new window.kakao.maps.LatLng(item.lat, item.lng));
+    infoWindow.value?.setPosition(position);
     infoWindow.value?.open(map.value);
   }
 }
@@ -297,12 +326,15 @@ function isReliableKoreaLocation(lat, lng, accuracy) {
 }
 
 async function changeMode(nextMode) {
+  if (mode.value === 'notice')
+    updateSelectedNoticeContext(selectedItem.value);
   mode.value = nextMode;
   selectedItem.value = null;
   routeMessage.value = '';
   clearRoute();
   if (nextMode === 'notice') {
     selectedItem.value = filteredNotices.value[0] ?? null;
+    updateSelectedNoticeContext(selectedItem.value);
   } else {
     await loadPlaces();
   }
@@ -313,6 +345,7 @@ async function changeMode(nextMode) {
 async function submitSearch() {
   if (mode.value === 'notice') {
     selectedItem.value = filteredNotices.value[0] ?? null;
+    updateSelectedNoticeContext(selectedItem.value);
     await nextTick();
     renderMarkers();
     return;

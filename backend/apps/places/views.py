@@ -58,9 +58,7 @@ def search_places_view(request):
         items = [_serialize_place(row, place_type) for row in rows[:15]]
     except Exception:
         return Response({"items": _fallback_places(place_type), "fallback": True})
-    if query:
-        return Response({"items": items, "fallback": False, "center": search_center})
-    return Response({"items": items or _fallback_places(place_type), "fallback": not bool(items)})
+    return Response({"items": items, "fallback": False, "center": search_center})
 
 
 @extend_schema(

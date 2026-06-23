@@ -245,25 +245,23 @@ const memberRoadmapCards = computed(() => [
     { label: '가용 현금', value: formatMoney(currentProfile.value.asset ?? 0), caption: cashPlanCaption.value, icon: WalletCards },
     { label: '월 준비 기준', value: monthlyPlanLabel.value, caption: monthlyPlanCaption.value, icon: Route },
 ]);
-function coachText(value) {
-    if (!value)
-        return '';
-    if (typeof value === 'string')
-        return formatMoneyText(value);
-    const title = value.title ? String(value.title) : '';
-    const body = value.body ? String(value.body) : '';
-    return formatMoneyText([title, body].filter(Boolean).join(' · '));
-}
 const coachHeroText = computed(() => {
     const summary = selectedCoachSummary.value;
-    if (summary) {
-        const decisionPoint = Array.isArray(summary.decision_points) ? summary.decision_points.map(coachText).find(Boolean) : '';
-        const deepReview = Array.isArray(summary.deep_review_items) ? summary.deep_review_items.map(coachText).find(Boolean) : '';
-        return decisionPoint || deepReview || coachText(summary.summary) || '저장된 AI 코치 분석을 확인할 수 있습니다.';
-    }
+    if (summary)
+        return '선택 기준과 공식 확인 포인트가 저장됐습니다.';
     return 'AI 코치로 이번 주 행동 순서를 받으세요.';
 });
 const hasCoachSummary = computed(() => Boolean(selectedCoachSummary.value));
+const coachInsightChips = computed(() => {
+    const summary = selectedCoachSummary.value;
+    if (!summary)
+        return [];
+    return [
+        { label: '선택 기준', count: Array.isArray(summary.decision_points) ? summary.decision_points.length : 0 },
+        { label: '공식 체크', count: Array.isArray(summary.official_checklist) ? summary.official_checklist.length : 0 },
+        { label: '심화 검토', count: Array.isArray(summary.deep_review_items) ? summary.deep_review_items.length : 0 },
+    ].filter((item) => item.count > 0);
+});
 const guestHighlights = [
     { icon: SearchCheck, label: '조건 입력', value: '희망 지역, 자금, 면적을 저장' },
     { icon: Trophy, label: '후보 비교', value: '점수와 마감일로 공고를 압축' },
@@ -474,7 +472,16 @@ onMounted(loadDashboard);
               <Bot class="h-4 w-4" />
               {{ hasCoachSummary ? '최근 AI 코치' : 'AI 코치' }}
             </div>
-            <p class="mt-3 line-clamp-3 text-lg font-black leading-7 text-slate-950">{{ coachHeroText }}</p>
+            <p class="mt-3 text-lg font-black leading-7 text-slate-950">{{ coachHeroText }}</p>
+            <div v-if="coachInsightChips.length" class="mt-3 flex flex-wrap gap-2">
+              <span
+                v-for="chip in coachInsightChips"
+                :key="chip.label"
+                class="rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-black text-blue-700"
+              >
+                {{ chip.label }} {{ chip.count }}
+              </span>
+            </div>
             <RouterLink
               :to="selectedAiCoachRoute"
               class="mt-5 inline-flex h-10 items-center rounded-lg bg-slate-950 px-4 text-sm font-black text-white"
