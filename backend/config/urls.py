@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="bg" x1="10" x2="54" y1="8" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1D4ED8"/><stop offset=".55" stop-color="#0F766E"/><stop offset="1" stop-color="#F59E0B"/></linearGradient><linearGradient id="n" x1="21" x2="45" y1="47" y2="17" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FDE68A"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#bg)"/><circle cx="32" cy="32" r="21" fill="#FFFFFF" opacity=".16"/><path fill="#FFFFFF" d="M15.5 30.2 32 16.1l16.5 14.1-3.7 4.3-3.1-2.7v17.1H22.3V31.8l-3.1 2.7-3.7-4.3Z"/><path fill="#0F766E" d="M27 38.2c0-2.8 2.2-5 5-5s5 2.2 5 5v10.7H27V38.2Z"/><path fill="url(#n)" d="m43.7 18.9-6 22.1a2 2 0 0 1-1.4 1.4l-16 4.4 6.1-15.9a2 2 0 0 1 1.3-1.2l16-10.8Z"/><path fill="#1D4ED8" d="m32.1 31.4 4.2 4.2-9.7 4.4 5.5-8.6Z"/><circle cx="32" cy="32" r="3.2" fill="#FFFFFF"/></svg>"""
 
@@ -28,6 +29,9 @@ def favicon(_request):
 urlpatterns = [
     path("favicon.ico", favicon),
     path('admin/', admin.site.urls),
+    path("api/schema", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/redoc", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     path("api/", include("apps.profiles.urls")),
     path("api/", include("apps.recommendations.urls")),
     path("api/", include("apps.notices.urls")),

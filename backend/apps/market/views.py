@@ -3,9 +3,11 @@ from __future__ import annotations
 from datetime import date
 
 from django.db.models import Avg, Count, Max, Min
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.api_schema import COMMON_ERROR_RESPONSES, MARKET_ASSETS_RESPONSE, MARKET_SUMMARY_RESPONSE, TAGS
 from apps.market.models import MarketAssetPrice
 
 
@@ -62,6 +64,19 @@ REGION_PREFIX_LABELS = {
 }
 
 
+@extend_schema(
+    tags=[TAGS["market"]],
+    summary="시장 지표 시계열",
+    description="금, 은, 환율, 기준금리, KOSPI/KOSDAQ, 부동산 거래 평균 등 Economy NOW 차트 데이터를 반환합니다.",
+    parameters=[
+        OpenApiParameter("asset", str, OpenApiParameter.QUERY, description="gold, silver, usd_krw, base_rate, kospi, kosdaq, estate_apt_trade_avg 등"),
+        OpenApiParameter("region", str, OpenApiParameter.QUERY, description="부동산 지표의 법정동/지역 코드"),
+        OpenApiParameter("region_prefix", str, OpenApiParameter.QUERY, description="부동산 지표의 광역 코드 prefix"),
+        OpenApiParameter("start", str, OpenApiParameter.QUERY, description="YYYY-MM-DD 시작일"),
+        OpenApiParameter("end", str, OpenApiParameter.QUERY, description="YYYY-MM-DD 종료일"),
+    ],
+    responses={200: MARKET_ASSETS_RESPONSE, **COMMON_ERROR_RESPONSES},
+)
 @api_view(["GET"])
 def market_assets_view(request):
     asset = request.query_params.get("asset", "gold")
@@ -101,6 +116,12 @@ def market_assets_view(request):
     )
 
 
+@extend_schema(
+    tags=[TAGS["market"]],
+    summary="시장 지표 요약",
+    description="Economy NOW 상단 카드와 수집 데이터 범위/건수 요약을 반환합니다.",
+    responses={200: MARKET_SUMMARY_RESPONSE},
+)
 @api_view(["GET"])
 def market_summary_view(_request):
     cards = [

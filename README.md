@@ -32,7 +32,7 @@
 - 금융상품, 청년정책, 청약 공고는 외부 API 또는 DB 데이터를 먼저 사용하고, fixture는 부족한 부분을 보충하는 안전망으로만 사용합니다.
 - 청약 fixture는 17개 광역시·도별 활성 소유형 공고가 5개 미만일 때 부족분만 뒤에 보충합니다.
 - fixture 공고는 공식 원문 링크 대신 `Fixture`로 표시되며, 추천 점수도 실제 공고보다 낮게 보정됩니다.
-- AI 기본값은 `openai`입니다. AI 코치, 전역 챗봇, LLM 보조 PDF 분석을 사용하려면 `OPENAI_API_KEY`를 넣어야 합니다.
+- AI 기본값은 SSAFY GMS용 `gms_openai`입니다. AI 코치, 전역 챗봇, LLM 보조 PDF 분석을 사용하려면 `GMS_API_KEY`를 넣어야 합니다.
 - HuggingFace/local model serving은 현재 단계의 PDF 해석 핵심 방식에서 제외했습니다. 현재 전략은 rule-first, 공식 PDF 구조 파싱, 필요 시 GPT 보조, template fallback입니다.
 - 공식 PDF 분석 결과가 있으면 주택형별 납부 일정이 우선 사용됩니다.
 - 중도금은 0회, 1회, 여러 회차, 10회 이상 모두 가능한 반복 일정으로 처리합니다.
@@ -155,13 +155,20 @@ BOK_ECOS_API_KEY=
 KRX_API_KEY=
 
 FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true
+FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ=false
 FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5
 
-AI_PROVIDER=openai
-AI_MODEL=gpt-4o-mini
+AI_PROVIDER=gms_openai
+AI_MODEL=gpt-4.1
 AI_ENABLE_LLM_EXTRACTION=true
 AI_ENABLE_LLM_CHAT=true
 AI_REQUEST_TIMEOUT=30
+
+GMS_API_KEY=
+GMS_OPENAI_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
+GMS_OPENAI_CHAT_PATH=/chat/completions
+
+# Direct OpenAI mode only
 OPENAI_API_KEY=
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_CHAT_PATH=/chat/completions
@@ -259,7 +266,7 @@ http://localhost:8000/api/recommendations/housing
 |---|---|
 | 실제 금융상품/정책이 DB에 있음 | 실제 DB 데이터를 추천에 사용 |
 | 실제 금융상품/정책이 DB에 없음 | fixture 금융상품/정책을 사용해 화면이 비지 않게 함 |
-| 특정 광역시·도 활성 소유형 공고가 5개 미만 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true`이면 부족분만 fixture로 DB에 보충 |
+| 특정 광역시·도 활성 소유형 공고가 5개 미만 | `sync_fixture_supplements` 명령으로 부족분만 fixture로 DB에 보충 |
 | 실제 DB만 확인하고 싶음 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=false` 설정 후 Django 서버 재시작 |
 | 발표용 fixture를 DB에 직접 넣고 싶음 | `load_firsthome_fixture`로 85개 fixture 공고와 분석 결과를 로드 |
 | 청약 아고라 시연 글/댓글이 필요함 | `seed_agora`로 게시판별 6~10개 글과 0~4개 댓글을 로드 |
@@ -268,7 +275,15 @@ fixture 보충 기준은 `backend/.env`에서 조정합니다.
 
 ```env
 FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT=true
+FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ=false
 FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION=5
+```
+
+`FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ=false`가 기본 권장값입니다. `/api/notices` 같은 조회 API는 DB를 쓰지 않고, 발표 전 아래 명령으로 부족분 fixture를 미리 확정해 둡니다. SQLite는 동시 쓰기에 약하므로 Waitress로 발표 서버를 띄운 뒤 첫 화면 요청에서 fixture를 생성하는 방식은 피합니다.
+
+```bash
+cd backend
+python manage.py sync_fixture_supplements
 ```
 
 시연용 고정 데이터를 DB에 직접 넣고 싶을 때만 아래 명령을 사용합니다. 이 명령은 기존 공고/상품/정책을 지운 뒤 fixture를 로드하므로, 실제 수집 데이터를 보존해야 하는 상황에서는 실행하지 않습니다.
@@ -319,7 +334,9 @@ KRX_API_KEY=KRX_Open_API_AUTH_KEY
 4. 실제 공고의 공식 PDF 분석을 실행합니다.
 5. Kakao Local REST API로 지도 위치 좌표를 보강합니다.
 6. Economy NOW 시장 데이터를 압축 수집합니다.
-7. 서버와 프론트를 실행하고 화면에서 실제 데이터 반영을 확인합니다.
+7. 실제 데이터가 부족한 지역에만 fixture 공고와 분석 결과를 보충합니다.
+8. 청약 아고라 시연 글/댓글이 필요하면 seed 데이터를 생성합니다.
+9. 서버와 프론트를 실행하고 화면에서 실제 데이터 반영을 확인합니다.
 
 ### 7.1 금융상품/주택담보대출 수집
 
@@ -330,6 +347,7 @@ python manage.py import_finlife
 ```
 
 기본값은 예금, 적금, 주택담보대출을 모두 수집합니다. 기존 데이터를 지우고 다시 수집해야 할 때만 `python manage.py import_finlife --clear`를 사용합니다.
+예금/적금은 같은 금융회사와 상품명을 하나의 상품으로 저장하고, 6개월/12개월/24개월 같은 기간별 금리는 `FinancialProductOption`으로 묶습니다. 이전 방식으로 들어간 `상품명 (12개월)` 형태의 중복 상품은 `import_finlife` 실행 시 같은 상품의 옵션으로 병합됩니다. 외부 API를 다시 호출하지 않고 기존 DB만 정리할 때는 `python manage.py import_finlife --repair-only`를 사용합니다.
 
 ### 7.2 청년정책 수집
 
@@ -394,7 +412,23 @@ python manage.py import_market_data --asset krx
 - `krx`: KRX Open API KOSPI/KOSDAQ 지수
 - `estate`: 국토교통부 아파트 매매 실거래가 월평균 요약
 
-### 7.7 수집 결과 확인
+### 7.7 부족 지역 fixture 보충
+
+실제 LH 공고 수집과 PDF 분석이 끝난 뒤, 활성 소유형 공고가 부족한 광역시·도에만 fixture 공고와 분석 결과를 보충합니다. 이 명령은 실제 수집 데이터를 지우지 않고, 부족분만 DB에 materialize합니다.
+
+```bash
+python manage.py sync_fixture_supplements
+```
+
+`/api/notices` 같은 조회 API는 기본적으로 fixture를 DB에 자동 생성하지 않습니다. 발표 서버를 띄우기 전에 이 명령을 한 번 실행해 두면 첫 화면 접속 중 SQLite write lock이 생기는 위험을 줄일 수 있습니다.
+
+청약 아고라 시연 글과 댓글이 필요하면 이어서 아래 명령을 실행합니다.
+
+```bash
+python manage.py seed_agora
+```
+
+### 7.8 수집 결과 확인
 
 ```text
 http://localhost:8000/api/notices?active=1
@@ -500,6 +534,7 @@ ngrok으로 외부에 공유할 때는 Django 개발 서버(`runserver`)보다 W
 source .venv/Scripts/activate
 cd backend
 python manage.py migrate
+python manage.py sync_fixture_supplements
 waitress-serve --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
 ```
 
@@ -619,6 +654,7 @@ ngrok으로 발표/공유할 때는 백엔드를 다음처럼 실행합니다.
 ```bash
 source .venv/Scripts/activate
 cd backend
+python manage.py sync_fixture_supplements
 waitress-serve --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
 ```
 
@@ -717,27 +753,38 @@ npm run build
 | GET | `/api/recommendations/policies` | 정책 추천 |
 | POST | `/api/ai/coach-summary` | 선택 공고/옵션 기준 AI 코치 플랜 |
 | POST | `/api/ai/chat` | 전역 챗봇 답변 |
+| GET | `/api/docs` | Swagger UI |
+| GET | `/api/schema` | OpenAPI schema |
+| GET | `/api/redoc` | ReDoc API 문서 |
+
+Swagger UI는 Auth / Account, Profile, Housing Notices, Notice Documents, Recommendations, Funding, AI Coach, Financial Products, Market, Map / Places, Community, Videos 태그로 분리되어 있습니다. 문서 스키마 검증은 `python manage.py spectacular --validate --file NUL`로 확인합니다.
 
 ---
 
 ## 13. AI 설정
 
-기본값은 OpenAI-compatible Chat Completions API를 호출하는 `openai` 모드입니다. `backend/.env`에 `OPENAI_API_KEY`가 없으면 AI 코치와 전역 챗봇은 template fallback 또는 오류 안내로 내려갈 수 있습니다.
+발표/시연 환경에서는 SSAFY GMS key를 쓰는 `gms_openai` 모드를 권장합니다. GMS 문서의 OpenAI 호환 base URL은 `https://gms.ssafy.io/gmsapi/api.openai.com/v1`이고, 현재 시스템은 Chat Completions 호환 경로인 `/chat/completions`로 AI 코치, 전역 챗봇, PDF LLM 보조 분석을 호출합니다. 직접 OpenAI API를 사용할 때만 `AI_PROVIDER=openai`와 `OPENAI_API_KEY`를 사용합니다.
 
 현재 AI 기능은 두 갈래입니다.
 
 | 기능 | 역할 | LLM 사용 |
 |---|---|---|
-| 전역 챗봇 | 모든 화면에서 서비스 이용 방법, 현재 화면, 청약 관련 질문에 답변 | `AI_PROVIDER=openai`, `AI_ENABLE_LLM_CHAT=true`일 때 LLM 사용 |
-| AI 코치 | 사용자가 선택한 공고와 주택형 옵션 기준으로 이번 주 할 일, 공식 확인 포인트, 선택 기준 정리 | `AI_PROVIDER=openai`, `AI_ENABLE_LLM_CHAT=true`일 때 LLM 사용, 로그인 사용자는 같은 입력에 대해 캐시 재사용 |
+| 전역 챗봇 | 모든 화면에서 서비스 이용 방법, 현재 화면, 청약 관련 질문에 답변 | `AI_PROVIDER=gms_openai` 또는 `openai`, `AI_ENABLE_LLM_CHAT=true`일 때 LLM 사용 |
+| AI 코치 | 사용자가 선택한 공고와 주택형 옵션 기준으로 이번 주 할 일, 공식 확인 포인트, 선택 기준 정리 | `AI_PROVIDER=gms_openai` 또는 `openai`, `AI_ENABLE_LLM_CHAT=true`일 때 LLM 사용, 로그인 사용자는 같은 입력에 대해 캐시 재사용 |
 | PDF 구조 분석 | 공식 공고문에서 주택형, 금액, 일정, 융자금, 서류 근거 추출 | rule-first가 기본이며 `AI_ENABLE_LLM_EXTRACTION=true`일 때만 LLM 보조 |
 
 ```env
-AI_PROVIDER=openai
-AI_MODEL=gpt-4o-mini
+AI_PROVIDER=gms_openai
+AI_MODEL=gpt-4.1
 AI_ENABLE_LLM_EXTRACTION=true
 AI_ENABLE_LLM_CHAT=true
 AI_REQUEST_TIMEOUT=30
+
+GMS_API_KEY=SSAFY_GMS_KEY
+GMS_OPENAI_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
+GMS_OPENAI_CHAT_PATH=/chat/completions
+
+# Direct OpenAI mode only
 OPENAI_API_KEY=본인_API_KEY
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_CHAT_PATH=/chat/completions
@@ -804,7 +851,7 @@ LH 공고가 정확한 도로명 주소 없이 지구명만 제공하면 Kakao g
 
 ### AI가 외부 모델을 호출하지 않음
 
-기본값은 `AI_PROVIDER=openai`입니다. `OPENAI_API_KEY`가 비어 있으면 LLM 호출이 실패하거나 template fallback으로 내려갈 수 있습니다. 키를 넣은 뒤 Django 서버를 재시작합니다.
+발표/시연 기본 권장은 `AI_PROVIDER=gms_openai`입니다. `GMS_API_KEY`가 비어 있으면 LLM 호출이 실패하거나 template fallback으로 내려갈 수 있습니다. 키를 넣은 뒤 Django 서버를 재시작합니다. 직접 OpenAI를 쓰는 경우에는 `AI_PROVIDER=openai`와 `OPENAI_API_KEY`를 사용합니다.
 
 ---
 

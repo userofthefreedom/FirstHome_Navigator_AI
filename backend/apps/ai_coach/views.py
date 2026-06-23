@@ -1,10 +1,29 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.api_schema import (
+    COACH_CHAT_EXAMPLE,
+    COACH_CHAT_REQUEST,
+    COACH_CHAT_RESPONSE,
+    COACH_SUMMARY_EXAMPLE,
+    COACH_SUMMARY_REQUEST,
+    COACH_SUMMARY_RESPONSE,
+    COMMON_ERROR_RESPONSES,
+    TAGS,
+)
 from apps.ai_coach.services.prompt_templates import coach_chat, coach_summary
 from apps.profiles.services import profile_from_request
 
 
+@extend_schema(
+    tags=[TAGS["ai"]],
+    summary="AI 코치 요약 생성",
+    description="선택 공고/주택형 옵션과 사용자 프로필을 바탕으로 이번 주 할 일, 공식 확인 포인트, 선택 기준을 생성합니다. 로그인 사용자는 LLM 결과를 캐시합니다.",
+    request=COACH_SUMMARY_REQUEST,
+    responses={200: COACH_SUMMARY_RESPONSE, **COMMON_ERROR_RESPONSES},
+    examples=[COACH_SUMMARY_EXAMPLE],
+)
 @api_view(["POST"])
 def coach_summary_view(request):
     notice_id = int(request.data.get("notice_id", 101))
@@ -30,6 +49,14 @@ def coach_summary_view(request):
     return Response(summary)
 
 
+@extend_schema(
+    tags=[TAGS["ai"]],
+    summary="전역 AI 챗봇 답변",
+    description="현재 화면 context, 선택 공고, 선택 옵션, 사용자 조건을 바탕으로 청약 관련 질문에 답변합니다.",
+    request=COACH_CHAT_REQUEST,
+    responses={200: COACH_CHAT_RESPONSE, **COMMON_ERROR_RESPONSES},
+    examples=[COACH_CHAT_EXAMPLE],
+)
 @api_view(["POST"])
 def coach_chat_view(request):
     try:

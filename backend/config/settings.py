@@ -58,11 +58,14 @@ EXTERNAL_API_KEYS = {
 }
 
 AI_SETTINGS = {
-    "PROVIDER": os.getenv("AI_PROVIDER", "openai"),
-    "MODEL": os.getenv("AI_MODEL", "gpt-4o-mini"),
+    "PROVIDER": os.getenv("AI_PROVIDER", "gms_openai"),
+    "MODEL": os.getenv("AI_MODEL", "gpt-4.1"),
     "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
     "OPENAI_BASE_URL": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
     "OPENAI_CHAT_PATH": os.getenv("OPENAI_CHAT_PATH", "/chat/completions"),
+    "GMS_API_KEY": os.getenv("GMS_API_KEY", os.getenv("OPENAI_API_KEY", "")),
+    "GMS_OPENAI_BASE_URL": os.getenv("GMS_OPENAI_BASE_URL", "https://gms.ssafy.io/gmsapi/api.openai.com/v1"),
+    "GMS_OPENAI_CHAT_PATH": os.getenv("GMS_OPENAI_CHAT_PATH", "/chat/completions"),
     "REQUEST_TIMEOUT": int(os.getenv("AI_REQUEST_TIMEOUT", "30")),
     "ENABLE_LLM_EXTRACTION": os.getenv("AI_ENABLE_LLM_EXTRACTION", "true").lower() == "true",
     "ENABLE_LLM_CHAT": os.getenv("AI_ENABLE_LLM_CHAT", "true").lower() == "true",
@@ -70,6 +73,7 @@ AI_SETTINGS = {
 
 FIRSTHOME_FIXTURE_FALLBACK = {
     "ENABLE_SUPPLEMENT": os.getenv("FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT", "true").lower() == "true",
+    "MATERIALIZE_ON_READ": os.getenv("FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ", "false").lower() == "true",
     "MIN_ACTIVE_SERVICE_NOTICES_PER_REGION": int(os.getenv("FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION", "5")),
     "MIN_SERVICE_NOTICES": int(os.getenv("FIRSTHOME_MIN_SERVICE_NOTICES", "5")),
 }
@@ -131,6 +135,37 @@ REST_FRAMEWORK = {
     ],
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "FirstHome Navigator API",
+    "DESCRIPTION": "Backend API for housing notices, recommendations, funding plans, maps, and AI coach features.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "TAGS": [
+        {"name": "Auth / Account", "description": "회원가입, 로그인, 로그아웃, 현재 사용자와 계정 상태 API입니다."},
+        {"name": "Profile", "description": "사용자 청약 조건, 관심 항목, 현재 선택 공고/옵션 상태 API입니다."},
+        {"name": "Housing Notices", "description": "LH 청약 공고 목록, 상세, 지도 표시용 공고 API입니다."},
+        {"name": "Notice Documents", "description": "공식 공고문 발견/분석, 주택형 옵션, 자격 체크리스트 API입니다."},
+        {"name": "Recommendations", "description": "청약, 금융상품, 주택담보대출, 정책 추천 API입니다."},
+        {"name": "Funding", "description": "선택 공고와 주택형 옵션 기준 자금 로드맵 API입니다."},
+        {"name": "AI Coach", "description": "SSAFY GMS/OpenAI-compatible LLM 기반 AI 코치와 전역 챗봇 API입니다."},
+        {"name": "Financial Products", "description": "금융상품 목록/상세, 가입상품 저장과 해제 API입니다."},
+        {"name": "Market", "description": "Economy NOW 시장 지표와 주거 시장 보조 지표 API입니다."},
+        {"name": "Map / Places", "description": "Kakao Local/Mobility 기반 주변 은행, 부동산, 경로 API입니다."},
+        {"name": "Community", "description": "청약 아고라 게시글과 댓글 API입니다."},
+        {"name": "Videos", "description": "YouTube 기반 청약 관련 영상 검색 API입니다."},
+    ],
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "displayOperationId": False,
+        "defaultModelsExpandDepth": 1,
+        "defaultModelExpandDepth": 2,
+        "docExpansion": "none",
+        "filter": True,
+        "operationsSorter": "alpha",
+        "tagsSorter": "alpha",
+    },
+}
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -147,7 +182,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
 
     # Local apps
-    "apps.profiles",
+    "apps.profiles.apps.ProfilesConfig",
     "apps.notices",
     "apps.notice_docs",
     "apps.recommendations",

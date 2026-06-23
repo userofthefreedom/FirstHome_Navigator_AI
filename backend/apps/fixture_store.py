@@ -176,12 +176,40 @@ def _notices_with_fixture_supplement(
     if min_per_region <= 0:
         return db_notices or fixture_notices
 
+    if not fallback_settings.get("MATERIALIZE_ON_READ", False):
+        return db_notices or fixture_notices
+
     with _FIXTURE_MATERIALIZE_LOCK:
         latest_db_notices = _db_notices()
         if _materialize_fixture_supplements(latest_db_notices, fixture_notices, min_per_region=min_per_region):
             return _db_notices()
 
     return latest_db_notices or db_notices or fixture_notices
+
+
+def sync_fixture_supplements(*, min_per_region: int | None = None) -> dict[str, Any]:
+    fallback_settings = getattr(settings, "FIRSTHOME_FIXTURE_FALLBACK", {})
+    if min_per_region is None:
+        min_per_region = int(
+            fallback_settings.get(
+                "MIN_ACTIVE_SERVICE_NOTICES_PER_REGION",
+                fallback_settings.get("MIN_SERVICE_NOTICES", 5),
+            )
+            or 0
+        )
+    fixture_notices = [_fixture_notice(notice) for notice in load_fixture()["notices"]]
+    before = _db_notices()
+    with _FIXTURE_MATERIALIZE_LOCK:
+        changed = _materialize_fixture_supplements(before, fixture_notices, min_per_region=min_per_region)
+        after = _db_notices()
+    return {
+        "changed": changed,
+        "before_count": len(before),
+        "after_count": len(after),
+        "created_or_updated_count": max(0, len(after) - len(before)),
+        "min_per_region": min_per_region,
+        "region_counts": _active_service_counts_by_region(after),
+    }
 
 
 def _materialize_fixture_supplements(
@@ -225,6 +253,23 @@ def _materialize_fixture_supplements(
                 changed = True
 
     return changed
+
+
+def _active_service_counts_by_region(notices: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    counts = {
+        region: {"actual": 0, "fixture": 0, "total": 0}
+        for region in METROPOLITAN_REGIONS
+    }
+    for notice in notices:
+        if not notice.get("is_service_target") or not is_current_notice(notice):
+            continue
+        region = _metropolitan_region(notice)
+        if region not in counts:
+            continue
+        key = "fixture" if _is_fixture_notice(notice) else "actual"
+        counts[region][key] += 1
+        counts[region]["total"] += 1
+    return counts
 
 
 def _sync_existing_fixture_notices(fixture_notices: list[dict[str, Any]]) -> bool:

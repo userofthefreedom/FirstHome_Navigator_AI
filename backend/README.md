@@ -108,21 +108,27 @@ cp .env.example .env
 | `FINLIFE_API_KEY` | 금융감독원 금융상품 API 키 |
 | `YOUTH_POLICY_API_KEY` | 온통청년 정책 API 키 |
 | `KAKAO_REST_API_KEY` | Kakao Local REST API 좌표 보강 키 |
+| `GMS_API_KEY` | SSAFY GMS OpenAI-compatible API 키 |
+| `GMS_OPENAI_BASE_URL` | SSAFY GMS OpenAI-compatible base URL |
 | `OPENAI_API_KEY` | AI 코치/챗봇/LLM 보조 분석용 OpenAI API 키 |
 | `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT` | 지역별 fixture 보충 on/off |
+| `FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ` | 조회 API에서 fixture를 자동 DB 생성할지 여부. 발표용 기본 권장값은 `false` |
 | `FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION` | 지역별 최소 활성 소유형 공고 수 |
 
 기본 AI 설정:
 
 ```env
-AI_PROVIDER=openai
-AI_MODEL=gpt-4o-mini
+AI_PROVIDER=gms_openai
+AI_MODEL=gpt-4.1
 AI_ENABLE_LLM_EXTRACTION=true
 AI_ENABLE_LLM_CHAT=true
 AI_REQUEST_TIMEOUT=30
+GMS_API_KEY=
+GMS_OPENAI_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
+GMS_OPENAI_CHAT_PATH=/chat/completions
 ```
 
-HuggingFace/local model serving은 현재 단계에서 사용하지 않습니다.
+발표/시연 환경에서는 SSAFY GMS key를 사용하는 `gms_openai` provider를 권장합니다. 직접 OpenAI API를 사용할 때만 `AI_PROVIDER=openai`와 `OPENAI_API_KEY`를 사용합니다. HuggingFace/local model serving은 현재 단계에서 사용하지 않습니다.
 
 ngrok 임시 공유는 프론트 ngrok 주소 하나만 열고 Vite dev server의 `/api` 프록시를 사용합니다. 고정 도메인을 쓰거나 Vite 프록시가 아닌 배포 환경에서는 `.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 실제 프론트/백엔드 주소를 추가합니다.
 
@@ -155,13 +161,44 @@ http://localhost:8000/api/dashboard
 http://localhost:8000/api/notices?active=1
 http://localhost:8000/api/notices/map
 http://localhost:8000/api/recommendations/housing
+http://localhost:8000/api/docs
+http://localhost:8000/api/schema
+```
+
+Swagger UI는 기능별 태그로 정리되어 있습니다.
+
+- Auth / Account
+- Profile
+- Housing Notices
+- Notice Documents
+- Recommendations
+- Funding
+- AI Coach
+- Financial Products
+- Market
+- Map / Places
+- Community
+- Videos
+
+문서 스키마를 검증하려면 아래 명령을 사용합니다.
+
+```bash
+python manage.py spectacular --validate --file NUL
 ```
 
 ## Data Commands
 
 ### Fixture
 
-발표용 고정 데이터를 DB에 로드합니다. 기존 공고/상품/정책을 지우므로 실제 수집 데이터가 필요할 때는 주의합니다.
+실제 수집 데이터를 유지한 채 부족한 지역만 fixture로 보충하려면 아래 명령을 사용합니다. 이 명령은 활성 소유형 공고가 기준치보다 적은 광역시·도에만 fixture 공고와 분석 결과를 materialize합니다.
+
+```bash
+python manage.py sync_fixture_supplements
+```
+
+`FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ=false`가 기본 권장값입니다. `/api/notices` 같은 조회 API가 요청 중 DB를 쓰지 않게 하고, 서버 실행 전에 위 명령으로 보충을 끝내 두면 SQLite lock 위험을 줄일 수 있습니다.
+
+발표용 고정 데이터만 DB에 로드해야 할 때는 아래 명령을 사용합니다. 기존 공고/상품/정책을 지우므로 실제 수집 데이터가 필요할 때는 주의합니다.
 
 ```bash
 python manage.py load_firsthome_fixture
@@ -173,7 +210,10 @@ python manage.py load_firsthome_fixture
 python manage.py import_finlife --dry-run
 python manage.py import_finlife
 python manage.py import_finlife --clear
+python manage.py import_finlife --repair-only
 ```
+
+예금/적금은 상품명 기준으로 하나의 `FinancialProduct`에 저장되고, 기간별 금리는 `FinancialProductOption`으로 묶입니다. 과거 수집으로 생긴 `상품명 (12개월)` 형태의 중복 상품은 `import_finlife` 실행 시 같은 상품의 옵션으로 병합됩니다. 외부 API를 다시 호출하지 않고 기존 DB만 정리할 때는 `--repair-only`를 사용합니다.
 
 ### Youth Policies
 

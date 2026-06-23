@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 
 from apps.fixture_store import default_profile
 from apps.products.models import FinancialProduct, UserJoinedProduct
-from apps.products.services.finlife import normalize_finlife_loan_products, normalize_finlife_products
+from apps.products.services.finlife import normalize_finlife_loan_products, normalize_finlife_product_records, normalize_finlife_products
 from apps.products.services.matcher import match_products
 
 
@@ -58,6 +58,31 @@ class FinlifeNormalizerTests(SimpleTestCase):
         self.assertEqual(products[0].category, "적금")
         self.assertEqual(products[0].monthly_limit, 1000000)
         self.assertIn("금융감독원", products[0].reasons[0])
+
+    def test_finlife_product_records_keep_terms_as_options(self):
+        result = {
+            "baseList": [
+                {
+                    "fin_prdt_cd": "D001",
+                    "fin_co_no": "001",
+                    "kor_co_nm": "테스트은행",
+                    "fin_prdt_nm": "첫집 예금",
+                    "join_way": "영업점, 인터넷",
+                    "max_limit": None,
+                }
+            ],
+            "optionList": [
+                {"fin_prdt_cd": "D001", "save_trm": "12", "intr_rate": "3.1", "intr_rate2": "3.5"},
+                {"fin_prdt_cd": "D001", "save_trm": "24", "intr_rate": "3.2", "intr_rate2": "3.7"},
+            ],
+        }
+
+        records = normalize_finlife_product_records(result, "deposit")
+
+        self.assertEqual(len(records), 2)
+        self.assertEqual({record["name"] for record in records}, {"첫집 예금"})
+        self.assertEqual({record["option"]["save_trm"] for record in records}, {12, 24})
+        self.assertTrue(all(record["category"] == "예금" for record in records))
 
     def test_mortgage_loan_product_is_normalized_for_purchase_matching(self):
         result = {

@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from django.test import SimpleTestCase, TestCase, override_settings
 
-from apps.fixture_store import current_notices, default_profile, find_notice, load_fixture, notices, seed_fixture_notice_analysis
+from apps.fixture_store import current_notices, default_profile, find_notice, load_fixture, notices, seed_fixture_notice_analysis, sync_fixture_supplements
 from apps.funding.services.calculator import funding_plan
 from apps.notice_docs.models import HousingUnitOption, PaymentSchedule
 from apps.notices.models import HousingNotice
@@ -208,7 +208,7 @@ class RecommendationServiceTests(TestCase):
 
     def test_fixture_analysis_seed_is_idempotent(self):
         fixture_notice = load_fixture()["notices"][0]
-        current_notices(include_excluded=True)
+        sync_fixture_supplements(min_per_region=5)
         notice = HousingNotice.objects.get(id=int(fixture_notice["id"]))
 
         seed_fixture_notice_analysis(notice, fixture_notice)
@@ -597,6 +597,31 @@ class RecommendationServiceTests(TestCase):
         self.assertIn(9112, policy_ids)
         self.assertNotIn(9111, policy_ids)
 
+    def test_policy_matcher_infers_local_policy_region_before_nationwide_fallback(self):
+        YouthPolicy.objects.create(
+            id=9113,
+            name="태안 청년 신혼부부 주택자금 대출이자 지원",
+            provider="신속허가과",
+            target="태안 청년 신혼부부",
+            benefit="가구당 연간 100만원 이내 대출이자 지원",
+            policy_category="주거",
+            regions=["전국"],
+            age_min=19,
+            age_max=39,
+            max_income=0,
+            requires_homeless=True,
+            source_url="https://example.com/taean",
+            reasons=["저장 지역이 전국이어도 정책명으로 실제 지역을 추론합니다."],
+        )
+        incheon_profile = {**default_profile(), "preferred_regions": ["인천"]}
+        chungnam_profile = {**default_profile(), "preferred_regions": ["충남"]}
+
+        incheon_policy_ids = [policy["id"] for policy in match_policies(incheon_profile, limit=30)]
+        chungnam_policy_ids = [policy["id"] for policy in match_policies(chungnam_profile, limit=30)]
+
+        self.assertNotIn(9113, incheon_policy_ids)
+        self.assertIn(9113, chungnam_policy_ids)
+
     def test_policy_matcher_excludes_business_rent_support(self):
         YouthPolicy.objects.create(
             id=9121,
@@ -940,6 +965,7 @@ class RecommendationServiceTests(TestCase):
             is_service_target=True,
         )
 
+        sync_fixture_supplements(min_per_region=5)
         service_notices = notices()
         gyeonggi_notices = [notice for notice in service_notices if "경기" in f"{notice['region']} {notice['district']}"]
 

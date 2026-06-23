@@ -27,10 +27,10 @@ def limit_text(value: str, *, max_length: int = MAX_REPLY_LENGTH) -> str:
     return text[:max_length].rstrip() + "..."
 
 
-def sanitize_reply(value: str) -> str:
+def sanitize_reply(value: str, *, require_official_notice: bool = True) -> str:
     text = limit_text(value, max_length=MAX_REPLY_LENGTH)
     required_notice = "공식 공고문 확인이 필요합니다."
-    if "공식" not in text or "확인" not in text:
+    if require_official_notice and ("공식" not in text or "확인" not in text):
         suffix = " " + required_notice
         text = limit_text(text + suffix, max_length=MAX_REPLY_LENGTH)
     return text

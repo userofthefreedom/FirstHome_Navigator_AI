@@ -4,7 +4,7 @@ from datetime import date
 from typing import Any
 
 from apps.rules.funding import effective_monthly_capacity
-from apps.rules.regions import REGION_ALIASES, normalize_region_key, region_matches
+from apps.rules.regions import infer_region_from_text, region_matches
 
 
 FIXTURE_POLICY_SCORE_PENALTY = 2
@@ -51,9 +51,6 @@ NON_USER_HOUSING_POLICY_KEYWORDS = {
     "환경 개선",
     "정비사업",
 }
-POLICY_REGION_ALIASES = REGION_ALIASES
-
-
 def product_match_score(product: dict[str, Any], profile: dict[str, Any]) -> int:
     target_months = int(profile.get("target_months", 0))
     monthly_saving = effective_monthly_capacity(profile)
@@ -150,12 +147,10 @@ def _region_matches(target_region: str, preferred_region: str) -> bool:
     return region_matches(target_region, preferred_region)
 
 
-def _normalize_region_key(value: Any) -> str:
-    return normalize_region_key(value)
-
-
 def _policy_regions(policy: dict[str, Any]) -> list[str]:
     policy_regions = [str(region or "").strip() for region in policy.get("regions", []) if str(region or "").strip()]
+    if policy_regions and "전국" not in policy_regions:
+        return policy_regions
     inferred_regions = _infer_policy_regions(policy)
     return inferred_regions or policy_regions
 
@@ -169,15 +164,5 @@ def _infer_policy_regions(policy: dict[str, Any]) -> list[str]:
         str(policy.get(field) or "")
         for field in ("name", "provider", "target", "benefit")
     )
-    text_key = _normalize_region_key(searchable_text)
-    matched = [
-        canonical
-        for canonical, aliases in POLICY_REGION_ALIASES.items()
-        if any(
-            _normalize_region_key(alias) in text_key
-            for alias in aliases
-            if len(_normalize_region_key(alias)) >= 3
-        )
-    ]
-    return matched
+    return infer_region_from_text(searchable_text)
 

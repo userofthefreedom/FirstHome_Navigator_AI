@@ -285,12 +285,28 @@ def coach_chat(
         return None
 
     official_context = _official_context(notice_id, plan.get("option_id"))
+    if _is_service_usage_question(message):
+        reply = _service_usage_reply(page_context)
+        actions = _service_usage_actions(page_context)
+        response = {
+            "source": "template_fallback",
+            "notice_id": notice_id,
+            "notice_title": notice["title"],
+            "option_id": plan.get("option_id"),
+            "page_context": _safe_page_context(page_context),
+            "reply": sanitize_reply(reply, require_official_notice=False),
+            "suggested_actions": sanitize_actions(actions),
+            "context_refs": [] if _is_general_explore_page(page_context) else official_context["refs"],
+        }
+        _save_chat_log(response, message, provider="template", safety_flags=safety_flags(reply))
+        return response
+
     llm_response = _coach_chat_with_llm(notice, plan, profile, message, official_context=official_context, page_context=page_context)
     if llm_response:
         return llm_response
 
     normalized = message.replace(" ", "").lower()
-    if any(keyword in normalized for keyword in ["사용법", "이용", "어떻게", "화면", "페이지", "버튼", "어디", "메뉴", "설명"]):
+    if _is_service_usage_question(message):
         reply = _service_usage_reply(page_context)
         actions = _service_usage_actions(page_context)
     elif any(keyword in normalized for keyword in ["부족", "계약금", "돈", "자금", "얼마"]):
@@ -328,9 +344,9 @@ def coach_chat(
         "notice_title": notice["title"],
         "option_id": plan.get("option_id"),
         "page_context": _safe_page_context(page_context),
-        "reply": sanitize_reply(reply),
+        "reply": sanitize_reply(reply, require_official_notice=not _is_general_explore_page(page_context)),
         "suggested_actions": sanitize_actions(actions),
-        "context_refs": official_context["refs"],
+        "context_refs": [] if _is_general_explore_page(page_context) else official_context["refs"],
     }
     _save_chat_log(response, message, provider="template", safety_flags=safety_flags(reply))
     return response
@@ -397,9 +413,9 @@ def _coach_chat_with_llm(
         "notice_title": notice["title"],
         "option_id": plan.get("option_id"),
         "page_context": _safe_page_context(page_context),
-        "reply": sanitize_reply(str(payload.get("reply", ""))),
+        "reply": sanitize_reply(str(payload.get("reply", "")), require_official_notice=not _is_general_explore_page(page_context)),
         "suggested_actions": sanitize_actions([str(action) for action in payload.get("suggested_actions", [])]),
-        "context_refs": payload.get("context_refs") or official_context["refs"],
+        "context_refs": [] if _is_general_explore_page(page_context) else payload.get("context_refs") or official_context["refs"],
     }
     if not response["reply"]:
         return None
@@ -449,6 +465,21 @@ def _document_reply(notice: dict[str, Any], plan: dict[str, Any]) -> str:
     )
 
 
+def _is_service_usage_question(message: str) -> bool:
+    normalized = str(message or "").replace(" ", "").lower()
+    if any(keyword in normalized for keyword in ["공식공고문", "공고문", "근거", "서류", "문장", "pdf"]):
+        return False
+    return any(keyword in normalized for keyword in ["사용법", "이용", "어떻게", "화면", "페이지", "버튼", "어디", "메뉴", "설명", "관리", "그래프"])
+
+
+def _is_general_explore_page(page_context: dict[str, Any] | None) -> bool:
+    if not isinstance(page_context, dict):
+        return False
+    page_type = str(page_context.get("page_type") or "")
+    page_mode = str(page_context.get("page_mode") or "")
+    return page_mode == "general_explore" or page_type in {"agora", "finance_products", "economy_now", "auth"}
+
+
 def _service_usage_reply(page_context: dict[str, Any]) -> str:
     page_type = str(page_context.get("page_type") or "")
     page_labels = {
@@ -460,6 +491,12 @@ def _service_usage_reply(page_context: dict[str, Any]) -> str:
         "ai_coach": "AI 코치",
         "map": "청약 지도",
         "favorites": "관심목록",
+        "finance_products": "금융상품",
+        "finance_product_detail": "금융상품 상세",
+        "economy_now": "경제 NOW",
+        "agora": "청약 아고라",
+        "my_page": "MY PAGE",
+        "auth": "계정",
     }
     label = page_labels.get(page_type, "현재 화면")
     if page_type == "profile":
@@ -473,9 +510,21 @@ def _service_usage_reply(page_context: dict[str, Any]) -> str:
     if page_type == "ai_coach":
         return "AI 코치 화면은 이미 선택한 청약과 주택형을 기준으로 이번 주 해야 할 일, 확인할 조건, 자금 준비 방향을 정리합니다. 빠른 질문은 오른쪽 챗봇에서 하고, 깊은 실행 계획은 이 화면을 기준으로 보면 됩니다."
     if page_type == "map":
-        return "청약 지도 화면은 지역별 공고를 빠르게 훑어보는 곳입니다. 관심 지역의 공고를 선택한 뒤 옵션 보기로 들어가면 세부 조건과 자금 로드맵으로 이어집니다."
+        return "청약 지도 화면은 청약, 부동산, 은행 위치를 지도에서 함께 보는 곳입니다. 지역·청약 유형·데이터 출처를 필터링하고, 공고를 선택하면 상세 정보와 주택형 옵션, 자금 로드맵으로 이어집니다."
     if page_type == "favorites":
         return "관심목록 화면은 저장한 공고, 주택형 옵션, 금융상품, 정책을 모아 보는 곳입니다. 저장한 옵션은 바로 자금 로드맵으로 이동해 다시 비교할 수 있습니다."
+    if page_type == "finance_products":
+        return "금융상품 화면은 계약금 준비에 활용할 예금·적금을 은행, 기간, 금리, 적합도 기준으로 비교하는 곳입니다. 상품을 열면 기간별 금리 옵션을 보고 가입 후보로 저장할 수 있습니다."
+    if page_type == "finance_product_detail":
+        return "금융상품 상세 화면은 한 상품의 기간별 금리 옵션을 고르고 메모와 함께 MY PAGE 가입상품 후보로 저장하는 곳입니다. 저장한 메모와 선택 금리는 MY PAGE 그래프와 목록에서 다시 확인할 수 있습니다."
+    if page_type == "economy_now":
+        return "경제 NOW 화면은 지역 시세, 전월세 흐름, 기준금리 같은 시장 신호를 청약 판단 보조 자료로 보는 곳입니다. 추천 공고의 납부 부담을 볼 때 금리와 가격 흐름을 함께 참고하세요."
+    if page_type == "agora":
+        return "청약 아고라 화면은 특정 공고나 상품을 분석하는 화면이 아니라, 청약·분양·금리·주거금융 영상을 찾아보고 커뮤니티에서 일반 질문과 의견을 나누는 공간입니다. 검색창에는 '청약통장', '공공분양', '계약금 준비', '예적금 금리'처럼 주제를 넣고, 아래 게시판에는 청약·금융상품·자금준비 질문을 나눠 올리면 됩니다."
+    if page_type == "my_page":
+        return "MY PAGE는 저장된 프로필 값, 관심 공고, 관심 주택형 옵션, 가입 금융상품 후보를 한 번에 확인하고 정리하는 화면입니다. 이 화면에서는 자산·부채·월 저축 가능액 같은 조건을 직접 수정하지 않고, 필요하면 조건 입력 화면으로 이동해 수정합니다. 여기서는 관심 항목 해제, 저장 옵션의 자금 보기, 가입상품 메모와 금리 그래프 확인에 집중하면 됩니다."
+    if page_type == "auth":
+        return "계정 화면에서는 로그인과 회원가입을 처리합니다. 로그인하면 프로필, 관심목록, 현재 선택 공고와 옵션, 가입상품 후보가 계정 기준으로 이어져 다른 화면에서 다시 활용됩니다."
     return f"{label}에서 궁금한 버튼이나 청약 조건을 물어보면, 현재 선택된 공고와 옵션 또는 입력 조건을 기준으로 설명해드립니다."
 
 
@@ -488,8 +537,14 @@ def _service_usage_actions(page_context: dict[str, Any]) -> list[str]:
         "notice_detail": ["주택형 옵션을 하나 선택하세요.", "공식 확인 체크리스트를 확인하세요.", "옵션 자금 보기로 이동하세요."],
         "funding": ["계약금 부족액과 월 목표를 확인하세요.", "다른 옵션과 간단히 비교하세요.", "AI 코칭 받기로 다음 행동을 정리하세요."],
         "ai_coach": ["바로 처리할 일을 확인하세요.", "공식 원문 또는 fixture 안내를 구분하세요.", "필요하면 추천 목록에서 다른 후보를 선택하세요."],
-        "map": ["지역 공고를 선택하세요.", "옵션 보기로 세부 화면에 들어가세요.", "관심 공고는 저장해두세요."],
+        "map": ["청약·부동산·은행 탭을 전환해보세요.", "지역 필터로 후보를 좁히세요.", "공고 선택 후 옵션과 자금 로드맵을 확인하세요."],
         "favorites": ["저장 옵션의 자금 보기를 열어보세요.", "관심 공고를 다시 비교하세요.", "필요 없는 항목은 정리하세요."],
+        "finance_products": ["은행과 기간 필터로 후보를 좁히세요.", "상품 상세에서 기간별 금리를 비교하세요.", "선택 옵션과 메모를 가입 후보로 저장하세요."],
+        "finance_product_detail": ["저장할 기간 옵션을 선택하세요.", "메모에 준비 목적을 적어두세요.", "MY PAGE에서 그래프와 함께 다시 확인하세요."],
+        "economy_now": ["관심 지역 시세 흐름을 확인하세요.", "금리 변화가 월 부담에 주는 영향을 보세요.", "추천 공고의 납부 일정과 함께 판단하세요."],
+        "agora": ["청약·분양·금리 키워드로 영상을 검색하세요.", "청약·금융상품·자금준비 게시판을 골라 질문을 남기세요.", "영상에서 본 내용을 내 조건에 맞게 해석해달라고 물어보세요."],
+        "my_page": ["관심 옵션의 자금 보기를 다시 열어보세요.", "가입상품 메모와 금리 그래프를 확인하세요.", "조건 수정은 조건 입력 화면에서 진행하세요."],
+        "auth": ["로그인 후 프로필 저장 상태를 확인하세요.", "비로그인 저장 항목은 로그인 시 병합됩니다.", "MY PAGE에서 계정 저장 결과를 확인하세요."],
     }
     return actions_by_page.get(page_type, ["현재 화면의 버튼 이름을 질문해보세요.", "청약 조건이나 자금 흐름을 물어보세요.", "선택한 공고가 있으면 세부 답변이 더 정확해집니다."])
 
@@ -685,6 +740,11 @@ def _page_context_text(page_context: dict[str, Any]) -> str:
         "ai_coach": "AI 코치",
         "map": "청약 지도",
         "favorites": "관심목록",
+        "finance_products": "금융상품",
+        "finance_product_detail": "금융상품 상세",
+        "economy_now": "경제 NOW",
+        "agora": "청약 아고라",
+        "my_page": "MY PAGE",
         "auth": "계정",
     }
     page_type = safe.get("page_type") or "unknown"
@@ -692,13 +752,21 @@ def _page_context_text(page_context: dict[str, Any]) -> str:
         f"- 화면: {labels.get(page_type, page_type)}",
         f"- 경로: {safe.get('path') or ''}",
         f"- 로그인 여부: {'로그인' if safe.get('is_authenticated') else '비로그인'}",
-        f"- 선택 공고 ID: {safe.get('notice_id') or '없음'}",
-        f"- 선택 옵션 ID: {safe.get('option_id') or '없음'}",
+        f"- 화면 모드: {safe.get('page_mode') or 'selected_notice'}",
     ]
+    if safe.get("page_mode") == "general_explore":
+        lines.append("- 답변 기준: 이 화면은 특정 공고 상세 분석보다 영상 탐색, 커뮤니티 질문, 일반 청약·자금·금융상품 대화가 우선입니다.")
+    else:
+        lines.extend([
+            f"- 선택 공고 ID: {safe.get('notice_id') or '없음'}",
+            f"- 선택 옵션 ID: {safe.get('option_id') or '없음'}",
+        ])
     if safe.get("notice_title"):
         lines.append(f"- 선택 공고명: {safe['notice_title']}")
     if safe.get("option_label"):
         lines.append(f"- 선택 옵션: {safe['option_label']}")
+    if safe.get("page_title"):
+        lines.append(f"- 화면 제목: {safe['page_title']}")
     return "\n".join(lines)
 
 
@@ -706,7 +774,7 @@ def _safe_page_context(page_context: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(page_context, dict):
         return {}
     safe: dict[str, Any] = {}
-    for key in ["path", "page_type", "notice_title", "option_label"]:
+    for key in ["path", "page_type", "page_title", "page_mode", "notice_title", "option_label"]:
         value = str(page_context.get(key) or "").strip()
         if value:
             safe[key] = value[:160]

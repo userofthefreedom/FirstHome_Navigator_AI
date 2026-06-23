@@ -2,18 +2,34 @@ from __future__ import annotations
 
 import requests
 from django.conf import settings
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from apps.api_schema import TAGS, VIDEOS_RESPONSE
 
 
 DEFAULT_QUERY = "청약 공공분양 주택청약 내집마련"
 
 
+@extend_schema(
+    tags=[TAGS["videos"]],
+    summary="기본 청약 영상 목록",
+    description="청약/공공분양/내집마련 관련 기본 YouTube 검색 결과를 최대 3개 반환합니다.",
+    responses={200: VIDEOS_RESPONSE},
+)
 @api_view(["GET"])
 def default_videos_view(_request):
     return _youtube_response(DEFAULT_QUERY)
 
 
+@extend_schema(
+    tags=[TAGS["videos"]],
+    summary="청약 영상 검색",
+    description="검색어 기준 YouTube 청약 관련 영상을 최대 3개 반환합니다.",
+    parameters=[OpenApiParameter("q", str, OpenApiParameter.QUERY, description="영상 검색어")],
+    responses={200: VIDEOS_RESPONSE},
+)
 @api_view(["GET"])
 def search_videos_view(request):
     query = request.query_params.get("q", "").strip() or "청약"

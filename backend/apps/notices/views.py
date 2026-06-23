@@ -1,6 +1,18 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.api_schema import (
+    ACTIVE_PARAM,
+    COMMON_ERROR_RESPONSES,
+    INCLUDE_EXCLUDED_PARAM,
+    NOTICE_LIST_RESPONSE,
+    NOTICE_LIST_EXAMPLE,
+    NOTICE_RESPONSE,
+    OWNERSHIP_TYPE_PARAM,
+    REGION_PARAM,
+    TAGS,
+)
 from apps.fixture_store import current_notices, find_notice, notices
 from apps.notices.services.map_locations import offset_location, resolve_notice_location
 from apps.profiles.services import profile_from_request
@@ -10,6 +22,14 @@ from apps.rules.cache_service import get_or_set_locked
 from apps.rules.regions import canonical_region
 
 
+@extend_schema(
+    tags=[TAGS["notices"]],
+    summary="청약 공고 목록",
+    description="실제 DB 공고를 우선 반환하고, 설정에 따라 부족 지역은 fixture 보충 데이터를 함께 반환합니다.",
+    parameters=[ACTIVE_PARAM, INCLUDE_EXCLUDED_PARAM, REGION_PARAM, OWNERSHIP_TYPE_PARAM],
+    responses={200: NOTICE_LIST_RESPONSE},
+    examples=[NOTICE_LIST_EXAMPLE],
+)
 @api_view(["GET"])
 def notice_list(request):
     include_excluded = request.query_params.get("include_excluded") in {"1", "true", "yes"}
@@ -24,6 +44,12 @@ def notice_list(request):
     )
 
 
+@extend_schema(
+    tags=[TAGS["notices"]],
+    summary="청약 공고 상세",
+    description="공고 ID 기준으로 공고 상세, 공식 문서 분석 요약, 대표 주택형 정보를 반환합니다.",
+    responses={200: NOTICE_RESPONSE, **COMMON_ERROR_RESPONSES},
+)
 @api_view(["GET"])
 def notice_detail(request, notice_id):
     notice = find_notice(notice_id)
@@ -32,6 +58,21 @@ def notice_detail(request, notice_id):
     return Response(notice)
 
 
+@extend_schema(
+    tags=[TAGS["notices"]],
+    summary="지도 표시용 청약 공고",
+    description="현재 프로필 기준 추천 점수와 위치 좌표가 포함된 지도 마커용 공고 목록을 반환합니다.",
+    parameters=[INCLUDE_EXCLUDED_PARAM, OWNERSHIP_TYPE_PARAM],
+    responses={
+        200: {
+            "type": "object",
+            "properties": {
+                "items": {"type": "array", "items": {"type": "object"}},
+                "count": {"type": "integer"},
+            },
+        }
+    },
+)
 @api_view(["GET"])
 def notice_map(request):
     include_excluded = request.query_params.get("include_excluded") in {"1", "true", "yes"}

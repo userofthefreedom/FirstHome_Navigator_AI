@@ -4,12 +4,29 @@ from urllib.parse import quote
 
 import requests
 from django.conf import settings
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from apps.api_schema import COMMON_ERROR_RESPONSES, PLACES_SEARCH_RESPONSE, ROUTE_RESPONSE, TAGS
 
 DEFAULT_ORIGIN = {"lat": 37.5012743, "lng": 127.039585, "name": "멀티캠퍼스 역삼"}
 
 
+@extend_schema(
+    tags=[TAGS["places"]],
+    summary="주변 은행/부동산 검색",
+    description="Kakao Local API로 선택 지역 주변 은행 또는 부동산 중개업소를 검색합니다. API 키가 없으면 fallback 장소를 반환합니다.",
+    parameters=[
+        OpenApiParameter("type", str, OpenApiParameter.QUERY, description="bank 또는 estate"),
+        OpenApiParameter("query", str, OpenApiParameter.QUERY, description="검색 중심으로 사용할 지역/주소/키워드"),
+        OpenApiParameter("bank_brand", str, OpenApiParameter.QUERY, description="kb, shinhan, woori, hana 등 은행 브랜드 필터"),
+        OpenApiParameter("lat", float, OpenApiParameter.QUERY, description="검색 중심 위도"),
+        OpenApiParameter("lng", float, OpenApiParameter.QUERY, description="검색 중심 경도"),
+        OpenApiParameter("radius", int, OpenApiParameter.QUERY, description="검색 반경 미터"),
+    ],
+    responses={200: PLACES_SEARCH_RESPONSE},
+)
 @api_view(["GET"])
 def search_places_view(request):
     place_type = request.query_params.get("type", "bank")
@@ -46,6 +63,16 @@ def search_places_view(request):
     return Response({"items": items or _fallback_places(place_type), "fallback": not bool(items)})
 
 
+@extend_schema(
+    tags=[TAGS["places"]],
+    summary="지도 경로 조회",
+    description="멀티캠퍼스 역삼 기준 선택 지점까지 Kakao Mobility 경로 polyline과 길찾기 URL을 반환합니다.",
+    parameters=[
+        OpenApiParameter("lat", float, OpenApiParameter.QUERY, required=True, description="목적지 위도"),
+        OpenApiParameter("lng", float, OpenApiParameter.QUERY, required=True, description="목적지 경도"),
+    ],
+    responses={200: ROUTE_RESPONSE, **COMMON_ERROR_RESPONSES},
+)
 @api_view(["GET"])
 def route_view(request):
     lat = request.query_params.get("lat")

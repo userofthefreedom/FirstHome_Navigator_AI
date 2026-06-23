@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.products.models import FinancialProduct, FinancialProductOption
-from apps.products.services.finlife import FINLIFE_SOURCE_URL, fetch_finlife_payload
+from apps.products.services.finlife import FINLIFE_SOURCE_URL, fetch_finlife_payload, normalize_finlife_product_records
 from apps.rules.cache_service import clear_firsthome_cache
 
 
@@ -27,7 +27,7 @@ class Command(BaseCommand):
         records = []
         for kind in kinds:
             payload = fetch_finlife_payload(api_key, kind, top_fin_grp_no=options["top_fin_grp_no"])
-            records.extend(_records_from_payload(payload.get("result", {}), kind))
+            records.extend(normalize_finlife_product_records(payload.get("result", {}), kind))
 
         if options["dry_run"]:
             self.stdout.write(self.style.SUCCESS(f"Fetched {len(records)} products/options. No database changes."))
@@ -97,54 +97,3 @@ class Command(BaseCommand):
         if options["saving_only"]:
             return ["saving"]
         return ["deposit", "saving"]
-
-
-def _records_from_payload(result: dict, kind: str) -> list[dict]:
-    category = "deposit" if kind == "deposit" else "saving"
-    base_by_code = {item.get("fin_prdt_cd"): item for item in result.get("baseList") or []}
-    records = []
-    for option in result.get("optionList") or []:
-        code = option.get("fin_prdt_cd")
-        base = base_by_code.get(code) or {}
-        provider = str(base.get("kor_co_nm") or "").strip()
-        name = str(base.get("fin_prdt_nm") or "").strip()
-        if not provider or not name:
-            continue
-        records.append(
-            {
-                "provider": provider[:60],
-                "name": name[:120],
-                "category": category,
-                "product_code": str(code or "")[:80],
-                "bank_code": str(base.get("fin_co_no") or "")[:40],
-                "monthly_limit": _to_int(base.get("max_limit")),
-                "join_way": str(base.get("join_way") or "").strip(),
-                "special_condition": str(base.get("spcl_cnd") or "").strip(),
-                "source_meta": base,
-                "option": {
-                    "save_trm": _to_int(option.get("save_trm")),
-                    "intr_rate_type": str(option.get("intr_rate_type") or "")[:40],
-                    "intr_rate_type_nm": str(option.get("intr_rate_type_nm") or "")[:80],
-                    "intr_rate": _to_float(option.get("intr_rate")),
-                    "intr_rate2": _to_float(option.get("intr_rate2")),
-                    "rsrv_type": str(option.get("rsrv_type") or "")[:40],
-                    "rsrv_type_nm": str(option.get("rsrv_type_nm") or "")[:80],
-                    "source_meta": option,
-                },
-            }
-        )
-    return records
-
-
-def _to_int(value) -> int:
-    try:
-        return int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-
-
-def _to_float(value) -> float:
-    try:
-        return float(value or 0)
-    except (TypeError, ValueError):
-        return 0

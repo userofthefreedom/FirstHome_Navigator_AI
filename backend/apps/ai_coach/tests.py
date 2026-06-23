@@ -126,6 +126,90 @@ class AiCoachChatApiTests(TestCase):
         self.assertIn("추천 청약", payload["reply"])
         self.assertTrue(any("공고" in action or "자금" in action for action in payload["suggested_actions"]))
 
+    def test_chat_api_answers_new_page_usage_contexts(self):
+        cases = [
+            ("agora", "청약 아고라", "영상"),
+            ("map", "청약 지도", "은행"),
+            ("finance_products", "금융상품", "기간별"),
+            ("my_page", "MY PAGE", "그래프"),
+        ]
+        for page_type, expected_reply, expected_action in cases:
+            with self.subTest(page_type=page_type):
+                response = self.client.post(
+                    "/api/ai/chat",
+                    {
+                        "notice_id": 101,
+                        "message": "이 화면은 어떻게 쓰면 돼?",
+                        "profile": {"asset": 8000000},
+                        "page_context": {
+                            "path": f"/{page_type}",
+                            "page_type": page_type,
+                            "page_title": expected_reply,
+                            "page_mode": "general_explore" if page_type in {"agora", "finance_products"} else "selected_notice",
+                            "is_authenticated": True,
+                        },
+                    },
+                    content_type="application/json",
+                )
+
+                self.assertEqual(response.status_code, 200)
+                payload = response.json()
+                self.assertEqual(payload["source"], "template_fallback")
+                self.assertEqual(payload["page_context"]["page_type"], page_type)
+                self.assertIn(expected_reply, payload["reply"])
+                self.assertTrue(any(expected_action in action for action in payload["suggested_actions"]))
+
+    def test_chat_api_answers_agora_as_general_community_page(self):
+        response = self.client.post(
+            "/api/ai/chat",
+            {
+                "notice_id": 101,
+                "message": "이 화면은 어떻게 쓰면 돼?",
+                "profile": {"asset": 8000000},
+                "page_context": {
+                    "path": "/finance/agora",
+                    "page_type": "agora",
+                    "page_title": "청약 아고라",
+                    "page_mode": "general_explore",
+                    "is_authenticated": True,
+                },
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "template_fallback")
+        self.assertIn("특정 공고나 상품을 분석하는 화면이 아니라", payload["reply"])
+        self.assertIn("영상", payload["reply"])
+        self.assertIn("커뮤니티", payload["reply"])
+        self.assertEqual(payload["context_refs"], [])
+
+    def test_chat_api_answers_my_page_as_read_and_manage_page(self):
+        response = self.client.post(
+            "/api/ai/chat",
+            {
+                "notice_id": 101,
+                "message": "MY PAGE는 어떻게 관리해?",
+                "profile": {"asset": 8000000, "debt": 0, "monthly_saving": 800000},
+                "page_context": {
+                    "path": "/my-page",
+                    "page_type": "my_page",
+                    "page_title": "MY PAGE",
+                    "page_mode": "saved_items",
+                    "is_authenticated": True,
+                },
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["source"], "template_fallback")
+        self.assertIn("직접 수정하지 않고", payload["reply"])
+        self.assertIn("조건 입력", payload["reply"])
+        self.assertNotIn("공식 공고문 확인", payload["reply"])
+
     def test_chat_context_refs_include_official_evidence_and_checklist(self):
         notice = HousingNotice.objects.create(
             title="Evidence public sale notice",
@@ -208,6 +292,35 @@ class AiCoachChatApiTests(TestCase):
     def test_template_provider_does_not_call_external_llm(self):
         with self.assertRaises(AiProviderUnavailable):
             chat_completion(messages=[{"role": "user", "content": "hello"}])
+
+    @override_settings(
+        AI_SETTINGS={
+            "PROVIDER": "gms_openai",
+            "MODEL": "gpt-4.1",
+            "GMS_API_KEY": "gms-test-key",
+            "GMS_OPENAI_BASE_URL": "https://gms.ssafy.io/gmsapi/api.openai.com/v1",
+            "GMS_OPENAI_CHAT_PATH": "/chat/completions",
+            "REQUEST_TIMEOUT": 30,
+            "ENABLE_LLM_EXTRACTION": False,
+            "ENABLE_LLM_CHAT": True,
+        }
+    )
+    @patch("apps.ai_coach.services.ai_client.requests.post")
+    def test_gms_openai_provider_uses_gms_endpoint_and_key(self, mock_post):
+        raw_response = {"choices": [{"message": {"content": '{"reply":"ok"}'}}]}
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = raw_response
+        mock_post.return_value = mock_response
+
+        result = chat_completion(messages=[{"role": "user", "content": "hello"}])
+
+        self.assertEqual(result.provider, "gms_openai")
+        self.assertEqual(result.model, "gpt-4.1")
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], "https://gms.ssafy.io/gmsapi/api.openai.com/v1/chat/completions")
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer gms-test-key")
+        self.assertEqual(kwargs["json"]["model"], "gpt-4.1")
 
     def test_ai_chat_smoke_command_writes_report(self):
         with tempfile.TemporaryDirectory() as temp_dir:

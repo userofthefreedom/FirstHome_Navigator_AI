@@ -1,8 +1,25 @@
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.db import IntegrityError
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.api_schema import (
+    ACCOUNT_STATE_REQUEST,
+    ACCOUNT_STATE_RESPONSE,
+    AUTH_REQUEST,
+    AUTH_RESPONSE,
+    CLIENT_ID_HEADER,
+    COMMON_ERROR_RESPONSES,
+    ERROR_RESPONSE,
+    FAVORITE_LIST_RESPONSE,
+    FAVORITE_REQUEST,
+    FAVORITE_RESPONSE,
+    LOGOUT_RESPONSE,
+    PROFILE_RESPONSE,
+    TAGS,
+    USER_RESPONSE,
+)
 from apps.fixture_store import default_profile, find_notice, policies, products
 from apps.notice_docs.models import HousingUnitOption
 from apps.notice_docs.serializers import serialize_unit_option
@@ -147,6 +164,21 @@ def _favorite_queryset(request):
     return Favorite.objects.filter(user__isnull=True, client_id=_client_id(request))
 
 
+@extend_schema(
+    methods=["GET"],
+    tags=[TAGS["profile"]],
+    summary="사용자 청약 조건 조회",
+    description="로그인 사용자는 저장된 UserProfile을, 비로그인 사용자는 세션 프로필을 반환합니다.",
+    responses={200: PROFILE_RESPONSE},
+)
+@extend_schema(
+    methods=["PUT"],
+    tags=[TAGS["profile"]],
+    summary="사용자 청약 조건 저장",
+    description="청약 추천, 자금 로드맵, AI 코치가 함께 사용하는 사용자 조건을 저장합니다.",
+    request=PROFILE_RESPONSE,
+    responses={200: PROFILE_RESPONSE, **COMMON_ERROR_RESPONSES},
+)
 @api_view(["GET", "PUT"])
 def profile_view(request):
     user = _django_user(request)
@@ -167,6 +199,32 @@ def profile_view(request):
     return Response(profile)
 
 
+@extend_schema(
+    methods=["GET"],
+    tags=[TAGS["profile"]],
+    summary="관심 항목 목록 조회",
+    description="관심 공고, 관심 주택형 옵션, 관심 금융상품, 관심 정책을 최근 저장순으로 반환합니다.",
+    parameters=[CLIENT_ID_HEADER],
+    responses={200: FAVORITE_LIST_RESPONSE},
+)
+@extend_schema(
+    methods=["POST"],
+    tags=[TAGS["profile"]],
+    summary="관심 항목 저장",
+    description="로그인 사용자는 계정에, 비로그인 사용자는 X-FirstHome-Client-Id 또는 세션에 관심 항목을 저장합니다.",
+    parameters=[CLIENT_ID_HEADER],
+    request=FAVORITE_REQUEST,
+    responses={201: FAVORITE_RESPONSE, **COMMON_ERROR_RESPONSES},
+)
+@extend_schema(
+    methods=["DELETE"],
+    tags=[TAGS["profile"]],
+    summary="관심 항목 삭제",
+    description="favorite_type과 object_id가 일치하는 관심 항목을 삭제합니다.",
+    parameters=[CLIENT_ID_HEADER],
+    request=FAVORITE_REQUEST,
+    responses={204: None, **COMMON_ERROR_RESPONSES},
+)
 @api_view(["GET", "POST", "DELETE"])
 def favorites_view(request):
     if request.method == "GET":
@@ -200,6 +258,12 @@ def favorites_view(request):
     return Response(status=204)
 
 
+@extend_schema(
+    tags=[TAGS["auth"]],
+    summary="현재 로그인 사용자 조회",
+    description="현재 세션의 사용자, 프로필, 계정 상태를 반환합니다. 비로그인 상태에서는 is_authenticated=false를 반환합니다.",
+    responses={200: AUTH_RESPONSE},
+)
 @api_view(["GET"])
 def auth_me_view(request):
     user = _django_user(request)
@@ -212,6 +276,13 @@ def auth_me_view(request):
     return Response(payload)
 
 
+@extend_schema(
+    tags=[TAGS["auth"]],
+    summary="회원가입",
+    description="사용자 계정을 생성하고 즉시 로그인 처리합니다. 세션/클라이언트에 있던 프로필과 관심 항목을 계정으로 병합합니다.",
+    request=AUTH_REQUEST,
+    responses={201: AUTH_RESPONSE, 400: ERROR_RESPONSE},
+)
 @api_view(["POST"])
 def register_view(request):
     username = str(request.data.get("username", "")).strip()
@@ -243,6 +314,13 @@ def register_view(request):
     )
 
 
+@extend_schema(
+    tags=[TAGS["auth"]],
+    summary="로그인",
+    description="아이디와 비밀번호로 로그인하고 세션/클라이언트 관심 항목을 계정으로 병합합니다.",
+    request=AUTH_REQUEST,
+    responses={200: AUTH_RESPONSE, 400: ERROR_RESPONSE},
+)
 @api_view(["POST"])
 def login_view(request):
     username = str(request.data.get("username", "")).strip()
@@ -264,12 +342,34 @@ def login_view(request):
     )
 
 
+@extend_schema(
+    tags=[TAGS["auth"]],
+    summary="로그아웃",
+    description="현재 세션을 로그아웃 처리합니다.",
+    request=None,
+    responses={200: LOGOUT_RESPONSE},
+)
 @api_view(["POST"])
 def logout_view(request):
     logout(request._request)
     return Response({"user": {"is_authenticated": False}})
 
 
+@extend_schema(
+    methods=["GET"],
+    tags=[TAGS["profile"]],
+    summary="현재 선택 상태 조회",
+    description="사용자가 마지막으로 선택한 공고, 주택형 옵션, 추천 스냅샷, 자금 로드맵 상태를 반환합니다.",
+    responses={200: ACCOUNT_STATE_RESPONSE},
+)
+@extend_schema(
+    methods=["PUT"],
+    tags=[TAGS["profile"]],
+    summary="현재 선택 상태 저장",
+    description="대시보드, 상세, 자금 로드맵, AI 코치 화면 간에 공유되는 선택 상태를 저장합니다.",
+    request=ACCOUNT_STATE_REQUEST,
+    responses={200: ACCOUNT_STATE_RESPONSE, **COMMON_ERROR_RESPONSES},
+)
 @api_view(["GET", "PUT"])
 def account_state_view(request):
     user = _django_user(request)

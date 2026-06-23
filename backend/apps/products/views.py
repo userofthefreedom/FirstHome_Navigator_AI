@@ -1,9 +1,18 @@
 import re
 
 from django.db.models import Max, Prefetch, Q
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from apps.api_schema import (
+    COMMON_ERROR_RESPONSES,
+    JOIN_PRODUCT_EXAMPLE,
+    JOIN_PRODUCT_REQUEST,
+    MODEL_RESPONSES,
+    PRODUCT_LIST_RESPONSE,
+    TAGS,
+)
 from apps.fixture_store import products as fixture_products
 from apps.products.models import FinancialProduct, FinancialProductOption, UserJoinedProduct
 from apps.products.serializers import FinancialProductSerializer, UserJoinedProductSerializer
@@ -49,6 +58,20 @@ def _fixture_items():
     return items
 
 
+@extend_schema(
+    tags=[TAGS["products"]],
+    operation_id="financial_products_list",
+    summary="금융상품 목록",
+    description="예금/적금 상품을 필터링하고, 사용자 프로필 기준 적합도와 가입 여부를 함께 반환합니다.",
+    parameters=[
+        OpenApiParameter("category", str, OpenApiParameter.QUERY, description="all, deposit, saving 또는 DB 카테고리명"),
+        OpenApiParameter("provider", str, OpenApiParameter.QUERY, description="금융회사명 필터"),
+        OpenApiParameter("q", str, OpenApiParameter.QUERY, description="상품명/금융회사명 검색어"),
+        OpenApiParameter("term_months", int, OpenApiParameter.QUERY, description="저축 기간 월 수"),
+        OpenApiParameter("ordering", str, OpenApiParameter.QUERY, description="fit, rate, term, provider, name"),
+    ],
+    responses={200: PRODUCT_LIST_RESPONSE},
+)
 @api_view(["GET"])
 def products_view(request):
     queryset = _product_queryset()
@@ -84,6 +107,13 @@ def products_view(request):
     return Response({"items": items, "filters": {"providers": providers, "categories": categories}})
 
 
+@extend_schema(
+    tags=[TAGS["products"]],
+    operation_id="financial_products_retrieve",
+    summary="금융상품 상세",
+    description="상품 상세, 금리 옵션, 사용자 조건 기준 적합도, 가입 여부, 주의사항을 반환합니다.",
+    responses={200: MODEL_RESPONSES["product"], **COMMON_ERROR_RESPONSES},
+)
 @api_view(["GET"])
 def product_detail_view(request, product_id: int):
     try:
@@ -104,6 +134,14 @@ def product_detail_view(request, product_id: int):
     return Response(data)
 
 
+@extend_schema(
+    tags=[TAGS["products"]],
+    summary="금융상품 가입 저장",
+    description="로그인 사용자의 MY PAGE 가입상품 목록에 금융상품과 선택 옵션을 저장합니다.",
+    request=JOIN_PRODUCT_REQUEST,
+    responses={201: MODEL_RESPONSES["joined_product"], **COMMON_ERROR_RESPONSES},
+    examples=[JOIN_PRODUCT_EXAMPLE],
+)
 @api_view(["POST"])
 def join_product_view(request, product_id: int):
     if not request.user.is_authenticated:
@@ -130,6 +168,12 @@ def join_product_view(request, product_id: int):
     return Response(UserJoinedProductSerializer(joined, context={"user": request.user}).data, status=201)
 
 
+@extend_schema(
+    tags=[TAGS["products"]],
+    summary="가입 금융상품 목록",
+    description="현재 로그인 사용자가 MY PAGE에 저장한 금융상품 목록을 반환합니다.",
+    responses={200: MODEL_RESPONSES["joined_product"](many=True), **COMMON_ERROR_RESPONSES},
+)
 @api_view(["GET"])
 def joined_products_view(request):
     if not request.user.is_authenticated:
@@ -138,6 +182,12 @@ def joined_products_view(request):
     return Response(UserJoinedProductSerializer(joined, many=True, context={"user": request.user}).data)
 
 
+@extend_schema(
+    tags=[TAGS["products"]],
+    summary="가입 금융상품 해제",
+    description="현재 로그인 사용자의 가입상품 저장 항목을 삭제합니다.",
+    responses={204: None, **COMMON_ERROR_RESPONSES},
+)
 @api_view(["DELETE"])
 def joined_product_detail_view(request, joined_id: int):
     if not request.user.is_authenticated:

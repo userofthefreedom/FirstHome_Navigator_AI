@@ -8,6 +8,8 @@ from typing import Any
 
 import requests
 
+from apps.rules.regions import infer_region_from_text
+
 
 YOUTHCENTER_POLICY_URL = "https://www.youthcenter.go.kr/go/ythip/getPlcy"
 YOUTHCENTER_SOURCE_URL = "https://www.youthcenter.go.kr/cmnFooter/openapiIntro/oaiDoc/46"
@@ -255,6 +257,11 @@ def _income_limit(text: str) -> int:
 def _regions(text: str) -> list[str]:
     regions = [REGION_CANONICAL_NAMES.get(region, region) for region in REGION_NAMES if region in text]
     regions = list(dict.fromkeys(regions))
+    if regions:
+        return regions
+    inferred_regions = infer_region_from_text(text)
+    if inferred_regions:
+        return inferred_regions
     return regions or ["전국"]
 
 

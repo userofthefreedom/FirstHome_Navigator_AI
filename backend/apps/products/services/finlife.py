@@ -197,6 +197,43 @@ def normalize_finlife_products(result: dict[str, Any], kind: str) -> list[Finlif
     return normalized
 
 
+def normalize_finlife_product_records(result: dict[str, Any], kind: str) -> list[dict[str, Any]]:
+    _endpoint, category = PRODUCT_ENDPOINTS[kind]
+    base_by_code = {item.get("fin_prdt_cd"): item for item in result.get("baseList") or []}
+    records = []
+    for option in result.get("optionList") or []:
+        code = option.get("fin_prdt_cd")
+        base = base_by_code.get(code) or {}
+        provider = str(base.get("kor_co_nm") or "").strip()
+        name = str(base.get("fin_prdt_nm") or "").strip()
+        if not provider or not name:
+            continue
+        records.append(
+            {
+                "provider": provider[:60],
+                "name": name[:120],
+                "category": category,
+                "product_code": str(code or "")[:80],
+                "bank_code": str(base.get("fin_co_no") or "")[:40],
+                "monthly_limit": _monthly_limit(base.get("max_limit"), category),
+                "join_way": str(base.get("join_way") or "").strip(),
+                "special_condition": str(base.get("spcl_cnd") or "").strip(),
+                "source_meta": base,
+                "option": {
+                    "save_trm": _to_int(option.get("save_trm")),
+                    "intr_rate_type": str(option.get("intr_rate_type") or "")[:40],
+                    "intr_rate_type_nm": str(option.get("intr_rate_type_nm") or "")[:80],
+                    "intr_rate": _to_float(option.get("intr_rate")),
+                    "intr_rate2": _to_float(option.get("intr_rate2")),
+                    "rsrv_type": str(option.get("rsrv_type") or "")[:40],
+                    "rsrv_type_nm": str(option.get("rsrv_type_nm") or "")[:80],
+                    "source_meta": option,
+                },
+            }
+        )
+    return records
+
+
 def normalize_finlife_loan_products(result: dict[str, Any], kind: str) -> list[FinlifeLoanProduct]:
     _endpoint, category = LOAN_ENDPOINTS[kind]
     base_by_code = {item.get("fin_prdt_cd"): item for item in result.get("baseList") or []}
@@ -269,6 +306,13 @@ def normalize_finlife_loan_products(result: dict[str, Any], kind: str) -> list[F
 def _to_int(value: Any) -> int:
     try:
         return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _to_float(value: Any) -> float:
+    try:
+        return float(value or 0)
     except (TypeError, ValueError):
         return 0
 

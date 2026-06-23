@@ -49,7 +49,7 @@ def chat_completion(
 
     endpoint = _endpoint_for_provider(provider)
     api_key = _api_key_for_provider(provider)
-    model = str(settings.AI_SETTINGS.get("MODEL", "gpt-4o-mini"))
+    model = str(settings.AI_SETTINGS.get("MODEL", "gpt-4.1"))
     payload: dict[str, Any] = {
         "model": model,
         "messages": messages,
@@ -94,6 +94,12 @@ def _endpoint_for_provider(provider: str) -> str:
         base_url = str(settings.AI_SETTINGS.get("OPENAI_BASE_URL", "https://api.openai.com/v1")).rstrip("/") + "/"
         path = str(settings.AI_SETTINGS.get("OPENAI_CHAT_PATH", "/chat/completions")).lstrip("/")
         return urljoin(base_url, path)
+    if provider in {"gms", "gms_openai"}:
+        base_url = str(
+            settings.AI_SETTINGS.get("GMS_OPENAI_BASE_URL", "https://gms.ssafy.io/gmsapi/api.openai.com/v1")
+        ).rstrip("/") + "/"
+        path = str(settings.AI_SETTINGS.get("GMS_OPENAI_CHAT_PATH", "/chat/completions")).lstrip("/")
+        return urljoin(base_url, path)
     raise AiProviderUnavailable(f"Unsupported AI_PROVIDER={provider}")
 
 
@@ -102,6 +108,11 @@ def _api_key_for_provider(provider: str) -> str:
         api_key = str(settings.AI_SETTINGS.get("OPENAI_API_KEY", ""))
         if not api_key:
             raise AiProviderUnavailable("OPENAI_API_KEY is missing.")
+        return api_key
+    if provider in {"gms", "gms_openai"}:
+        api_key = str(settings.AI_SETTINGS.get("GMS_API_KEY", "") or settings.AI_SETTINGS.get("OPENAI_API_KEY", ""))
+        if not api_key:
+            raise AiProviderUnavailable("GMS_API_KEY is missing.")
         return api_key
     return ""
 

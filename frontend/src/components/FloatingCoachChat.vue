@@ -24,13 +24,37 @@ const messages = ref([
     },
 ]);
 const canSend = computed(() => draft.value.trim().length > 0 && !pending.value);
-const pageType = computed(() => {
+const pageMeta = computed(() => {
     const name = String(route.name || '');
-    if (name === 'notice-detail')
-        return 'notice_detail';
-    if (name === 'ai-coach')
-        return 'ai_coach';
-    return name || 'unknown';
+    const byRoute = {
+        home: { type: 'home', title: '대시보드' },
+        profile: { type: 'profile', title: '조건 입력' },
+        recommendations: { type: 'recommendations', title: '추천 청약' },
+        map: { type: 'map', title: '청약 지도' },
+        'notice-detail': { type: 'notice_detail', title: '청약 세부' },
+        funding: { type: 'funding', title: '자금 로드맵' },
+        'ai-coach': { type: 'ai_coach', title: 'AI 코치' },
+        favorites: { type: 'favorites', title: '관심목록' },
+        'finance-products': { type: 'finance_products', title: '금융상품' },
+        'finance-product-detail': { type: 'finance_product_detail', title: '금융상품 상세' },
+        'economy-now': { type: 'economy_now', title: '경제 NOW' },
+        agora: { type: 'agora', title: '청약 아고라' },
+        'my-page': { type: 'my_page', title: 'MY PAGE' },
+        auth: { type: 'auth', title: '계정' },
+    };
+    return byRoute[name] ?? { type: name || 'unknown', title: '현재 화면' };
+});
+const pageType = computed(() => {
+    return pageMeta.value.type;
+});
+const pageMode = computed(() => {
+    const generalPages = new Set(['agora', 'finance_products', 'economy_now', 'auth']);
+    const managementPages = new Set(['my_page', 'favorites']);
+    if (generalPages.has(pageType.value))
+        return 'general_explore';
+    if (managementPages.has(pageType.value))
+        return 'saved_items';
+    return 'selected_notice';
 });
 const quickPrompts = computed(() => {
     const byPage = {
@@ -42,6 +66,12 @@ const quickPrompts = computed(() => {
         ai_coach: ['바로 처리할 일을 요약해줘.', '공식 확인 항목은 어떻게 봐?', '이 후보를 계속 볼지 판단 기준은?'],
         map: ['지도 화면은 어떻게 써?', '지역 공고를 선택하면 다음은?', '관심 지역을 비교하는 방법은?'],
         favorites: ['관심목록은 어떻게 활용해?', '저장한 옵션 자금은 어디서 봐?', '관심 공고를 다시 비교하려면?'],
+        finance_products: ['금융상품은 어떻게 비교해?', '기간별 금리는 어디서 봐?', '가입 후보 저장은 어떻게 해?'],
+        finance_product_detail: ['이 상품 옵션은 어떻게 고르면 돼?', '저장 메모는 어디에 보여?', '금리 비교는 어떻게 봐?'],
+        economy_now: ['경제 NOW는 무엇을 봐야 해?', '시장 지표를 청약 판단에 어떻게 써?', '금리와 집값 흐름을 요약해줘.'],
+        agora: ['청약 영상은 어떤 키워드로 찾아?', '자금 계획 질문은 어디에 남겨?', '금융상품 이야기도 해도 돼?'],
+        my_page: ['MY PAGE는 어떻게 관리해?', '가입상품 그래프는 어떻게 봐?', '관심 옵션을 다시 비교하려면?'],
+        auth: ['로그인하면 무엇이 저장돼?', '비로그인 상태와 뭐가 달라?', '계정 저장 흐름을 알려줘.'],
     };
     return byPage[pageType.value] ?? ['이 화면은 어떻게 쓰면 돼?', '청약 추천 흐름을 알려줘.', '내가 다음에 할 일은?'];
 });
@@ -88,6 +118,8 @@ function pageContext(noticeId) {
     return {
         path: route.fullPath,
         page_type: pageType.value,
+        page_title: pageMeta.value.title,
+        page_mode: pageMode.value,
         notice_id: noticeId || selectedNoticeId(),
         option_id: selectedOptionId(),
         is_authenticated: Boolean(authStore.user.is_authenticated),
