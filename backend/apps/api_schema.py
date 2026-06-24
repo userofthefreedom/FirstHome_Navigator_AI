@@ -617,6 +617,8 @@ VIDEO_RESPONSE = inline_serializer(
         "published_at": serializers.CharField(),
         "thumbnail_url": serializers.URLField(required=False, allow_blank=True),
         "description": serializers.CharField(required=False, allow_blank=True),
+        "embed_url": serializers.URLField(required=False, allow_blank=True),
+        "watch_url": serializers.URLField(required=False, allow_blank=True),
     },
 )
 
@@ -627,6 +629,9 @@ VIDEOS_RESPONSE = inline_serializer(
         "items": serializers.ListField(child=serializers.DictField()),
         "fallback": serializers.BooleanField(),
         "fallback_reason": serializers.CharField(required=False),
+        "cache": serializers.BooleanField(required=False),
+        "cache_type": serializers.CharField(required=False),
+        "query": serializers.CharField(required=False),
     },
 )
 

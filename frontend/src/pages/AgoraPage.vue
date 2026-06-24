@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { createAgoraComment, createAgoraPost, deleteAgoraComment, deleteAgoraPost, fetchAgoraPosts, fetchAuthSession, fetchDefaultVideos, searchVideos } from '../api/firsthome';
 
 const boardTabs = [
@@ -21,6 +21,8 @@ const session = ref(null);
 const videoQuery = ref('청약 공공분양');
 const videos = ref([]);
 const videoMessage = ref('');
+const videoLoading = ref(false);
+const lastVideoQuery = ref('');
 const selectedVideo = ref(null);
 const posts = ref([]);
 const activeBoard = ref('all');
@@ -30,11 +32,42 @@ const error = ref('');
 const isLoggedIn = computed(() => Boolean(session.value?.user?.is_authenticated));
 const isAllBoard = computed(() => activeBoard.value === 'all');
 const boardTitle = computed(() => boardTabs.find((tab) => tab.value === activeBoard.value)?.label ?? '전체');
+let videoSearchTimer = null;
 
-async function loadVideos(useSearch = false) {
-  const response = useSearch ? await searchVideos(videoQuery.value) : await fetchDefaultVideos();
-  videos.value = (response.items ?? []).slice(0, 3);
-  videoMessage.value = response.fallback_reason ?? '';
+function normalizedVideoQuery(value) {
+  return (value ?? '').trim().replace(/\s+/g, ' ');
+}
+
+function requestVideoSearch() {
+  const query = normalizedVideoQuery(videoQuery.value);
+  if (!query || videoLoading.value || query === lastVideoQuery.value) {
+    return;
+  }
+  if (videoSearchTimer) {
+    clearTimeout(videoSearchTimer);
+  }
+  videoSearchTimer = setTimeout(() => {
+    loadVideos(true, query);
+  }, 500);
+}
+
+async function loadVideos(useSearch = false, requestedQuery = '') {
+  if (videoLoading.value) {
+    return;
+  }
+  const query = normalizedVideoQuery(requestedQuery || videoQuery.value);
+  if (useSearch && !query) {
+    return;
+  }
+  videoLoading.value = true;
+  try {
+    const response = useSearch ? await searchVideos(query) : await fetchDefaultVideos();
+    videos.value = (response.items ?? []).slice(0, 3);
+    videoMessage.value = response.fallback_reason ?? '';
+    lastVideoQuery.value = useSearch ? query : '';
+  } finally {
+    videoLoading.value = false;
+  }
 }
 
 async function loadPosts() {
@@ -84,6 +117,12 @@ onMounted(async () => {
   session.value = await fetchAuthSession();
   await Promise.all([loadVideos(false), loadPosts()]);
 });
+
+onBeforeUnmount(() => {
+  if (videoSearchTimer) {
+    clearTimeout(videoSearchTimer);
+  }
+});
 </script>
 
 <template>
@@ -96,8 +135,10 @@ onMounted(async () => {
 
     <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div class="flex flex-col gap-3 md:flex-row">
-        <input v-model="videoQuery" class="h-11 flex-1 rounded-lg border border-slate-200 px-3 text-sm font-bold" type="search" placeholder="관심 키워드 검색" />
-        <button class="rounded-lg bg-blue-600 px-4 text-sm font-black text-white" type="button" @click="loadVideos(true)">검색</button>
+        <input v-model="videoQuery" class="h-11 flex-1 rounded-lg border border-slate-200 px-3 text-sm font-bold" type="search" placeholder="관심 키워드 검색" @keydown.enter.prevent="requestVideoSearch" />
+        <button class="rounded-lg bg-blue-600 px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-60" type="button" :disabled="videoLoading || !normalizedVideoQuery(videoQuery)" @click="requestVideoSearch">
+          {{ videoLoading ? '검색 중...' : '검색' }}
+        </button>
       </div>
       <p v-if="videoMessage" class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold text-slate-500">{{ videoMessage }}</p>
       <div class="mt-4 grid gap-4 lg:grid-cols-3">
@@ -177,7 +218,7 @@ onMounted(async () => {
 
     <div v-if="selectedVideo" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4" @click.self="selectedVideo = null">
       <section class="w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-2xl">
-        <iframe class="aspect-video w-full" :src="`https://www.youtube.com/embed/${selectedVideo.video_id}`" title="video" allowfullscreen></iframe>
+        <iframe class="aspect-video w-full" :src="selectedVideo.embed_url || `https://www.youtube.com/embed/${selectedVideo.video_id}`" title="video" allowfullscreen></iframe>
         <div class="p-5">
           <h2 class="text-xl font-black text-slate-950">{{ selectedVideo.title }}</h2>
           <p class="mt-1 text-sm font-bold text-slate-500">{{ selectedVideo.channel_title }} · {{ selectedVideo.published_at }}</p>
