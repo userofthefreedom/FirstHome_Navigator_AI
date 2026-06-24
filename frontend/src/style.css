@@ -29,24 +29,24 @@
 }
 
 :root[data-theme="light"] {
-  --background: #e9eef5;
+  --background: #e3eaf2;
   --foreground: #0f172a;
-  --card: #f8fafc;
+  --card: #f3f6fa;
   --card-foreground: #0f172a;
-  --panel: #f1f5f9;
-  --panel-strong: #e2e8f0;
+  --panel: #e8eef5;
+  --panel-strong: #d8e2ee;
   --primary: #0f766e;
   --primary-foreground: #ffffff;
-  --secondary: #e2e8f0;
+  --secondary: #d8e2ee;
   --secondary-foreground: #1e293b;
-  --muted: #e2e8f0;
+  --muted: #d8e2ee;
   --muted-foreground: #64748b;
-  --accent: #e6fffa;
+  --accent: #d4f4ee;
   --accent-foreground: #0f766e;
   --destructive: #e11d48;
   --destructive-foreground: #ffffff;
-  --border: #cbd5e1;
-  --input-background: #ffffff;
+  --border: #bdc9d8;
+  --input-background: #f7fafc;
   --ring: #14b8a6;
   color-scheme: light;
 }
@@ -79,6 +79,51 @@ body {
   font-variant-ligatures: none;
   font-synthesis: none;
   word-break: keep-all;
+}
+
+body :is(h1, h2, h3) {
+  text-wrap: balance;
+}
+
+main h1,
+main .text-3xl.font-bold,
+main .text-3xl.font-black,
+main .text-4xl.font-bold,
+main .text-4xl.font-black {
+  font-weight: 760 !important;
+  line-height: 1.18;
+}
+
+main h2,
+main .text-xl.font-bold,
+main .text-xl.font-black,
+main .text-2xl.font-bold,
+main .text-2xl.font-black {
+  font-weight: 700 !important;
+  line-height: 1.25;
+}
+
+main h3,
+main .text-lg.font-bold,
+main .text-lg.font-black {
+  font-weight: 660 !important;
+  line-height: 1.35;
+}
+
+main .text-2xl,
+main .text-3xl,
+main .text-4xl,
+main .text-5xl {
+  font-feature-settings: "kern" 1;
+}
+
+main :is(.text-2xl, .text-3xl, .text-4xl, .text-5xl).font-bold,
+main :is(.text-2xl, .text-3xl, .text-4xl, .text-5xl).font-black {
+  text-shadow: 0 0 0 transparent;
+}
+
+main :is(button, a)[class*="rounded"] {
+  min-height: 2.25rem;
 }
 
 html {
@@ -127,6 +172,23 @@ textarea {
 .text-4xl.font-black,
 .text-5xl.font-black {
   font-weight: 720 !important;
+}
+
+:is(header, main, aside, .fixed) .text-xs {
+  font-size: 0.8125rem !important;
+  line-height: 1.45;
+}
+
+:is(header, main, aside, .fixed) .text-\[11px\],
+:is(header, main, aside, .fixed) .text-\[10px\] {
+  font-size: 0.75rem !important;
+  line-height: 1.42;
+}
+
+:is(header, main, aside, .fixed) .text-xs.leading-none,
+:is(header, main, aside, .fixed) .text-\[11px\].leading-none,
+:is(header, main, aside, .fixed) .text-\[10px\].leading-none {
+  line-height: 1.16;
 }
 
 input,
@@ -439,40 +501,40 @@ span[class*="bg-emerald-50"] {
 
 :root[data-theme="light"] body {
   background:
-    linear-gradient(180deg, rgba(20, 184, 166, 0.07), transparent 260px),
+    linear-gradient(180deg, rgba(20, 184, 166, 0.045), transparent 260px),
     var(--background);
 }
 
 :root[data-theme="light"] .bg-\[\#f5f7fb\] {
-  background: #e9eef5 !important;
+  background: #e3eaf2 !important;
 }
 
 :root[data-theme="light"] .bg-white,
 :root[data-theme="light"] .bg-white\/90 {
-  background-color: #f8fafc !important;
+  background-color: #f3f6fa !important;
 }
 
 :root[data-theme="light"] .bg-slate-50,
 :root[data-theme="light"] .bg-slate-50\/80 {
-  background-color: #e8eff6 !important;
+  background-color: #e3ebf4 !important;
 }
 
 :root[data-theme="light"] .bg-slate-100 {
-  background-color: #dce6f1 !important;
+  background-color: #d7e2ed !important;
 }
 
 :root[data-theme="light"] .bg-slate-200 {
-  background-color: #e2e8f0 !important;
+  background-color: #cfd9e5 !important;
 }
 
 :root[data-theme="light"] aside.bg-slate-950 {
-  background-color: #f8fafc !important;
+  background-color: #eef3f8 !important;
   color: #0f172a !important;
 }
 
 :root[data-theme="light"] aside,
 :root[data-theme="light"] aside > div {
-  background-color: #f8fafc !important;
+  background-color: #eef3f8 !important;
   color: #0f172a !important;
 }
 
@@ -496,7 +558,7 @@ span[class*="bg-emerald-50"] {
 :root[data-theme="light"] aside .bg-white\/5,
 :root[data-theme="light"] aside .bg-white\/10,
 :root[data-theme="light"] aside .bg-white\/12 {
-  background-color: #e2e8f0 !important;
+  background-color: #d7e2ed !important;
 }
 
 aside nav a,
@@ -513,12 +575,12 @@ aside nav button:hover {
 :root[data-theme="light"] main .bg-slate-900,
 :root[data-theme="light"] main .bg-slate-950,
 :root[data-theme="light"] main .bg-slate-950\/95 {
-  background-color: #f8fafc !important;
+  background-color: #f3f6fa !important;
 }
 
 :root[data-theme="light"] .bg-blue-50,
 :root[data-theme="light"] .bg-blue-50\/80 {
-  background-color: #d8f8f1 !important;
+  background-color: #d1f0ea !important;
 }
 
 :root[data-theme="light"] .bg-blue-500,
@@ -528,19 +590,19 @@ aside nav button:hover {
 }
 
 :root[data-theme="light"] .bg-emerald-50 {
-  background-color: #dcf8ea !important;
+  background-color: #d5f0e4 !important;
 }
 
 :root[data-theme="light"] .bg-emerald-100 {
-  background-color: #bff1d7 !important;
+  background-color: #b9e9d3 !important;
 }
 
 :root[data-theme="light"] .bg-amber-50 {
-  background-color: #fffbeb !important;
+  background-color: #f8efd5 !important;
 }
 
 :root[data-theme="light"] .bg-amber-100 {
-  background-color: #fef3c7 !important;
+  background-color: #f3e3b0 !important;
 }
 
 :root[data-theme="light"] .bg-amber-500 {
@@ -548,16 +610,16 @@ aside nav button:hover {
 }
 
 :root[data-theme="light"] .bg-violet-50 {
-  background-color: #ebe4ff !important;
+  background-color: #e2daf7 !important;
 }
 
 :root[data-theme="light"] .bg-rose-50,
 :root[data-theme="light"] .bg-red-50 {
-  background-color: #fff1f2 !important;
+  background-color: #f7e2e6 !important;
 }
 
 :root[data-theme="light"] .bg-green-50 {
-  background-color: #ddf8e8 !important;
+  background-color: #d5efe1 !important;
 }
 
 :root[data-theme="light"] .text-slate-950,
@@ -686,7 +748,7 @@ aside nav button:hover {
 }
 
 :root[data-theme="light"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important;
+  border-color: #d8e2ee !important;
 }
 
 :root[data-theme="light"] .ring-blue-100,
@@ -699,16 +761,16 @@ aside nav button:hover {
 }
 
 :root[data-theme="light"] .hover\:bg-slate-50:hover {
-  background-color: #f8fafc !important;
+  background-color: #e8eef5 !important;
 }
 
 :root[data-theme="light"] .hover\:bg-slate-100:hover,
 :root[data-theme="light"] .hover\:bg-slate-200:hover {
-  background-color: #e2e8f0 !important;
+  background-color: #d8e2ee !important;
 }
 
 :root[data-theme="light"] .hover\:bg-blue-50:hover {
-  background-color: #ccfbf1 !important;
+  background-color: #c7ede5 !important;
 }
 
 :root[data-theme="light"] .hover\:bg-blue-700:hover,
@@ -718,14 +780,14 @@ aside nav button:hover {
 
 :root[data-theme="light"] button.bg-white:not(:disabled):hover,
 :root[data-theme="light"] a.bg-white:hover {
-  background-color: #e2e8f0 !important;
+  background-color: #d8e2ee !important;
   border-color: #0f766e !important;
   color: #0f172a !important;
 }
 
 :root[data-theme="light"] button.bg-white,
 :root[data-theme="light"] a.bg-white {
-  background-color: #f1f5f9 !important;
+  background-color: #e8eef5 !important;
   border-color: #b7c4d3 !important;
 }
 
@@ -771,33 +833,33 @@ aside nav button:hover {
 }
 
 :root[data-theme="light"] main .bg-white\/10 {
-  background-color: #dfe7f0 !important;
-  box-shadow: inset 0 0 0 1px #c3cedb;
+  background-color: #d7e2ed !important;
+  box-shadow: inset 0 0 0 1px #b9c6d5;
 }
 
 :root[data-theme="light"] .bg-emerald-500\/15,
 :root[data-theme="light"] .bg-blue-500\/15 {
-  background-color: #d7f4eb !important;
+  background-color: #d0eee6 !important;
   color: #0f766e !important;
   box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.22);
 }
 
 :root[data-theme="light"] .bg-white\/10,
 :root[data-theme="light"] .bg-white\/12 {
-  background-color: #dfe7f0 !important;
-  box-shadow: inset 0 0 0 1px #c3cedb;
+  background-color: #d7e2ed !important;
+  box-shadow: inset 0 0 0 1px #b9c6d5;
 }
 
 :root[data-theme="light"] main .border-white\/10 {
-  border-color: #cbd5e1 !important;
+  border-color: #bdc9d8 !important;
 }
 
 :root[data-theme="light"] .shadow-sm {
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07) !important;
 }
 
 :root[data-theme="light"] .shadow-lg {
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14) !important;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.12) !important;
 }
 
 .dashboard-member-hero {
@@ -877,14 +939,69 @@ aside nav button:hover {
 
 :root[data-theme="light"] .dashboard-member-hero {
   background:
-    linear-gradient(90deg, rgba(20, 184, 166, 0.12), rgba(255, 255, 255, 0.36) 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(232, 239, 246, 0.64));
+    linear-gradient(90deg, rgba(20, 184, 166, 0.1), rgba(243, 246, 250, 0.4) 42%),
+    linear-gradient(180deg, rgba(243, 246, 250, 0.72), rgba(224, 233, 242, 0.78));
 }
 
 :root[data-theme="light"] .member-roadmap-icon {
-  background: #d7f4eb;
+  background: #cceee5;
   color: #0f766e;
   box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.24);
+}
+
+.map-control-panel {
+  color: #f8fafc;
+}
+
+.map-mode-button,
+.map-tool-button,
+.map-search-button {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.map-mode-button:hover,
+.map-tool-button:hover,
+.map-search-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+:root[data-theme="light"] .map-control-panel {
+  background-color: rgba(243, 246, 250, 0.95) !important;
+  border-color: #c3cedb !important;
+  color: #0f172a;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16) !important;
+}
+
+:root[data-theme="light"] .map-mode-button.bg-emerald-400 {
+  background-color: #20c9a8 !important;
+  color: #052e2b !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.18), 0 8px 18px rgba(15, 118, 110, 0.16);
+}
+
+:root[data-theme="light"] .map-mode-button.bg-slate-800,
+:root[data-theme="light"] .map-tool-button.bg-slate-800 {
+  background-color: #d8e2ee !important;
+  color: #334155 !important;
+  box-shadow: inset 0 0 0 1px #b7c4d3;
+}
+
+:root[data-theme="light"] .map-mode-button.bg-slate-800:hover,
+:root[data-theme="light"] .map-tool-button.bg-slate-800:hover {
+  background-color: #c5d1df !important;
+  color: #0f172a !important;
+}
+
+:root[data-theme="light"] .map-search-button {
+  background-color: #20c9a8 !important;
+  color: #052e2b !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.18), 0 8px 18px rgba(15, 118, 110, 0.16);
+}
+
+:root[data-theme="light"] .map-side-panel {
+  background-color: #f3f6fa !important;
+  color: #0f172a !important;
+  border-color: #bdc9d8 !important;
 }
 
 .score-breakdown {

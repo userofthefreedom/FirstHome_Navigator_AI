@@ -3,6 +3,7 @@
 import re
 from typing import Any
 
+from django.conf import settings
 from django.db import OperationalError, ProgrammingError
 
 from apps.fixture_store import current_notices, default_profile
@@ -181,6 +182,36 @@ def _ranked_unit_options(notice_id: int, profile: dict[str, Any], *, limit: int 
 
     if not serialized:
         return []
+    return _ranked_serialized_unit_options(serialized, profile, limit=limit)
+
+
+def _serialized_unit_options_by_notice(notice_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
+    if not notice_ids:
+        return {}
+    try:
+        from apps.notice_docs.models import HousingUnitOption
+
+        options = (
+            HousingUnitOption.objects.filter(notice_id__in=notice_ids)
+            .prefetch_related("payment_schedules")
+            .order_by("notice_id", "-confidence", "exclusive_area_m2", "id")
+        )
+        grouped: dict[int, list[dict[str, Any]]] = {}
+        for option in options:
+            grouped.setdefault(int(option.notice_id), []).append(_serialize_unit_option(option))
+        return grouped
+    except (OperationalError, ProgrammingError):
+        return {}
+
+
+def _ranked_serialized_unit_options(
+    serialized: list[dict[str, Any]],
+    profile: dict[str, Any],
+    *,
+    limit: int = 3,
+) -> list[dict[str, Any]]:
+    if not serialized:
+        return []
     for option in serialized:
         option["option_fit_score"] = option_fit_score(option, profile)
         option["fit_reasons"] = option_fit_reasons(option, profile)
@@ -240,10 +271,16 @@ def _option_fallback_source(option: Any) -> str:
     return ""
 
 
-def calculate_score(notice: dict[str, Any], profile: dict[str, Any] | None = None) -> dict[str, Any]:
+def calculate_score(
+    notice: dict[str, Any],
+    profile: dict[str, Any] | None = None,
+    *,
+    top_options: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     profile = profile or default_profile()
     detail = _score_detail_with_source_penalty(notice, score_detail(notice, profile))
-    top_options = _ranked_unit_options(int(notice["id"]), profile, limit=3)
+    if top_options is None:
+        top_options = _ranked_unit_options(int(notice["id"]), profile, limit=3)
     best_option = top_options[0] if top_options else None
     option_fit_score = best_option["option_fit_score"] if best_option else _option_fit_score(notice, profile)
     total_score = sum(detail.values())
@@ -295,13 +332,26 @@ def recommendation_candidate_notices(profile: dict[str, Any] | None = None) -> l
 def cached_recommendation_candidate_count(profile: dict[str, Any] | None = None) -> int:
     profile = profile or default_profile()
     key = cache_key("recommendation-candidate-count", data_version(), profile_hash(profile))
-    return get_or_set_locked(key, lambda: len(recommendation_candidate_notices(profile)), timeout=60)
+    return get_or_set_locked(key, lambda: len(recommendation_candidate_notices(profile)), timeout=_recommendation_cache_timeout())
 
 
 def ranked_recommendations(profile: dict[str, Any] | None = None, limit: int = 3) -> list[dict[str, Any]]:
     profile = profile or default_profile()
+    candidates = recommendation_candidate_notices(profile)
+    options_by_notice = _serialized_unit_options_by_notice([int(notice["id"]) for notice in candidates])
     recommendations = sorted(
-        [calculate_score(notice, profile) for notice in recommendation_candidate_notices(profile)],
+        [
+            calculate_score(
+                notice,
+                profile,
+                top_options=_ranked_serialized_unit_options(
+                    options_by_notice.get(int(notice["id"]), []),
+                    profile,
+                    limit=3,
+                ),
+            )
+            for notice in candidates
+        ],
         key=lambda item: (item["total_score"], item["option_fit_score"]),
         reverse=True,
     )
@@ -311,7 +361,11 @@ def ranked_recommendations(profile: dict[str, Any] | None = None, limit: int = 3
 def cached_ranked_recommendations(profile: dict[str, Any] | None = None, limit: int = 3) -> list[dict[str, Any]]:
     profile = profile or default_profile()
     key = cache_key("ranked-recommendations", data_version(), profile_hash(profile), limit)
-    return get_or_set_locked(key, lambda: ranked_recommendations(profile, limit=limit), timeout=60)
+    return get_or_set_locked(key, lambda: ranked_recommendations(profile, limit=limit), timeout=_recommendation_cache_timeout())
+
+
+def _recommendation_cache_timeout() -> int:
+    return int(getattr(settings, "FIRSTHOME_CACHE_TIMEOUTS", {}).get("RECOMMENDATIONS", 300))
 
 
 def _option_selection_factors(option: dict[str, Any]) -> list[dict[str, Any]]:

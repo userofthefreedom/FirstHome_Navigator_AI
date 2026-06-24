@@ -115,23 +115,31 @@ def save_last_recommendations(request, recommendations: list[dict]) -> None:
     user = django_user(request)
     if user and user.is_authenticated:
         state = user_account_state(user)
-        state.last_recommendations = snapshot
+        changed_fields = []
+        if state.last_recommendations != snapshot:
+            state.last_recommendations = snapshot
+            changed_fields.append("last_recommendations")
         if recommendations and not state.current_notice_id:
             first = recommendations[0]
             state.current_notice_id = _positive_or_none(first.get("notice_id"))
             best_option = first.get("best_option") if isinstance(first.get("best_option"), dict) else {}
             state.current_option_id = _positive_or_none(best_option.get("option_id"))
-        state.save()
+            changed_fields.extend(["current_notice_id", "current_option_id"])
+        if changed_fields:
+            state.save(update_fields=[*dict.fromkeys(changed_fields), "updated_at"])
         return
 
     session_state = account_state_payload(request.session.get("account_state", {}))
+    changed = session_state.get("last_recommendations") != snapshot
     session_state["last_recommendations"] = snapshot
     if recommendations and not session_state.get("current_notice_id"):
         first = recommendations[0]
         session_state["current_notice_id"] = _positive_or_none(first.get("notice_id"))
         best_option = first.get("best_option") if isinstance(first.get("best_option"), dict) else {}
         session_state["current_option_id"] = _positive_or_none(best_option.get("option_id"))
-    request.session["account_state"] = session_state
+        changed = True
+    if changed:
+        request.session["account_state"] = session_state
 
 
 def _recommendation_snapshot(recommendations: list[dict]) -> list[dict]:

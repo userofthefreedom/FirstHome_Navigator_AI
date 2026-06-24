@@ -450,19 +450,19 @@ onBeforeUnmount(() => {
         {{ mapError || '지도 로딩 중입니다.' }}
       </div>
 
-      <div class="absolute left-4 top-4 z-10 w-[min(660px,calc(100%-2rem))] rounded-lg border border-white/10 bg-slate-950/95 p-3 shadow-2xl">
+      <div class="map-control-panel absolute left-4 top-4 z-10 w-[min(660px,calc(100%-2rem))] rounded-lg border border-white/10 bg-slate-950/95 p-3 shadow-2xl">
         <div class="flex flex-wrap gap-2">
           <button
             v-for="item in [{key:'notice',label:'청약'}, {key:'estate',label:'부동산'}, {key:'bank',label:'은행'}]"
             :key="item.key"
             type="button"
-            class="h-10 rounded-lg px-4 text-sm font-black"
+            class="map-mode-button h-10 rounded-lg px-4 text-sm font-black"
             :class="mode === item.key ? 'bg-emerald-400 text-slate-950' : 'bg-slate-800 text-slate-200'"
             @click="changeMode(item.key)"
           >
             {{ item.label }}
           </button>
-          <button type="button" class="ml-auto flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 text-slate-200" @click="moveToCurrentLocation">
+          <button type="button" class="map-tool-button ml-auto flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 text-slate-200" @click="moveToCurrentLocation">
             <LocateFixed class="h-4 w-4" />
           </button>
         </div>
@@ -475,7 +475,7 @@ onBeforeUnmount(() => {
             :placeholder="mode === 'notice' ? '청약명, 지역, 지구 검색' : `${modeLabel} 검색어 또는 지역`"
             @keydown.enter="submitSearch"
           />
-          <button type="button" class="flex h-10 items-center gap-2 rounded-lg bg-emerald-500 px-4 text-sm font-black text-slate-950" @click="submitSearch">
+          <button type="button" class="map-search-button flex h-10 items-center gap-2 rounded-lg bg-emerald-500 px-4 text-sm font-black text-slate-950" @click="submitSearch">
             <Search class="h-4 w-4" /> 검색
           </button>
         </div>
@@ -516,7 +516,7 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <aside class="flex min-h-0 flex-col border-l border-white/10 bg-slate-950 p-4 text-white">
+    <aside class="map-side-panel flex min-h-0 flex-col border-l border-white/10 bg-slate-950 p-4 text-white">
       <div class="shrink-0">
         <p class="inline-flex items-center gap-2 text-sm font-bold text-emerald-300">
           <MapPin class="h-4 w-4" /> {{ modeLabel }} 지도

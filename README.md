@@ -559,6 +559,18 @@ VITE_KAKAO_MAP_JS_KEY=본인_KAKAO_JAVASCRIPT_KEY
 
 3. 두 번째 터미널에서 프론트를 실행합니다.
 
+발표/시연처럼 여러 명이 동시에 접속하는 상황에서는 Vite 개발 서버보다 **빌드 산출물 preview** 방식을 권장합니다. 개발 서버는 빠른 수정 확인에는 편하지만, 30명 동시 접속처럼 정적 파일 요청이 한꺼번에 몰리는 상황에서는 첫 로딩 시간이 길게 튈 수 있습니다.
+
+발표 권장 실행:
+
+```bash
+cd frontend
+npm run build
+npm run preview -- --host 127.0.0.1 --port 5173
+```
+
+급하게 개발 중인 화면을 바로 확인해야 할 때만 아래 개발 서버를 사용합니다.
+
 ```bash
 cd frontend
 npm run dev
@@ -615,14 +627,36 @@ CSRF_COOKIE_SECURE=false
 - 백엔드와 프론트 서버는 모두 켜져 있어야 합니다.
 - 이 프로젝트는 ngrok 무료 경고 페이지 우회를 위해 API 요청에 `ngrok-skip-browser-warning` 헤더를 자동으로 붙입니다.
 
-### 8.1.5 종료 방법
+### 8.1.5 발표 직전 캐시 워밍업
+
+발표 직전에는 백엔드와 프론트 preview 서버, ngrok 터널을 모두 켠 뒤 아래 요청을 한 번 실행해 주요 캐시를 데웁니다. 첫 접속자가 추천 계산과 AI smoke check를 모두 떠안지 않게 하는 절차입니다.
+
+Git Bash 기준:
+
+```bash
+BASE_URL="https://본인-ngrok-주소"
+
+curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/dashboard" > /dev/null
+curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/recommendations/housing" > /dev/null
+curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/recommendations/products" > /dev/null
+curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/market/summary" > /dev/null
+curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/videos/default" > /dev/null
+curl -sS -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"이 서비스 화면 사용법을 한 문단으로 알려줘.","page_context":{"type":"home","title":"대시보드"}}' \
+  "$BASE_URL/api/ai/chat" > /dev/null
+```
+
+워밍업 후 브라우저에서 `BASE_URL`을 새로고침하고, 청약 지도와 AI 챗봇이 정상 응답하는지 한 번만 확인합니다.
+
+### 8.1.6 종료 방법
 
 공유를 끝낼 때는 열어둔 3개 터미널을 각각 종료합니다.
 
 | 터미널 | 종료 방법 |
 |---|---|
 | Waitress 백엔드 | `Ctrl + C` |
-| Vite 프론트 | `Ctrl + C` |
+| Vite 프론트 preview/dev | `Ctrl + C` |
 | 프론트 ngrok 터널 | `Ctrl + C` |
 
 ngrok 터널은 터미널을 종료하면 외부 주소도 더 이상 접속되지 않습니다. 다음에 다시 실행하면 프론트 ngrok 주소가 새로 발급될 수 있으므로 Kakao Developers 사이트 도메인을 다시 확인합니다.
@@ -657,6 +691,16 @@ waitress-serve --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
 ```
 
 프론트엔드:
+
+발표/공유:
+
+```bash
+cd frontend
+npm run build
+npm run preview -- --host 127.0.0.1 --port 5173
+```
+
+개발 중:
 
 ```bash
 cd frontend

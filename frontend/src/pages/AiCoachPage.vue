@@ -21,6 +21,7 @@ import {
     fetchFavorites,
     fetchFundingPlan,
     fetchHousingRecommendations,
+    fetchLatestCoachSummary,
     fetchNotice,
     removeFavorite,
 } from '../api/firsthome';
@@ -393,9 +394,26 @@ async function loadTargetNotice(targetNoticeId) {
     const resolvedOptionId = fundingResponse.option_id || optionId;
     saveCurrentSelection(targetNoticeId, resolvedOptionId);
     switchingNoticeId.value = null;
+    void loadCoachSummary(targetNoticeId, resolvedOptionId);
+}
+
+async function loadCoachSummary(targetNoticeId, resolvedOptionId) {
     coachLoading.value = true;
     try {
-        aiCoach.value = await fetchCoachSummary(targetNoticeId, profileStore.profile, resolvedOptionId);
+        try {
+            const cachedSummary = await fetchLatestCoachSummary(targetNoticeId, resolvedOptionId);
+            if (selectedNotice.value?.id !== targetNoticeId)
+                return;
+            aiCoach.value = cachedSummary;
+            return;
+        }
+        catch {
+            // No cached plan exists yet. Generate it without blocking the page shell.
+        }
+        const nextSummary = await fetchCoachSummary(targetNoticeId, profileStore.profile, resolvedOptionId);
+        if (selectedNotice.value?.id !== targetNoticeId)
+            return;
+        aiCoach.value = nextSummary;
     }
     catch {
         error.value = 'AI 코치 LLM 분석을 아직 불러오지 못했습니다. 공고와 자금 정보는 표시했고, 잠시 후 다시 시도해 주세요.';
@@ -429,7 +447,6 @@ async function loadCoach() {
     finally {
         loading.value = false;
         switchingNoticeId.value = null;
-        coachLoading.value = false;
     }
 }
 
