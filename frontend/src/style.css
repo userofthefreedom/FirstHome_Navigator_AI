@@ -59,11 +59,11 @@ body {
     var(--background);
   color: var(--foreground);
   font-family:
-    "SUIT Variable",
-    SUIT,
-    "Noto Sans KR",
     "Pretendard Variable",
     Pretendard,
+    "Noto Sans KR",
+    "SUIT Variable",
+    SUIT,
     -apple-system,
     BlinkMacSystemFont,
     "Apple SD Gothic Neo",
@@ -90,8 +90,9 @@ main .text-3xl.font-bold,
 main .text-3xl.font-black,
 main .text-4xl.font-bold,
 main .text-4xl.font-black {
-  font-weight: 760 !important;
-  line-height: 1.18;
+  font-size: clamp(1.875rem, 1.55rem + 0.9vw, 2.45rem);
+  font-weight: 800 !important;
+  line-height: 1.14;
 }
 
 main h2,
@@ -99,15 +100,27 @@ main .text-xl.font-bold,
 main .text-xl.font-black,
 main .text-2xl.font-bold,
 main .text-2xl.font-black {
-  font-weight: 700 !important;
-  line-height: 1.25;
+  font-weight: 760 !important;
+  line-height: 1.22;
 }
 
 main h3,
 main .text-lg.font-bold,
 main .text-lg.font-black {
-  font-weight: 660 !important;
-  line-height: 1.35;
+  font-weight: 700 !important;
+  line-height: 1.3;
+}
+
+main :is(.text-xl, .text-2xl, .text-3xl, .text-4xl).font-bold,
+main :is(.text-xl, .text-2xl, .text-3xl, .text-4xl).font-black {
+  letter-spacing: 0;
+}
+
+main :is(.text-lg, .text-xl, .text-2xl).font-bold.text-slate-950,
+main :is(.text-lg, .text-xl, .text-2xl).font-black.text-slate-950,
+main :is(.text-lg, .text-xl, .text-2xl).font-bold.text-blue-700,
+main :is(.text-lg, .text-xl, .text-2xl).font-black.text-blue-700 {
+  font-weight: 740 !important;
 }
 
 main .text-2xl,
@@ -160,6 +173,16 @@ textarea {
 .text-xs.font-black,
 .text-sm.font-black {
   font-weight: 620 !important;
+}
+
+header :is(.font-semibold, .font-bold),
+aside :is(.font-semibold, .font-bold) {
+  font-weight: 680 !important;
+}
+
+aside .text-lg.font-semibold,
+header .text-lg.font-semibold {
+  font-weight: 760 !important;
 }
 
 .text-lg.font-black,
@@ -576,6 +599,31 @@ aside nav button:hover {
 :root[data-theme="light"] main .bg-slate-950,
 :root[data-theme="light"] main .bg-slate-950\/95 {
   background-color: #f3f6fa !important;
+}
+
+:root[data-theme="light"] main .bg-slate-800,
+:root[data-theme="light"] main .bg-slate-800\/80,
+:root[data-theme="light"] main .bg-slate-800\/90,
+:root[data-theme="light"] .map-side-panel .bg-slate-800,
+:root[data-theme="light"] .map-side-panel .bg-slate-900 {
+  background-color: #d8e2ee !important;
+  color: #334155 !important;
+  box-shadow: inset 0 0 0 1px #b7c4d3;
+}
+
+:root[data-theme="light"] main .bg-slate-800.text-white,
+:root[data-theme="light"] main .bg-slate-800 .text-white,
+:root[data-theme="light"] .map-side-panel .bg-slate-800.text-white,
+:root[data-theme="light"] .map-side-panel .bg-slate-800 .text-white {
+  color: #334155 !important;
+}
+
+:root[data-theme="light"] main button.bg-slate-800:not(:disabled):hover,
+:root[data-theme="light"] main a.bg-slate-800:hover,
+:root[data-theme="light"] .map-side-panel button.bg-slate-800:not(:disabled):hover,
+:root[data-theme="light"] .map-side-panel a.bg-slate-800:hover {
+  background-color: #c5d1df !important;
+  color: #0f172a !important;
 }
 
 :root[data-theme="light"] .bg-blue-50,
