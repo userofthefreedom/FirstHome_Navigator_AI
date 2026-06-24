@@ -388,10 +388,10 @@ onMounted(load);
                 <div
                   v-for="item in visibleJoined"
                   :key="item.id"
-                  class="grid min-h-[64px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1fr)_minmax(150px,220px)_auto]"
+                  class="group grid min-h-[64px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 transition last:border-b-0 hover:bg-blue-50 md:grid-cols-[minmax(0,1fr)_minmax(150px,220px)_auto]"
                 >
-                  <RouterLink :to="`/finance/products/${item.product.id}`" class="min-w-0">
-                    <p class="truncate font-black text-slate-950">{{ item.product.name }}</p>
+                  <RouterLink :to="`/finance/products/${item.product.id}`" class="min-w-0 rounded-md text-slate-950 transition hover:text-blue-800">
+                    <p class="truncate font-black text-inherit group-hover:text-blue-800">{{ item.product.name }}</p>
                     <p class="mt-1 truncate text-xs font-bold text-slate-500">
                       {{ item.product.provider }} · {{ selectedOptionLabel(item) }} · {{ productRateLabel(item) }}
                     </p>
@@ -455,13 +455,13 @@ onMounted(load);
           <p class="mt-1 text-sm text-slate-500">{{ chartSummary }}</p>
           <div class="mt-4 rounded-lg bg-slate-950 p-5">
             <div v-if="chartBars.length" class="grid h-72 grid-cols-[58px_minmax(0,1fr)] gap-3">
-              <div class="flex flex-col justify-between pb-7 pt-2 text-right text-xs font-black text-sky-100/80">
+              <div class="chart-axis-labels flex flex-col justify-between pb-7 pt-2 text-right text-xs font-black text-sky-100/80">
                 <span v-for="tick in chartTicks" :key="tick.label">{{ tick.label }}</span>
               </div>
               <div class="relative min-w-0 overflow-x-auto">
-                <div class="pointer-events-none absolute inset-x-0 top-2 border-t border-dashed border-slate-800"></div>
-                <div class="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-slate-800"></div>
-                <div class="pointer-events-none absolute inset-x-0 bottom-7 border-b border-slate-700"></div>
+                <div class="chart-grid-line pointer-events-none absolute inset-x-0 top-2 border-t border-dashed border-slate-800"></div>
+                <div class="chart-grid-line pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-slate-800"></div>
+                <div class="chart-baseline pointer-events-none absolute inset-x-0 bottom-7 border-b border-slate-700"></div>
                 <div class="flex h-full items-end gap-4 pt-5" :style="chartTrackStyle">
                   <div
                     v-for="item in chartBars"
@@ -491,7 +491,7 @@ onMounted(load);
                       >
                         <span
                           v-if="option.selected && option.term"
-                          class="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center text-[9px] font-semibold leading-none text-white/95 drop-shadow"
+                          class="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center text-[11px] font-semibold leading-none text-white/95 drop-shadow"
                         >
                           <span v-for="(char, charIndex) in verticalTermChars(option.term)" :key="`${option.id}-${charIndex}`">{{ char }}</span>
                         </span>

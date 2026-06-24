@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { Bookmark, Bot, Building2, ChevronDown, ChevronRight, Home, Landmark, LineChart, LogOut, MapPinned, MessageSquareText, PiggyBank, Search, UserRound, WalletCards } from 'lucide-vue-next';
+import { Bookmark, Bot, Building2, ChevronDown, ChevronRight, Home, Landmark, LineChart, LogOut, MapPinned, MessageSquareText, Moon, PiggyBank, Search, Sun, UserRound, WalletCards } from 'lucide-vue-next';
 import FloatingCoachChat from '../components/FloatingCoachChat.vue';
 import { fetchHousingRecommendations } from '../api/firsthome';
 import { useAuthStore } from '../stores/authStore';
@@ -20,6 +20,7 @@ const searchLoading = ref(false);
 const searchError = ref('');
 const searchRecommendations = ref([]);
 const financeOpen = ref(route.path.startsWith('/finance'));
+const theme = ref(localStorage.getItem('firsthome-theme') === 'light' ? 'light' : 'dark');
 const displayName = computed(() => {
     if (profileStore.profile.name)
         return profileStore.profile.name;
@@ -28,6 +29,9 @@ const displayName = computed(() => {
     return '게스트';
 });
 const profileStatus = computed(() => (authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중'));
+const themeIcon = computed(() => (theme.value === 'dark' ? Moon : Sun));
+const themeLabel = computed(() => (theme.value === 'dark' ? '다크 모드' : '라이트 모드'));
+const nextThemeLabel = computed(() => (theme.value === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'));
 const menus = [
     { label: '대시보드', shortLabel: '홈', path: '/', icon: Home },
     { label: '조건 입력', shortLabel: '조건', path: '/profile', icon: UserRound },
@@ -64,6 +68,13 @@ function menuTo(menu) {
 }
 function toggleFinanceMenu() {
     financeOpen.value = !financeOpen.value;
+}
+function applyTheme(value) {
+    document.documentElement.dataset.theme = value;
+    document.documentElement.style.colorScheme = value;
+}
+function toggleTheme() {
+    theme.value = theme.value === 'dark' ? 'light' : 'dark';
 }
 function isActive(path) {
     if (path === '/')
@@ -142,6 +153,10 @@ watch(() => route.path, (path) => {
     if (path.startsWith('/finance'))
         financeOpen.value = true;
 });
+watch(theme, (value) => {
+    localStorage.setItem('firsthome-theme', value);
+    applyTheme(value);
+}, { immediate: true });
 onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', handleDocumentPointer);
 });
@@ -202,6 +217,18 @@ onBeforeUnmount(() => {
           </template>
         </nav>
 
+        <div class="border-t border-white/10 px-3 py-4">
+          <button
+            type="button"
+            class="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-bold text-slate-200 transition hover:border-blue-300/50 hover:bg-white/10 hover:text-white"
+            :title="nextThemeLabel"
+            @click="toggleTheme"
+          >
+            <component :is="themeIcon" class="h-5 w-5" />
+            <span class="flex-1 text-left">{{ themeLabel }}</span>
+            <span class="rounded-md bg-white/10 px-2 py-1 text-[11px] font-black">{{ theme === 'dark' ? 'Dark' : 'Light' }}</span>
+          </button>
+        </div>
       </div>
     </aside>
 
@@ -270,11 +297,11 @@ onBeforeUnmount(() => {
               <div class="min-w-0">
                 <div class="flex min-w-0 items-center gap-2">
                   <p class="truncate text-sm font-semibold">{{ displayName }}</p>
-                  <span class="shrink-0 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                  <span class="shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-700">
                     {{ formatMoney(profileStore.profile.asset) }}
                   </span>
                 </div>
-                <p class="truncate text-xs text-slate-500">
+                <p class="truncate text-xs font-semibold text-slate-600">
                   {{ profileStatus }} · {{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}
                 </p>
               </div>

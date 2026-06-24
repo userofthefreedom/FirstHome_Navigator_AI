@@ -92,7 +92,7 @@ onMounted(loadProducts);
           </div>
           <div class="flex shrink-0 flex-col items-end gap-1">
             <span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">{{ categoryLabels[product.category] ?? product.category }}</span>
-            <span v-if="form.ordering === 'fit' && product.match_score" class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
+            <span v-if="form.ordering === 'fit' && product.match_score" class="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
               적합도 {{ product.match_score }}점
             </span>
           </div>
