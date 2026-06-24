@@ -4,15 +4,20 @@ import { RouterLink } from 'vue-router';
 import { Building2, ExternalLink, LocateFixed, MapPin, Navigation, Search, WalletCards } from 'lucide-vue-next';
 import { fetchMapNotices, fetchPlaceRoute, searchPlaces } from '../api/firsthome';
 import { formatMoney } from '../utils/format';
-import { saveCurrentSelection } from '../utils/selectionState';
+import { readCurrentSelection, saveCurrentSelection } from '../utils/selectionState';
 
 const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_MAP_JS_KEY ?? '';
 const KAKAO_SCRIPT_ID = 'firsthome-kakao-map-sdk';
 const DEFAULT_CENTER = { lat: 37.5012743, lng: 127.039585 };
+const PLACE_SEARCH_MAX_RADIUS_METERS = 20000;
+const PLACE_SEARCH_BROAD_LEVEL = 8;
+const PLACE_SEARCH_BROAD_RADIUS_METERS = 5000;
 
 const mapElement = ref(null);
 const map = ref(null);
 const markers = ref([]);
+const markerByKey = ref(new Map());
+const pendingFocusTimer = ref(null);
 const routeLine = ref(null);
 const routeMarkers = ref([]);
 const userLocationMarker = ref(null);
@@ -31,6 +36,7 @@ const notices = ref([]);
 const places = ref([]);
 const selectedItem = ref(null);
 const selectedNoticeContext = ref(null);
+const initialNoticeFocusPending = ref(false);
 const loading = ref(true);
 const routeLoading = ref(false);
 const routeMessage = ref('');
@@ -158,6 +164,10 @@ function initializeMap() {
   infoWindow.value = new window.kakao.maps.InfoWindow({ zIndex: 10 });
   mapReady.value = true;
   renderMarkers();
+  if (initialNoticeFocusPending.value && selectedItem.value) {
+    initialNoticeFocusPending.value = false;
+    window.setTimeout(() => selectItem(selectedItem.value), 0);
+  }
 }
 
 async function loadNotices() {
@@ -172,7 +182,12 @@ async function loadNotices() {
       name: item.title,
       address: [item.region, item.district].filter(Boolean).join(' '),
     }));
-    selectedItem.value = filteredNotices.value[0] ?? notices.value[0] ?? null;
+    const savedSelection = readCurrentSelection();
+    const savedNotice = savedSelection.noticeId
+      ? notices.value.find((item) => Number(item.notice_id) === Number(savedSelection.noticeId))
+      : null;
+    selectedItem.value = savedNotice ?? filteredNotices.value[0] ?? notices.value[0] ?? null;
+    initialNoticeFocusPending.value = Boolean(savedNotice);
     updateSelectedNoticeContext(selectedItem.value);
   } catch {
     error.value = '청약 지도 데이터를 불러오지 못했습니다.';
@@ -189,7 +204,8 @@ async function loadPlaces() {
   routeMessage.value = '';
   clearRoute();
   try {
-    const placeQuery = searchTerm.value.trim() || selectedPlaceRegion.value;
+    const typedQuery = searchTerm.value.trim();
+    const placeQuery = typedQuery || selectedPlaceRegion.value;
     const center = placeSearchCenter();
     const response = await searchPlaces({
       type: mode.value,
@@ -197,9 +213,27 @@ async function loadPlaces() {
       bank_brand: mode.value === 'bank' ? bankBrand.value : '',
       lat: center.lat,
       lng: center.lng,
-      radius: placeQuery ? 20000 : 3000,
+      radius: placeQuery ? 20000 : mapViewportRadiusMeters(),
     });
-    places.value = response.items ?? [];
+    let items = response.items ?? [];
+    if (!items.length && !placeQuery && !isBroadMapView() && selectedNoticeContext.value?.lat && selectedNoticeContext.value?.lng) {
+      const fallbackCenter = {
+        lat: Number(selectedNoticeContext.value.lat),
+        lng: Number(selectedNoticeContext.value.lng),
+      };
+      const fallbackResponse = await searchPlaces({
+        type: mode.value,
+        query: '',
+        bank_brand: mode.value === 'bank' ? bankBrand.value : '',
+        lat: fallbackCenter.lat,
+        lng: fallbackCenter.lng,
+        radius: 3000,
+      });
+      items = fallbackResponse.items ?? [];
+      if (items.length)
+        focusMapOnCoords(selectedNoticeContext.value, 4);
+    }
+    places.value = items;
     selectedItem.value = places.value[0] ?? null;
   } catch {
     error.value = '장소 검색 결과를 불러오지 못했습니다.';
@@ -208,11 +242,12 @@ async function loadPlaces() {
   }
 }
 
-function renderMarkers() {
+function renderMarkers(options = {}) {
   if (!map.value || !window.kakao?.maps)
     return;
   markers.value.forEach((marker) => marker.setMap(null));
   markers.value = [];
+  markerByKey.value = new Map();
   infoWindow.value?.close();
 
   const bounds = new window.kakao.maps.LatLngBounds();
@@ -223,11 +258,13 @@ function renderMarkers() {
     const marker = new window.kakao.maps.Marker({ map: map.value, position, title: item.name });
     window.kakao.maps.event.addListener(marker, 'click', () => selectItem(item, marker));
     markers.value.push(marker);
+    markerByKey.value.set(itemKey(item), marker);
     bounds.extend(position);
   });
-  if (markers.value.length > 1) {
+  const shouldFitBounds = options.fit ?? !options.preserveView;
+  if (shouldFitBounds && markers.value.length > 1) {
     map.value.setBounds(bounds, 48, 48, 48, 48);
-  } else if (markers.value.length === 1) {
+  } else if (shouldFitBounds && markers.value.length === 1) {
     map.value.setCenter(markers.value[0].getPosition());
     map.value.setLevel(4);
   }
@@ -237,6 +274,13 @@ function isNoticeItem(item) {
   return Boolean(item?.notice_id || item?.application_deadline || item?.supply_type);
 }
 
+function itemKey(item) {
+  if (!item)
+    return '';
+  const type = isNoticeItem(item) ? 'notice' : mode.value;
+  return `${type}:${item.notice_id || item.id || `${item.lat},${item.lng}`}`;
+}
+
 function updateSelectedNoticeContext(item) {
   if (!isNoticeItem(item) || !item?.lat || !item?.lng)
     return;
@@ -244,10 +288,91 @@ function updateSelectedNoticeContext(item) {
 }
 
 function placeSearchCenter() {
+  if (map.value?.getCenter) {
+    const center = map.value.getCenter();
+    return { lat: center.getLat(), lng: center.getLng() };
+  }
   return {
     lat: Number(selectedNoticeContext.value?.lat || DEFAULT_CENTER.lat),
     lng: Number(selectedNoticeContext.value?.lng || DEFAULT_CENTER.lng),
   };
+}
+
+function mapViewportRadiusMeters() {
+  if (!map.value?.getBounds)
+    return 3000;
+  if (isBroadMapView())
+    return PLACE_SEARCH_BROAD_RADIUS_METERS;
+  const center = placeSearchCenter();
+  const bounds = map.value.getBounds();
+  const northEast = bounds.getNorthEast();
+  const southWest = bounds.getSouthWest();
+  const radius = Math.max(
+    distanceMeters(center, { lat: northEast.getLat(), lng: northEast.getLng() }),
+    distanceMeters(center, { lat: southWest.getLat(), lng: southWest.getLng() }),
+  );
+  return Math.min(PLACE_SEARCH_MAX_RADIUS_METERS, Math.max(1000, Math.round(radius)));
+}
+
+function isBroadMapView() {
+  return Number(map.value?.getLevel?.() || 0) >= PLACE_SEARCH_BROAD_LEVEL;
+}
+
+function distanceMeters(a, b) {
+  const earthRadius = 6371000;
+  const toRad = (value) => (Number(value) * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * earthRadius * Math.asin(Math.sqrt(h));
+}
+
+function itemInCurrentBounds(item) {
+  if (!map.value?.getBounds || !window.kakao?.maps || !item?.lat || !item?.lng)
+    return false;
+  const bounds = map.value.getBounds();
+  const northEast = bounds.getNorthEast();
+  const southWest = bounds.getSouthWest();
+  const lat = Number(item.lat);
+  const lng = Number(item.lng);
+  return lat >= southWest.getLat() && lat <= northEast.getLat()
+    && lng >= southWest.getLng() && lng <= northEast.getLng();
+}
+
+function nearestNoticeForCurrentView() {
+  const center = placeSearchCenter();
+  const withCoords = filteredNotices.value.filter((item) => item.lat && item.lng);
+  const visible = withCoords.filter(itemInCurrentBounds);
+  const candidates = visible.length ? visible : withCoords;
+  const item = [...candidates].sort((a, b) => (
+    distanceMeters(center, { lat: a.lat, lng: a.lng }) - distanceMeters(center, { lat: b.lat, lng: b.lng })
+  ))[0] ?? null;
+  return { item, inViewport: Boolean(item && visible.includes(item)) };
+}
+
+function focusMapOnPosition(position, targetLevel = 4) {
+  if (!map.value)
+    return;
+  if (pendingFocusTimer.value) {
+    clearTimeout(pendingFocusTimer.value);
+    pendingFocusTimer.value = null;
+  }
+  if (map.value.getLevel() > targetLevel)
+    map.value.setLevel(targetLevel);
+  map.value.setCenter(position);
+  pendingFocusTimer.value = window.setTimeout(() => {
+    map.value?.relayout?.();
+    map.value?.setCenter(position);
+    pendingFocusTimer.value = null;
+  }, 90);
+}
+
+function focusMapOnCoords(item, targetLevel = 4) {
+  if (!map.value || !window.kakao?.maps || !item?.lat || !item?.lng)
+    return;
+  focusMapOnPosition(new window.kakao.maps.LatLng(item.lat, item.lng), targetLevel);
 }
 
 function selectItem(item, marker = null, options = {}) {
@@ -259,12 +384,8 @@ function selectItem(item, marker = null, options = {}) {
   if (!map.value || !window.kakao?.maps || !item.lat || !item.lng)
     return;
   const position = new window.kakao.maps.LatLng(item.lat, item.lng);
-  if (shouldFocus) {
-    map.value.panTo(position);
-    const targetLevel = isNoticeItem(item) ? 5 : 4;
-    if (map.value.getLevel() > targetLevel)
-      map.value.setLevel(targetLevel);
-  }
+  if (shouldFocus)
+    focusMapOnPosition(position, 4);
   const subtitle = item.address || item.road_address || item.provider || '';
   const content = `
     <div style="width:280px;padding:13px 14px;background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 16px 36px rgba(15,23,42,.2);font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
@@ -275,8 +396,9 @@ function selectItem(item, marker = null, options = {}) {
       <span style="display:block;margin-top:7px;color:#475569;font-size:12px;font-weight:600;line-height:1.45;">${escapeHtml(subtitle)}</span>
     </div>`;
   infoWindow.value?.setContent(content);
-  if (marker) {
-    infoWindow.value?.open(map.value, marker);
+  const targetMarker = marker || markerByKey.value.get(itemKey(item));
+  if (targetMarker) {
+    infoWindow.value?.open(map.value, targetMarker);
   } else {
     infoWindow.value?.setPosition(position);
     infoWindow.value?.open(map.value);
@@ -326,20 +448,33 @@ function isReliableKoreaLocation(lat, lng, accuracy) {
 }
 
 async function changeMode(nextMode) {
-  if (mode.value === 'notice')
+  if (mode.value === nextMode)
+    return;
+  const previousMode = mode.value;
+  if (previousMode === 'notice')
     updateSelectedNoticeContext(selectedItem.value);
+  if (previousMode !== nextMode)
+    searchTerm.value = '';
   mode.value = nextMode;
   selectedItem.value = null;
   routeMessage.value = '';
   clearRoute();
   if (nextMode === 'notice') {
-    selectedItem.value = filteredNotices.value[0] ?? null;
+    const nextNotice = previousMode === 'notice'
+      ? { item: filteredNotices.value[0] ?? null, inViewport: false }
+      : nearestNoticeForCurrentView();
+    selectedItem.value = nextNotice.item;
     updateSelectedNoticeContext(selectedItem.value);
+    await nextTick();
+    renderMarkers({ preserveView: previousMode !== 'notice' });
+    if (selectedItem.value)
+      selectItem(selectedItem.value, null, { focus: !nextNotice.inViewport });
+    return;
   } else {
     await loadPlaces();
   }
   await nextTick();
-  renderMarkers();
+  renderMarkers({ preserveView: nextMode !== 'notice' });
 }
 
 async function submitSearch() {
@@ -351,7 +486,7 @@ async function submitSearch() {
     return;
   }
   await loadPlaces();
-  renderMarkers();
+  renderMarkers({ preserveView: !searchTerm.value.trim() && !selectedPlaceRegion.value });
 }
 
 async function changePlaceSido() {
@@ -414,6 +549,7 @@ watch([filteredNotices, noticeRegion, noticeSupplyType, noticeDataType], () => {
   if (mode.value !== 'notice')
     return;
   selectedItem.value = filteredNotices.value[0] ?? null;
+  updateSelectedNoticeContext(selectedItem.value);
   renderMarkers();
 });
 
@@ -431,6 +567,10 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  if (pendingFocusTimer.value) {
+    clearTimeout(pendingFocusTimer.value);
+    pendingFocusTimer.value = null;
+  }
   if (window.__firsthomeMapRouteToSelected)
     delete window.__firsthomeMapRouteToSelected;
   markers.value.forEach((marker) => marker.setMap(null));
@@ -510,7 +650,7 @@ onBeforeUnmount(() => {
           </select>
         </div>
 
-        <p v-if="locationMessage" class="mt-2 rounded-md bg-slate-900/80 px-3 py-2 text-xs font-bold text-slate-300">
+        <p v-if="locationMessage" class="map-status-message mt-2 rounded-md px-3 py-2 text-xs font-black">
           {{ locationMessage }}
         </p>
       </div>
@@ -569,7 +709,7 @@ onBeforeUnmount(() => {
             카카오맵 장소 보기 <ExternalLink class="h-4 w-4" />
           </a>
         </div>
-        <p v-if="routeMessage" class="mt-3 rounded-lg bg-slate-900 p-3 text-xs font-bold text-slate-300">{{ routeMessage }}</p>
+        <p v-if="routeMessage" class="map-status-message mt-3 rounded-lg px-3 py-2 text-xs font-black">{{ routeMessage }}</p>
       </div>
 
       <div class="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto">

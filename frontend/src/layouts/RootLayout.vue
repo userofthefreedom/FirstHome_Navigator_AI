@@ -1,12 +1,11 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
-import { Bookmark, Bot, Building2, ChevronDown, ChevronRight, Home, Landmark, LineChart, LogOut, MapPinned, MessageSquareText, Moon, PiggyBank, Search, Sun, UserRound, WalletCards } from 'lucide-vue-next';
+import { Bookmark, Bot, Building2, ChevronDown, ChevronRight, Home, Landmark, LineChart, LogOut, MapPinned, MessageSquareText, Moon, PiggyBank, Search, Sun, UserCheck, UserRound, WalletCards } from 'lucide-vue-next';
 import FloatingCoachChat from '../components/FloatingCoachChat.vue';
 import { fetchHousingRecommendations } from '../api/firsthome';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileStore } from '../stores/profileStore';
-import { formatMoney } from '../utils/format';
 import { buildGlobalSearchResults } from '../utils/globalSearch';
 import { clearCurrentSelection, currentSelectionRoute, readCurrentSelection, syncCurrentSelectionWithAccount } from '../utils/selectionState';
 const route = useRoute();
@@ -28,7 +27,12 @@ const displayName = computed(() => {
         return authStore.user.username;
     return '게스트';
 });
-const profileStatus = computed(() => (authStore.user.is_authenticated ? '계정 저장 중' : '임시 저장 중'));
+const preferredRegionLabel = computed(() => {
+    const regions = (profileStore.profile.preferred_regions ?? []).filter(Boolean);
+    if (!regions.length)
+        return '지역 확인 중';
+    return regions.length === 1 ? regions[0] : `${regions[0]} 등`;
+});
 const themeIcon = computed(() => (theme.value === 'dark' ? Moon : Sun));
 const themeLabel = computed(() => (theme.value === 'dark' ? '다크 모드' : '라이트 모드'));
 const nextThemeLabel = computed(() => (theme.value === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'));
@@ -289,22 +293,28 @@ onBeforeUnmount(() => {
           <div class="ml-auto flex items-center gap-2">
             <RouterLink
               to="/profile"
-              class="hidden min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm transition hover:border-blue-300 hover:bg-slate-50 sm:flex"
-              :class="authStore.user.is_authenticated ? 'max-w-[300px]' : 'max-w-[360px]'"
+              class="account-state-card hidden h-10 min-w-0 items-center gap-2 rounded-full border px-2.5 py-0 transition sm:flex"
+              :class="authStore.user.is_authenticated ? 'account-state-card-auth max-w-[250px]' : 'account-state-card-guest max-w-[250px]'"
             >
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-900 text-white">
-                <UserRound class="h-4 w-4" />
+              <div
+                class="account-state-icon flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white"
+                :class="authStore.user.is_authenticated ? 'account-state-icon-auth' : 'account-state-icon-guest'"
+              >
+                <component :is="authStore.user.is_authenticated ? UserCheck : UserRound" class="h-3.5 w-3.5" />
               </div>
               <div class="min-w-0 leading-tight">
                 <div class="flex min-w-0 items-center gap-2">
-                  <p class="truncate text-sm font-semibold">{{ displayName }}</p>
-                  <span class="shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-700">
-                    {{ formatMoney(profileStore.profile.asset) }}
+                  <p class="truncate text-[13px] font-bold">{{ displayName }}</p>
+                  <span
+                    class="account-state-badge shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-black leading-none"
+                    :class="authStore.user.is_authenticated ? 'account-state-badge-auth' : 'account-state-badge-guest'"
+                  >
+                    {{ authStore.user.is_authenticated ? '회원' : '비회원' }}
+                  </span>
+                  <span class="account-region-badge truncate text-[10px] font-bold leading-none">
+                    {{ preferredRegionLabel }}
                   </span>
                 </div>
-                <p class="mt-0.5 truncate text-[11px] font-semibold text-slate-600">
-                  {{ profileStatus }} · {{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}
-                </p>
               </div>
             </RouterLink>
 

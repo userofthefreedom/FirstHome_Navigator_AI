@@ -514,7 +514,7 @@ watch(estateProvince, () => {
             ></span>
             <span
               v-if="latestPoint"
-              class="pointer-events-none absolute h-2 w-2 rounded-full bg-rose-300 shadow-[0_0_0_3px_rgba(15,23,42,0.9),0_0_12px_rgba(251,113,133,0.45)]"
+              class="economy-current-dot pointer-events-none absolute h-2.5 w-2.5 rounded-full"
               :style="chartDotStyle(latestPoint)"
             ></span>
             <div
@@ -535,11 +535,11 @@ watch(estateProvince, () => {
             </div>
             <div
               v-if="latestPoint"
-              class="pointer-events-none absolute z-10 rounded-md border border-rose-300/40 bg-slate-950/95 px-2.5 py-1 text-xs font-black leading-tight text-rose-100 shadow-lg shadow-slate-950/30"
+              class="economy-current-badge pointer-events-none absolute z-10 rounded-md px-2.5 py-1 text-xs font-black leading-tight"
               :style="latestValueBadgeStyle(latestPoint)"
             >
-              <span class="block text-rose-200">현재</span>
-              <span class="block">{{ latestPoint.value }}</span>
+              <span class="economy-current-badge-label block">현재</span>
+              <span class="economy-current-badge-value block">{{ latestPoint.value }}</span>
             </div>
             <div v-if="!hasTrend" class="absolute inset-x-4 top-4 max-w-xl rounded-lg border border-slate-700 bg-slate-900/90 p-4">
               <p class="text-sm font-black text-white">{{ chartStatus }}</p>

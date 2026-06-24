@@ -40,7 +40,7 @@ async function submit() {
             await profileStore.hydrateProfile();
         }
         await syncCurrentSelectionWithAccount(session.account_state);
-        await router.push('/profile');
+        await router.push(mode.value === 'register' ? '/profile' : '/');
     }
     catch (exc) {
         error.value = exc?.response?.data?.detail ?? '계정 처리 중 오류가 발생했습니다.';

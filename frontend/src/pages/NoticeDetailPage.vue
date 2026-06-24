@@ -151,7 +151,19 @@ const activeUnitOptionGroup = computed(() => {
     const selectedType = currentOptionType();
     return groupedUnitOptions.value.find((group) => group.key === selectedType) ?? groupedUnitOptions.value[0] ?? null;
 });
-const visibleUnitOptions = computed(() => activeUnitOptionGroup.value?.options ?? []);
+const visibleUnitOptions = computed(() => {
+    const options = [...(activeUnitOptionGroup.value?.options ?? [])];
+    const currentId = fundingPlan.value?.option_id ?? selectedOptionId.value;
+    if (!currentId)
+        return options;
+    return options.sort((left, right) => {
+        if (left.id === currentId)
+            return -1;
+        if (right.id === currentId)
+            return 1;
+        return 0;
+    });
+});
 const officialChecklist = computed(() => {
     if (eligibilityChecklists.value.length) {
         return eligibilityChecklists.value.map((item) => ({
@@ -521,8 +533,8 @@ onMounted(loadDetail);
             <CalendarDays class="h-5 w-5 text-slate-400" />
             주요 일정
           </h2>
-          <div class="flex flex-1 flex-col justify-center">
-            <div class="schedule-timeline mt-5">
+          <div class="flex flex-1 flex-col gap-4">
+            <div class="schedule-timeline schedule-timeline-balanced mt-4 flex-1">
               <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="schedule-timeline-item grid gap-1 text-sm">
                 <p class="font-bold text-slate-950">{{ item.label }}</p>
                 <div class="flex flex-wrap justify-between gap-3 text-slate-500">
@@ -531,7 +543,7 @@ onMounted(loadDetail);
                 </div>
               </div>
             </div>
-            <p v-if="fundingPlan.loan_repayment_note" class="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+            <p v-if="fundingPlan.loan_repayment_note" class="mt-auto rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
               {{ fundingPlan.loan_repayment_note }}
             </p>
           </div>

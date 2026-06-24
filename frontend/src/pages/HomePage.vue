@@ -589,7 +589,7 @@ onMounted(loadDashboard);
         </div>
       </section>
 
-      <section class="grid items-start gap-4" :class="calendarOpen ? 'xl:grid-cols-[minmax(0,0.86fr)_minmax(430px,0.58fr)]' : 'xl:grid-cols-1'">
+      <section class="grid gap-4" :class="calendarOpen ? 'xl:grid-cols-[minmax(0,0.86fr)_minmax(430px,0.58fr)]' : 'xl:grid-cols-1'">
         <div class="h-full rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <div class="mb-5 flex items-center justify-between gap-3">
             <div>
@@ -635,7 +635,7 @@ onMounted(loadDashboard);
           </div>
         </div>
 
-        <div v-if="calendarOpen" class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div v-if="calendarOpen" class="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div class="mb-3 flex items-center justify-between gap-3">
             <h2 class="text-lg font-bold text-slate-950">{{ calendarTitle }}</h2>
             <CalendarDays class="h-5 w-5 text-slate-400" />
@@ -654,17 +654,17 @@ onMounted(loadDashboard);
             </button>
           </div>
 
-          <div class="grid gap-3 lg:grid-cols-[1fr_210px]">
-            <div>
+          <div class="grid flex-1 gap-3 lg:grid-cols-[1fr_210px]">
+            <div class="flex min-h-0 flex-col">
               <div class="grid grid-cols-7 border-b border-slate-200 pb-2 text-center text-xs font-bold text-slate-500">
                 <div v-for="day in weekDays" :key="day">{{ day }}</div>
               </div>
-              <div class="mt-2 grid grid-cols-7 gap-1.5">
+              <div class="mt-2 grid flex-1 auto-rows-fr grid-cols-7 gap-1.5">
                 <button
                   v-for="slot in calendarSlots"
                   :key="slot.key"
                   type="button"
-                  class="relative flex h-10 items-center justify-center rounded-lg border text-center transition"
+                  class="relative flex min-h-10 items-center justify-center rounded-lg border text-center transition"
                   :class="[
                     slot.day ? 'border-slate-200 bg-slate-50 hover:bg-slate-100' : 'pointer-events-none border-transparent bg-transparent',
                     slot.day && selectedCalendarDay === slot.day ? 'ring-2 ring-blue-200' : '',
@@ -685,14 +685,14 @@ onMounted(loadDashboard);
               </div>
             </div>
 
-            <aside class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <aside class="flex min-h-0 flex-col rounded-lg border border-slate-200 bg-slate-50 p-3 lg:max-h-[390px]">
               <div class="mb-2 flex items-center justify-between gap-2">
                 <h3 class="text-sm font-bold text-slate-950">
                   {{ selectedCalendarDay ? `${selectedCalendarDay}일 마감` : '빠른 마감' }}
                 </h3>
                 <span class="rounded-md bg-slate-950 px-1.5 py-0.5 text-[11px] font-bold text-white">{{ selectedDayEvents.length }}건</span>
               </div>
-              <div class="max-h-64 space-y-2 overflow-y-auto pr-1">
+              <div class="min-h-0 max-h-[330px] flex-1 space-y-2 overflow-y-auto pr-1">
                 <button
                   v-for="event in selectedDayEvents"
                   :key="`${event.id}-${event.deadline}`"

@@ -212,7 +212,7 @@ function contextLabel(ref) {
         </div>
         <button
           type="button"
-          class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/10 text-white transition hover:bg-white/15"
+          class="floating-chat-close flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-slate-800 text-white shadow-sm transition hover:bg-slate-700"
           title="닫기"
           @click="isOpen = false"
         >
