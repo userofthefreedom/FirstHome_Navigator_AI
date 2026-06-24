@@ -15,6 +15,8 @@ const form = reactive({
     username: '',
     email: '',
     password: '',
+    name: '',
+    birth_year: '',
 });
 async function submit() {
     loading.value = true;
@@ -22,7 +24,13 @@ async function submit() {
     try {
         const session = mode.value === 'login'
             ? await authStore.login({ username: form.username, password: form.password })
-            : await authStore.register({ username: form.username, email: form.email, password: form.password });
+            : await authStore.register({
+                username: form.username,
+                email: form.email,
+                password: form.password,
+                name: form.name,
+                birth_year: form.birth_year ? Number(form.birth_year) : undefined,
+            });
         if (session.profile) {
             profileStore.setLocalProfile(session.profile);
             profileStore.loaded = true;
@@ -101,6 +109,17 @@ async function logout() {
             <span class="text-sm font-medium text-slate-700">이메일</span>
             <input v-model.trim="form.email" type="email" autocomplete="email" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
           </label>
+
+          <div v-if="mode === 'register'" class="grid gap-4 sm:grid-cols-2">
+            <label class="block">
+              <span class="text-sm font-medium text-slate-700">이름</span>
+              <input v-model.trim="form.name" type="text" autocomplete="name" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+            </label>
+            <label class="block">
+              <span class="text-sm font-medium text-slate-700">출생년도</span>
+              <input v-model.number="form.birth_year" type="number" min="1900" max="2100" inputmode="numeric" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-500" />
+            </label>
+          </div>
 
           <label class="block">
             <span class="text-sm font-medium text-slate-700">비밀번호</span>

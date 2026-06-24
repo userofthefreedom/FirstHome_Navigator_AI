@@ -481,8 +481,8 @@ onMounted(loadDetail);
             <FileCheck2 class="h-5 w-5 text-blue-700" />
             공식 확인 체크리스트
           </h2>
-          <div class="mt-5 grid gap-3">
-            <div v-for="item in officialChecklist" :key="item.key" class="grid gap-2 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
+          <div class="official-rail mt-5">
+            <div v-for="item in officialChecklist" :key="item.key" class="official-rail-item grid gap-2 text-sm text-slate-700">
               <div class="flex items-start gap-3">
                 <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 <div class="min-w-0">
@@ -515,23 +515,27 @@ onMounted(loadDetail);
           </div>
         </div>
 
-        <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex min-h-full w-full flex-col">
           <h2 class="flex items-center gap-2 text-lg font-bold text-slate-950">
             <CalendarDays class="h-5 w-5 text-slate-400" />
             주요 일정
           </h2>
-          <div class="mt-5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
-            <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="grid gap-1 bg-white p-4 text-sm">
-              <p class="font-bold text-slate-950">{{ item.label }}</p>
-              <div class="flex flex-wrap justify-between gap-3 text-slate-500">
-                <span>{{ item.date }}</span>
-                <span>{{ formatMoney(item.amount) }}</span>
+          <div class="flex flex-1 flex-col justify-center">
+            <div class="schedule-timeline mt-5">
+              <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="schedule-timeline-item grid gap-1 text-sm">
+                <p class="font-bold text-slate-950">{{ item.label }}</p>
+                <div class="flex flex-wrap justify-between gap-3 text-slate-500">
+                  <span>{{ item.date }}</span>
+                  <span>{{ formatMoney(item.amount) }}</span>
+                </div>
               </div>
             </div>
+            <p v-if="fundingPlan.loan_repayment_note" class="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+              {{ fundingPlan.loan_repayment_note }}
+            </p>
           </div>
-          <p v-if="fundingPlan.loan_repayment_note" class="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
-            {{ fundingPlan.loan_repayment_note }}
-          </p>
+          </div>
         </div>
       </section>
 

@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase
 
+from apps.rules.matching import policy_match_score
 from apps.policies.services.youthcenter import normalize_youthcenter_policies
 
 
@@ -68,3 +69,55 @@ class YouthCenterPolicyNormalizerTests(SimpleTestCase):
         policies = normalize_youthcenter_policies(payload)
 
         self.assertEqual(policies[0].regions, ["경북"])
+
+
+class PolicyMatchScoreTests(SimpleTestCase):
+    def test_region_mismatch_returns_zero_score(self):
+        profile = {
+            "birth_year": 1999,
+            "annual_income": 50000000,
+            "preferred_regions": ["인천"],
+            "is_homeless": True,
+        }
+        policy = {
+            "name": "태안 청년 신혼부부 주택자금 대출이자 지원",
+            "provider": "태안군",
+            "target": "태안군 거주 청년",
+            "benefit": "가구당 대출이자 지원",
+            "policy_category": "주거",
+            "regions": ["충남"],
+            "age_min": 19,
+            "age_max": 39,
+            "requires_homeless": True,
+            "source_url": "https://example.com/policy",
+        }
+
+        score, source_priority = policy_match_score(policy, profile)
+
+        self.assertEqual(score, 0)
+        self.assertEqual(source_priority, 0)
+
+    def test_matching_housing_policy_uses_expanded_score_scale(self):
+        profile = {
+            "birth_year": 1999,
+            "annual_income": 50000000,
+            "preferred_regions": ["인천"],
+            "is_homeless": True,
+        }
+        policy = {
+            "name": "인천 청년 공공분양 청약 상담",
+            "provider": "인천광역시",
+            "target": "인천 무주택 청년",
+            "benefit": "청약 자격과 주택구입 자금 상담",
+            "policy_category": "주거",
+            "regions": ["인천"],
+            "age_min": 19,
+            "age_max": 39,
+            "max_income": 70000000,
+            "requires_homeless": True,
+            "source_url": "https://example.com/policy",
+        }
+
+        score, _ = policy_match_score(policy, profile)
+
+        self.assertGreaterEqual(score, 90)

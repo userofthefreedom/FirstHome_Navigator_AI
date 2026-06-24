@@ -19,18 +19,20 @@ DOWN_PAYMENT_TYPES = {"down_payment"}
 
 
 def eligibility_score(notice: dict[str, Any], profile: dict[str, Any]) -> int:
-    age = date.today().year - int(profile.get("birth_year", date.today().year))
+    age = date.today().year - int(profile.get("birth_year", date.today().year) or date.today().year)
     tags = set(notice.get("tags", []))
     special_conditions = set(profile.get("special_conditions", []))
-    income = int(profile.get("annual_income", 0))
-    asset = int(profile.get("asset", 0))
+    income = int(profile.get("annual_income", 0) or 0)
+    asset = int(profile.get("asset", 0) or 0)
+    max_income = int(notice.get("max_income", 0) or 0)
+    max_asset = int(notice.get("max_asset", 0) or 0)
 
     score = 0
     score += 8 if profile.get("is_homeless") else 0
     score += 7 if int(profile.get("subscription_months", 0)) >= int(notice.get("required_subscription_months", 24)) else 3
     score += 6 if int(notice.get("age_min", 19)) <= age <= int(notice.get("age_max", 150)) else 2
-    score += 6 if income <= int(notice.get("max_income", 10**12)) else 0
-    score += 4 if asset <= int(notice.get("max_asset", 10**12)) else 0
+    score += 6 if max_income and income <= max_income else 3 if not max_income else 0
+    score += 4 if max_asset and asset <= max_asset else 2 if not max_asset else 0
 
     special_match = ("first_home" in special_conditions and "생애최초" in tags) or (
         "youth" in special_conditions and "청년" in tags
@@ -66,13 +68,16 @@ def _normalize_key(value: Any) -> str:
 
 def schedule_score(notice: dict[str, Any]) -> int:
     today = date.today()
-    days_left = (_parse_date(notice["application_deadline"]) - today).days
-    contract_days = (_parse_date(notice["contract_date"]) - today).days
+    application_deadline = _parse_optional_date(notice.get("application_deadline"))
+    contract_date = _parse_optional_date(notice.get("contract_date"))
+    days_left = (application_deadline - today).days if application_deadline else -1
+    contract_days = (contract_date - today).days if contract_date else -1
 
     score = 0
     score += 3 if days_left >= 7 else 1 if days_left >= 0 else 0
     score += 5 if contract_days >= 30 else 2 if contract_days >= 0 else 0
-    score += 2 if str(notice.get("move_in", "")) >= "2027-01" else 1
+    move_in = str(notice.get("move_in", "")).strip()
+    score += 2 if move_in >= "2027-01" else 1 if move_in else 0
     return min(score, SCORE_WEIGHTS["schedule"])
 
 
@@ -140,7 +145,7 @@ def option_fit_score(option: dict[str, Any], profile: dict[str, Any]) -> int:
     if int(insights["due_before_move_in"]) > 0 and price and int(insights["due_before_move_in"]) <= price:
         score += 2
 
-    return min(score, 100)
+    return max(0, min(score, 100))
 
 
 def _area_range_score(area: float, min_area: float, max_area: float) -> int:
@@ -159,7 +164,7 @@ def _area_range_score(area: float, min_area: float, max_area: float) -> int:
 
 def _price_range_score(price: int, min_price: int, max_price: int) -> int:
     if not price:
-        return 10
+        return 5
     if (not min_price or price >= min_price) and (not max_price or price <= max_price):
         return 35
     if max_price and price > max_price:

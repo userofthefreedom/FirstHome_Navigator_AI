@@ -27,6 +27,7 @@ REGION_ALIASES = {
 
 GYEONGGI_NORTH_PLACES = (
     "고양",
+    "김포",
     "남양주",
     "파주",
     "의정부",
@@ -213,7 +214,7 @@ def region_matches(target_region: Any, preferred_region: Any) -> bool:
         target_subregion = gyeonggi_subregion_from_text(target_region)
         if target_subregion:
             return normalize_region_key(target_subregion) == preferred_key
-        return target_key in {"경기", "경기도", preferred_key}
+        return target_key == preferred_key
     aliases = REGION_ALIASES.get(str(preferred_region).strip(), (preferred_region,))
     return any(normalize_region_key(alias) in target_key for alias in aliases if alias)
 

@@ -163,9 +163,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-950 lg:grid lg:grid-cols-[260px_1fr]">
-    <aside class="hidden bg-slate-950 text-white lg:block">
-      <div class="sticky top-0 flex h-screen flex-col lg:relative lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:top-16 lg:after:w-px lg:after:bg-white/10">
+  <div class="min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-950">
+    <aside class="hidden bg-slate-950 text-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:block lg:w-[260px]">
+      <div class="flex h-screen flex-col lg:relative lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:top-16 lg:after:w-px lg:after:bg-white/10">
         <div class="flex h-16 items-center border-b border-white/10 px-6">
           <RouterLink to="/" class="flex min-w-0 items-center gap-3 rounded-lg transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-300">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-500/25">
@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
       </div>
     </aside>
 
-    <main class="flex min-h-screen min-w-0 flex-col">
+    <main class="flex min-h-screen min-w-0 flex-col lg:pl-[260px]">
       <header class="sticky top-0 z-30 h-16 border-b border-slate-200 bg-slate-950">
         <div class="flex h-full items-center gap-3 px-4 sm:px-6">
           <RouterLink to="/" class="flex items-center gap-2 rounded-lg text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-300 lg:hidden">
@@ -287,8 +287,9 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="ml-auto flex items-center gap-2">
-            <div
-              class="hidden min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:flex"
+            <RouterLink
+              to="/profile"
+              class="hidden min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-blue-300 hover:bg-slate-50 sm:flex"
               :class="authStore.user.is_authenticated ? 'max-w-[300px]' : 'max-w-[360px]'"
             >
               <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-900 text-white">
@@ -305,7 +306,7 @@ onBeforeUnmount(() => {
                   {{ profileStatus }} · {{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}
                 </p>
               </div>
-            </div>
+            </RouterLink>
 
             <button
               v-if="authStore.user.is_authenticated"

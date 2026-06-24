@@ -64,6 +64,8 @@ AUTH_REQUEST = inline_serializer(
         "username": serializers.CharField(help_text="사용자 아이디"),
         "password": serializers.CharField(write_only=True, help_text="비밀번호"),
         "email": serializers.EmailField(required=False, allow_blank=True, help_text="회원가입 시 선택 입력"),
+        "name": serializers.CharField(required=False, allow_blank=True, help_text="회원가입 시 조건 입력 기본값으로 저장할 이름"),
+        "birth_year": serializers.IntegerField(required=False, help_text="회원가입 시 조건 입력 기본값으로 저장할 출생년도"),
     },
 )
 

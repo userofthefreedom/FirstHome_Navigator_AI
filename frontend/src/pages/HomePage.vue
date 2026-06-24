@@ -404,8 +404,16 @@ onMounted(loadDashboard);
 
 <template>
   <div class="space-y-5">
-    <section v-if="loading" class="rounded-lg border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-600 shadow-sm">
-      대시보드 데이터를 불러오는 중입니다.
+    <section v-if="loading" class="loading-surface">
+      <p class="text-sm font-black text-slate-950">첫 집 준비 현황을 불러오고 있습니다</p>
+      <p class="mt-1 text-sm text-slate-500">저장된 조건, 추천 후보, 이번 주 행동 순서를 맞춰 보는 중입니다.</p>
+      <div class="mt-5 grid gap-3 md:grid-cols-3">
+        <div v-for="index in 3" :key="index" class="loading-surface-tile">
+          <span class="loading-surface-line w-1/3" />
+          <span class="loading-surface-line mt-5 w-4/5" />
+          <span class="loading-surface-line mt-3 w-2/3" />
+        </div>
+      </div>
     </section>
 
     <section v-else-if="error" class="rounded-lg border border-amber-100 bg-amber-50 p-6 text-sm font-semibold text-amber-800">
@@ -413,7 +421,7 @@ onMounted(loadDashboard);
     </section>
 
     <template v-else-if="selected && selectedRecommendation">
-      <section class="overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <section :class="isLoggedIn ? 'dashboard-member-hero' : 'overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6'">
         <div v-if="!isLoggedIn" class="grid gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(320px,0.48fr)] xl:items-center">
           <div>
             <div class="inline-flex items-center gap-2 rounded-md bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
@@ -458,16 +466,18 @@ onMounted(loadDashboard);
             <h1 class="mt-4 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">
               {{ dashboard?.profile.name || '회원' }}님의 첫 집 로드맵
             </h1>
-            <div class="mt-6 grid gap-3 md:grid-cols-3">
-              <div v-for="card in memberRoadmapCards" :key="card.label" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <component :is="card.icon" class="h-5 w-5 text-blue-700" />
+            <div class="member-roadmap-flow mt-6">
+              <div v-for="card in memberRoadmapCards" :key="card.label" class="member-roadmap-step">
+                <span class="member-roadmap-icon">
+                  <component :is="card.icon" class="h-5 w-5" />
+                </span>
                 <p class="mt-3 text-xs font-bold text-slate-500">{{ card.label }}</p>
                 <p class="mt-1 line-clamp-2 text-lg font-black leading-6 text-slate-950">{{ card.value }}</p>
                 <p class="mt-2 line-clamp-1 text-xs font-bold text-slate-500">{{ card.caption }}</p>
               </div>
             </div>
           </div>
-          <div class="rounded-lg border border-slate-200 bg-slate-50 p-5">
+          <div class="member-coach-strip">
             <div class="flex items-center gap-2 text-sm font-black text-blue-700">
               <Bot class="h-4 w-4" />
               {{ hasCoachSummary ? '최근 AI 코치' : 'AI 코치' }}

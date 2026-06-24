@@ -45,6 +45,7 @@ const coachLoading = ref(false);
 const switchingNoticeId = ref(null);
 const savingFavorite = ref(false);
 const error = ref('');
+const activeOfficialIndex = ref(0);
 
 const selectedRecommendation = computed(() => {
     if (!selectedNotice.value)
@@ -305,6 +306,19 @@ const deepReviewItems = computed(() => {
     ];
 });
 
+const officialReviewPairs = computed(() => {
+    const reviews = deepReviewItems.value;
+    return officialChecklist.value.map((title, index) => {
+        const review = reviews[index % Math.max(reviews.length, 1)];
+        return {
+            title,
+            detailTitle: review?.title ?? title,
+            body: review?.body ?? title,
+            why_it_matters: review?.why_it_matters ?? '',
+        };
+    });
+});
+
 const compactCandidates = computed(() => recommendations.value.slice(0, 5));
 
 function isFixtureNotice(notice) {
@@ -368,6 +382,7 @@ async function loadTargetNotice(targetNoticeId) {
         return;
     switchingNoticeId.value = targetNoticeId;
     aiCoach.value = null;
+    activeOfficialIndex.value = 0;
     const optionId = optionIdForNotice(targetNoticeId);
     const [noticeResponse, fundingResponse] = await Promise.all([
         fetchNotice(targetNoticeId),
@@ -496,6 +511,47 @@ onMounted(loadCoach);
           <p class="mt-1 text-sm font-bold text-slate-900">LLM 코칭 구성</p>
           <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
             <div class="loading-bar loading-bar-delay-more h-full rounded-full bg-emerald-500" />
+          </div>
+        </div>
+      </div>
+      <div class="coach-loading-workbench mt-6">
+        <div class="coach-loading-canvas">
+          <div class="coach-loading-document">
+            <span class="coach-loading-docline w-3/4" />
+            <span class="coach-loading-docline w-11/12" />
+            <span class="coach-loading-docline w-2/3" />
+            <span class="coach-loading-docline w-5/6" />
+            <span class="coach-loading-scan" />
+          </div>
+          <div class="coach-loading-document coach-loading-document-back">
+            <span class="coach-loading-docline w-2/3" />
+            <span class="coach-loading-docline w-4/5" />
+            <span class="coach-loading-docline w-1/2" />
+          </div>
+          <div class="coach-loading-flow" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+        <div class="coach-loading-panel">
+          <p class="text-sm font-black text-slate-950">분석 보드를 구성하고 있습니다</p>
+          <p class="mt-1 text-sm leading-6 text-slate-600">
+            공고문 근거, 선택 주택형, 자금 계획, 이번 주 행동 순서를 한 화면에 맞게 정리합니다.
+          </p>
+          <div class="mt-4 grid gap-3">
+            <div class="coach-loading-task">
+              <span>공식 근거 문장 추출</span>
+              <strong>PDF</strong>
+            </div>
+            <div class="coach-loading-task">
+              <span>계약금과 준비 목표 계산</span>
+              <strong>자금</strong>
+            </div>
+            <div class="coach-loading-task">
+              <span>바로 처리할 일 우선순위화</span>
+              <strong>코치</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -663,22 +719,35 @@ onMounted(loadCoach);
         <div v-if="isFixtureCoach" class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-900">
           Fixture 후보는 실제 공식 원문 보기나 공식 출처 버튼을 제공하지 않습니다. LLM은 fixture에 들어있는 주택형, 금액, 일정, 서류 후보를 기준으로 예시 코칭을 만들며 실제 신청 판단에는 사용할 수 없습니다.
         </div>
-        <div class="mt-5 flex flex-wrap gap-2">
-          <span
-            v-for="item in officialChecklist"
-            :key="item"
-            class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800"
-          >
-            <CheckCircle2 class="h-3.5 w-3.5" />
-            {{ item }}
-          </span>
-        </div>
-        <div class="mt-5 grid gap-3 lg:grid-cols-2">
-          <article v-for="item in deepReviewItems" :key="item.title" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h3 class="font-black text-slate-950">{{ item.title }}</h3>
-            <p class="mt-2 text-sm leading-6 text-slate-700">{{ item.body }}</p>
-            <p class="mt-3 rounded-md bg-white px-3 py-2 text-xs font-bold leading-5 text-slate-600">
-              {{ item.why_it_matters }}
+        <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(260px,0.42fr)_minmax(0,1fr)]">
+          <div class="official-rail">
+            <button
+              v-for="(item, index) in officialReviewPairs"
+              :key="item.title"
+              type="button"
+              class="official-rail-item w-full text-left transition"
+              :class="activeOfficialIndex === index ? 'text-emerald-700' : 'text-slate-700 hover:text-slate-950'"
+              @click="activeOfficialIndex = index"
+            >
+              <span class="official-rail-dot" />
+              <span class="block text-sm font-bold">{{ item.title }}</span>
+            </button>
+          </div>
+          <article class="official-detail-panel">
+            <p class="text-xs font-bold text-emerald-700">
+              {{ officialReviewPairs[activeOfficialIndex]?.title || officialReviewPairs[0]?.title }}
+            </p>
+            <h3 class="mt-2 text-lg font-bold text-slate-950">
+              {{ officialReviewPairs[activeOfficialIndex]?.detailTitle || officialReviewPairs[0]?.detailTitle }}
+            </h3>
+            <p class="mt-3 text-sm leading-7 text-slate-700">
+              {{ officialReviewPairs[activeOfficialIndex]?.body || officialReviewPairs[0]?.body }}
+            </p>
+            <p
+              v-if="officialReviewPairs[activeOfficialIndex]?.why_it_matters || officialReviewPairs[0]?.why_it_matters"
+              class="mt-4 rounded-lg bg-white px-4 py-3 text-xs font-bold leading-5 text-slate-600"
+            >
+              {{ officialReviewPairs[activeOfficialIndex]?.why_it_matters || officialReviewPairs[0]?.why_it_matters }}
             </p>
           </article>
         </div>
@@ -816,6 +885,138 @@ onMounted(loadCoach);
     animation-delay: 0.4s;
 }
 
+.coach-loading-workbench {
+    display: grid;
+    gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+    .coach-loading-workbench {
+        grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+    }
+}
+
+.coach-loading-canvas,
+.coach-loading-panel {
+    min-height: 15rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background:
+        radial-gradient(circle at 18% 18%, rgba(64, 215, 186, 0.16), transparent 28%),
+        linear-gradient(135deg, rgba(64, 215, 186, 0.08), rgba(59, 130, 246, 0.05)),
+        var(--card);
+}
+
+.coach-loading-canvas {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.coach-loading-panel {
+    padding: 1.25rem;
+}
+
+.coach-loading-document {
+    position: absolute;
+    left: 16%;
+    top: 18%;
+    z-index: 2;
+    display: grid;
+    width: min(20rem, 58%);
+    gap: 0.75rem;
+    border: 1px solid rgba(64, 215, 186, 0.22);
+    border-radius: 0.85rem;
+    background: rgba(15, 23, 42, 0.72);
+    padding: 1.3rem;
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.18);
+}
+
+.coach-loading-document-back {
+    left: auto;
+    right: 14%;
+    top: 28%;
+    z-index: 1;
+    opacity: 0.68;
+    transform: scale(0.92);
+}
+
+.coach-loading-docline {
+    display: block;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(64, 215, 186, 0.65), rgba(148, 163, 184, 0.2));
+}
+
+.coach-loading-scan {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent, rgba(64, 215, 186, 0.24), transparent);
+    animation: firsthome-document-scan 2.2s ease-in-out infinite;
+}
+
+.coach-loading-flow {
+    position: absolute;
+    bottom: 1.4rem;
+    left: 10%;
+    right: 10%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+
+.coach-loading-flow span {
+    height: 0.45rem;
+    border-radius: 999px;
+    background: rgba(64, 215, 186, 0.34);
+    animation: firsthome-flow-pulse 1.7s ease-in-out infinite;
+}
+
+.coach-loading-flow span:nth-child(2) {
+    animation-delay: 0.18s;
+}
+
+.coach-loading-flow span:nth-child(3) {
+    animation-delay: 0.36s;
+}
+
+.coach-loading-task {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.8rem;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 800;
+}
+
+.coach-loading-task:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.coach-loading-task strong {
+    border-radius: 999px;
+    background: rgba(64, 215, 186, 0.16);
+    color: var(--primary);
+    padding: 0.3rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 900;
+}
+
+:root[data-theme="light"] .coach-loading-document {
+    background: rgba(248, 250, 252, 0.88);
+    box-shadow: 0 1.25rem 2.5rem rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme="light"] .coach-loading-docline {
+    background: linear-gradient(90deg, rgba(15, 118, 110, 0.7), rgba(100, 116, 139, 0.2));
+}
+
 @keyframes firsthome-orbit {
     to {
         transform: rotate(360deg);
@@ -843,6 +1044,34 @@ onMounted(loadCoach);
     50% {
         opacity: 1;
         transform: translateY(-0.25rem);
+    }
+}
+
+@keyframes firsthome-document-scan {
+    0% {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    20%,
+    80% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes firsthome-flow-pulse {
+    0%,
+    100% {
+        opacity: 0.35;
+        transform: scaleX(0.78);
+        transform-origin: left;
+    }
+    50% {
+        opacity: 1;
+        transform: scaleX(1);
     }
 }
 </style>

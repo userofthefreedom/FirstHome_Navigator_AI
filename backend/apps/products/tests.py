@@ -171,6 +171,14 @@ class FinancialProductApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(actual_ids, expected_ids)
 
+    def test_fit_score_uses_expanded_scale(self):
+        response = self.client.get("/api/products", {"ordering": "fit"})
+        scores = [item["match_score"] for item in response.data["items"]]
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(max(scores), 30)
+        self.assertGreater(len(set(scores)), 1)
+
     def test_joined_product_delete_only_removes_current_user_item(self):
         user = get_user_model().objects.create_user(username="joined-user", password="pw")
         other_user = get_user_model().objects.create_user(username="other-user", password="pw")

@@ -32,7 +32,8 @@ def _candidate_products() -> list[dict[str, Any]]:
 
 
 def _serialize_product(product: FinancialProduct) -> dict[str, Any]:
-    best_option = max(product.options.all(), key=lambda item: (item.intr_rate2, item.intr_rate, item.save_trm), default=None)
+    options = list(product.options.all())
+    best_option = max(options, key=lambda item: (item.intr_rate2, item.intr_rate, item.save_trm), default=None)
     best_rate = max(float(best_option.intr_rate2 or best_option.intr_rate or 0), 0) if best_option else 0
     return {
         "id": product.id,
@@ -44,6 +45,7 @@ def _serialize_product(product: FinancialProduct) -> dict[str, Any]:
         "period": "상시" if not product.term_months else f"{product.term_months}개월",
         "term_months": product.term_months,
         "monthly_limit": product.monthly_limit,
+        "option_count": len(options),
         "protection_status": product.protection_status,
         "source_url": product.source_url,
         "reasons": product.reasons or ["자금 로드맵 준비액과 기간을 기준으로 비교할 수 있는 예적금 상품입니다."],

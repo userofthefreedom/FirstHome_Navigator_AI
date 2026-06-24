@@ -1,6 +1,6 @@
 {
   "baseUrl": "http://127.0.0.1:5173",
-  "generatedAt": "2026-06-24T01:57:52.980Z",
+  "generatedAt": "2026-06-24T04:45:06.250Z",
   "browserExecutable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
   "routes": [
     {
@@ -89,10 +89,13 @@
       "h1": "첫 집 준비를 한 화면에서",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_home.png"
     },
     {
@@ -109,10 +112,13 @@
       "h1": "첫 집 청약 추천 조건",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_profile.png"
     },
     {
@@ -129,10 +135,13 @@
       "h1": "검토할 후보 TOP 6",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_recommendations.png"
     },
     {
@@ -149,10 +158,13 @@
       "h1": "e편한세상 분당 퍼스트빌리지(성남낙생 A-1BL) 신혼희망타운(공공분양) 입주자모집공고",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_notice_detail.png"
     },
     {
@@ -169,10 +181,13 @@
       "h1": "계약금과 납부 일정",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_funding.png"
     },
     {
@@ -189,10 +204,13 @@
       "h1": "이첫집님의 다음 선택과 할 일",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_ai_coach.png"
     },
     {
@@ -209,10 +227,13 @@
       "h1": "청약 검색",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_map.png"
     },
     {
@@ -229,10 +250,13 @@
       "h1": "금융상품",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_products.png"
     },
     {
@@ -249,10 +273,13 @@
       "h1": "경제 NOW",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_economy_now.png"
     },
     {
@@ -269,10 +296,13 @@
       "h1": "청약 아고라",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_agora.png"
     },
     {
@@ -289,10 +319,13 @@
       "h1": "MY PAGE",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_my_page.png"
     },
     {
@@ -309,10 +342,13 @@
       "h1": "로그인",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_guest_auth.png"
     },
     {
@@ -335,10 +371,13 @@
       "h1": "시각점검님의 첫 집 로드맵 ",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_home.png"
     },
     {
@@ -355,10 +394,13 @@
       "h1": "첫 집 청약 추천 조건",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_profile.png"
     },
     {
@@ -375,10 +417,13 @@
       "h1": "검토할 후보 TOP 6",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_recommendations.png"
     },
     {
@@ -395,10 +440,13 @@
       "h1": "e편한세상 분당 퍼스트빌리지(성남낙생 A-1BL) 신혼희망타운(공공분양) 입주자모집공고",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_notice_detail.png"
     },
     {
@@ -415,10 +463,13 @@
       "h1": "계약금과 납부 일정",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_funding.png"
     },
     {
@@ -432,13 +483,16 @@
       "scenario": "user",
       "route": "ai_coach",
       "path": "/ai-coach",
-      "h1": "공고문과 선택 옵션을 읽고 있습니다",
+      "h1": "시각점검님의 다음 선택과 할 일",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_ai_coach.png"
     },
     {
@@ -455,10 +509,13 @@
       "h1": "청약 검색",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_map.png"
     },
     {
@@ -475,10 +532,13 @@
       "h1": "금융상품",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_products.png"
     },
     {
@@ -495,10 +555,13 @@
       "h1": "경제 NOW",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_economy_now.png"
     },
     {
@@ -515,10 +578,13 @@
       "h1": "청약 아고라",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_agora.png"
     },
     {
@@ -535,10 +601,13 @@
       "h1": "MY PAGE",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_my_page.png"
     },
     {
@@ -555,10 +624,13 @@
       "h1": "로그인됨",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "dark_user_auth.png"
     },
     {
@@ -575,10 +647,13 @@
       "h1": "첫 집 준비를 한 화면에서",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_home.png"
     },
     {
@@ -595,10 +670,13 @@
       "h1": "첫 집 청약 추천 조건",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_profile.png"
     },
     {
@@ -615,10 +693,13 @@
       "h1": "검토할 후보 TOP 6",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_recommendations.png"
     },
     {
@@ -635,10 +716,13 @@
       "h1": "e편한세상 분당 퍼스트빌리지(성남낙생 A-1BL) 신혼희망타운(공공분양) 입주자모집공고",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_notice_detail.png"
     },
     {
@@ -655,10 +739,13 @@
       "h1": "계약금과 납부 일정",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_funding.png"
     },
     {
@@ -675,10 +762,13 @@
       "h1": "이첫집님의 다음 선택과 할 일",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_ai_coach.png"
     },
     {
@@ -695,10 +785,13 @@
       "h1": "청약 검색",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_map.png"
     },
     {
@@ -715,10 +808,13 @@
       "h1": "금융상품",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_products.png"
     },
     {
@@ -735,10 +831,13 @@
       "h1": "경제 NOW",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_economy_now.png"
     },
     {
@@ -755,10 +854,13 @@
       "h1": "청약 아고라",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_agora.png"
     },
     {
@@ -775,10 +877,13 @@
       "h1": "MY PAGE",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_my_page.png"
     },
     {
@@ -795,10 +900,13 @@
       "h1": "로그인",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_guest_auth.png"
     },
     {
@@ -821,10 +929,13 @@
       "h1": "시각점검님의 첫 집 로드맵 ",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_home.png"
     },
     {
@@ -841,10 +952,13 @@
       "h1": "첫 집 청약 추천 조건",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_profile.png"
     },
     {
@@ -861,10 +975,13 @@
       "h1": "검토할 후보 TOP 6",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_recommendations.png"
     },
     {
@@ -881,10 +998,13 @@
       "h1": "e편한세상 분당 퍼스트빌리지(성남낙생 A-1BL) 신혼희망타운(공공분양) 입주자모집공고",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_notice_detail.png"
     },
     {
@@ -901,10 +1021,13 @@
       "h1": "계약금과 납부 일정",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_funding.png"
     },
     {
@@ -918,13 +1041,16 @@
       "scenario": "user",
       "route": "ai_coach",
       "path": "/ai-coach",
-      "h1": "시각점검님의 다음 선택과 할 일",
+      "h1": "공고문과 선택 옵션을 읽고 있습니다",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_ai_coach.png"
     },
     {
@@ -941,10 +1067,13 @@
       "h1": "청약 검색",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_map.png"
     },
     {
@@ -961,10 +1090,13 @@
       "h1": "금융상품",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_products.png"
     },
     {
@@ -981,10 +1113,13 @@
       "h1": "경제 NOW",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_economy_now.png"
     },
     {
@@ -1001,10 +1136,13 @@
       "h1": "청약 아고라",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_agora.png"
     },
     {
@@ -1021,10 +1159,13 @@
       "h1": "MY PAGE",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_my_page.png"
     },
     {
@@ -1041,10 +1182,13 @@
       "h1": "로그인됨",
       "textIssues": [],
       "paleBoundaries": [],
+      "subtleSurfaces": [],
+      "fontRiskText": [],
       "darkIslands": [],
       "tinyOrInvisibleText": [],
       "hoverIssues": [],
       "hoverShots": [],
+      "layoutIssues": [],
       "screenshot": "light_user_auth.png"
     }
   ]

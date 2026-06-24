@@ -59,6 +59,15 @@ def classify_notice_payload(notice: dict[str, Any]) -> NoticeClassification:
             exclude_reason=f"서비스 범위 밖의 공고: {scope_deny_keyword}",
         )
 
+    if _has_newlywed_public_sale_signal(normalized):
+        return NoticeClassification("newlywed_public_sale", True, "")
+
+    if _has_private_participation_public_sale_signal(normalized):
+        return NoticeClassification("private_participation_public_sale", True, "")
+
+    if _has_public_sale_signal(normalized):
+        return NoticeClassification("public_sale", True, "")
+
     deny_keyword = first_keyword_match(text, HARD_DENY_KEYWORDS)
     if deny_keyword:
         return NoticeClassification(
@@ -66,15 +75,6 @@ def classify_notice_payload(notice: dict[str, Any]) -> NoticeClassification:
             is_service_target=False,
             exclude_reason=f"서비스 범위 밖의 공고: {deny_keyword}",
         )
-
-    if "신혼희망타운" in normalized and "공공분양" in normalized:
-        return NoticeClassification("newlywed_public_sale", True, "")
-
-    if "민간참여" in normalized and "공공분양" in normalized:
-        return NoticeClassification("private_participation_public_sale", True, "")
-
-    if "공공분양주택" in normalized or "공공분양" in normalized or "분양주택" in normalized:
-        return NoticeClassification("public_sale", True, "")
 
     residual_keyword = first_keyword_match(text, RESIDUAL_SALE_KEYWORDS)
     if residual_keyword:
@@ -116,6 +116,26 @@ def first_keyword_match(text: str, keywords: list[str] | tuple[str, ...]) -> str
         if keyword in text or keyword.replace(" ", "") in normalized:
             return keyword
     return ""
+
+
+def _has_newlywed_public_sale_signal(normalized_text: str) -> bool:
+    return "신혼희망타운" in normalized_text and "공공분양" in normalized_text and "임대" not in normalized_text
+
+
+def _has_private_participation_public_sale_signal(normalized_text: str) -> bool:
+    return "민간참여" in normalized_text and "공공분양" in normalized_text and not _has_explicit_rental_signal(normalized_text)
+
+
+def _has_public_sale_signal(normalized_text: str) -> bool:
+    has_sale_signal = "공공분양주택" in normalized_text or "공공분양" in normalized_text or "분양주택" in normalized_text
+    return has_sale_signal and not _has_explicit_rental_signal(normalized_text)
+
+
+def _has_explicit_rental_signal(normalized_text: str) -> bool:
+    return any(
+        keyword in normalized_text
+        for keyword in ("행복주택", "국민임대", "영구임대", "매입임대", "장기전세", "분양전환", "공공임대")
+    )
 
 
 def is_lh_housing_notice_text(text: str) -> bool:

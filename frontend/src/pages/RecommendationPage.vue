@@ -186,8 +186,16 @@ onMounted(loadRecommendations);
       </label>
     </div>
 
-    <section v-if="loading" class="rounded-lg border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-600 shadow-sm">
-      추천 결과를 불러오는 중입니다.
+    <section v-if="loading" class="loading-surface">
+      <p class="text-sm font-black text-slate-950">추천 후보를 다시 계산하고 있습니다</p>
+      <p class="mt-1 text-sm text-slate-500">자격, 자금, 지역, 일정을 합산해 우선 검토할 주택형을 찾는 중입니다.</p>
+      <div class="mt-5 grid gap-3">
+        <div v-for="index in 3" :key="index" class="loading-surface-tile">
+          <span class="loading-surface-line w-1/4" />
+          <span class="loading-surface-line mt-4 w-2/3" />
+          <span class="loading-surface-line mt-3 w-full" />
+        </div>
+      </div>
     </section>
 
     <section v-else-if="error" class="rounded-lg border border-amber-100 bg-amber-50 p-6 text-sm font-semibold text-amber-800">
@@ -233,37 +241,57 @@ onMounted(loadRecommendations);
               {{ item.provider }} · {{ item.region }} · {{ item.district }}
             </p>
 
-            <div class="mt-4 grid gap-3 sm:grid-cols-4">
-              <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p class="text-xs text-slate-500">자격</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.eligibility }}/35</p>
+            <div class="score-breakdown mt-4">
+              <div class="score-breakdown-item">
+                <div class="score-breakdown-label">
+                  <span>자격</span>
+                  <strong>{{ item.score_detail.eligibility }}/35</strong>
+                </div>
+                <div class="score-breakdown-bar">
+                  <div class="score-breakdown-fill" :style="{ width: `${Math.min(100, Math.round((item.score_detail.eligibility / 35) * 100))}%` }" />
+                </div>
               </div>
-              <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p class="text-xs text-slate-500">자금</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.funding }}/25</p>
+              <div class="score-breakdown-item">
+                <div class="score-breakdown-label">
+                  <span>자금</span>
+                  <strong>{{ item.score_detail.funding }}/25</strong>
+                </div>
+                <div class="score-breakdown-bar">
+                  <div class="score-breakdown-fill" :style="{ width: `${Math.min(100, Math.round((item.score_detail.funding / 25) * 100))}%` }" />
+                </div>
               </div>
-              <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p class="text-xs text-slate-500">지역</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.location }}/30</p>
+              <div class="score-breakdown-item">
+                <div class="score-breakdown-label">
+                  <span>지역</span>
+                  <strong>{{ item.score_detail.location }}/30</strong>
+                </div>
+                <div class="score-breakdown-bar">
+                  <div class="score-breakdown-fill" :style="{ width: `${Math.min(100, Math.round((item.score_detail.location / 30) * 100))}%` }" />
+                </div>
               </div>
-              <div class="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p class="text-xs text-slate-500">일정</p>
-                <p class="mt-1 font-bold">{{ item.score_detail.schedule }}/10</p>
+              <div class="score-breakdown-item">
+                <div class="score-breakdown-label">
+                  <span>일정</span>
+                  <strong>{{ item.score_detail.schedule }}/10</strong>
+                </div>
+                <div class="score-breakdown-bar">
+                  <div class="score-breakdown-fill" :style="{ width: `${Math.min(100, Math.round((item.score_detail.schedule / 10) * 100))}%` }" />
+                </div>
               </div>
             </div>
 
-            <div v-if="recommendationOptions(item).length" class="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+            <div v-if="recommendationOptions(item).length" class="option-ribbon mt-4 px-4 py-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="text-sm font-bold text-blue-700">우선 검토할 주택형 옵션</p>
                 <span class="text-xs font-semibold text-blue-600">{{ recommendationOptions(item).length }}개 옵션</span>
               </div>
-              <div class="mt-3 grid gap-3 md:grid-cols-3">
+              <div class="mt-2 grid gap-x-5 md:grid-cols-3">
                 <RouterLink
                   v-for="option in recommendationOptions(item)"
                   :key="option.option_id"
                   :to="{ path: `/funding/${item.notice_id}`, query: { option_id: option.option_id } }"
                   @click="saveCurrentSelection(item.notice_id, option.option_id)"
-                  class="block min-w-0 rounded-lg bg-white p-3 text-sm ring-1 ring-blue-100 transition hover:bg-blue-100"
+                  class="option-ribbon-link text-sm transition hover:text-blue-700"
                 >
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
@@ -328,8 +356,28 @@ onMounted(loadRecommendations);
                 </span>
               </div>
             </div>
-            <p class="mt-4 text-sm text-slate-500">예상 분양가</p>
-            <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(representativePrice(item)) }}</p>
+            <div class="mt-4 flex items-end justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm text-slate-500">예상 분양가</p>
+                <p class="mt-1 text-lg font-bold text-slate-950">{{ priceLabel(representativePrice(item)) }}</p>
+              </div>
+              <span
+                v-if="isFixtureNotice(item)"
+                class="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 px-3 text-xs font-bold text-slate-600"
+              >
+                Fixture
+              </span>
+              <a
+                v-else-if="item.source_url"
+                :href="item.source_url"
+                target="_blank"
+                rel="noreferrer"
+                class="inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+              >
+                공식 출처
+                <ExternalLink class="h-3.5 w-3.5" />
+              </a>
+            </div>
             <RouterLink
               :to="detailRoute(item)"
               @click="saveCurrentSelection(item.notice_id, defaultRecommendationOption(item)?.option_id)"
@@ -338,22 +386,6 @@ onMounted(loadRecommendations);
               공식 근거 보기
               <ChevronRight class="h-4 w-4" />
             </RouterLink>
-            <span
-              v-if="isFixtureNotice(item)"
-              class="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-bold text-slate-600"
-            >
-              Fixture
-            </span>
-            <a
-              v-else-if="item.source_url"
-              :href="item.source_url"
-              target="_blank"
-              rel="noreferrer"
-              class="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-            >
-              공식 출처
-              <ExternalLink class="h-4 w-4" />
-            </a>
           </div>
         </div>
       </article>

@@ -66,20 +66,37 @@ def ceil_divide(amount: int, divisor: int) -> int:
 def funding_score_from_plan(notice: dict[str, Any], profile: dict[str, Any], plan: dict[str, Any]) -> int:
     down_payment = int(plan.get("down_payment") or 0)
     if down_payment <= 0:
-        return 10
+        return 6
 
     available = int(plan.get("available_cash") or 0)
     readiness_ratio = min(available / down_payment if down_payment else 1, 1)
     saving = effective_monthly_capacity(profile)
     target_months = max(int(profile.get("target_months", 1)), 1)
-    contract_days = (datetime.fromisoformat(notice["contract_date"]).date() - date.today()).days
+    contract_date = _parse_date(notice.get("contract_date"))
+    contract_days = (contract_date - date.today()).days if contract_date else 0
     shortfall = int(plan.get("shortfall") or 0)
     monthly_target = int(plan.get("monthly_target") or 0)
 
     score = 0
     score += round(readiness_ratio * 10)
     score += 5 if shortfall <= SHORTFALL_LOW_WON else 3 if shortfall <= SHORTFALL_MID_WON else 1
-    score += 7 if monthly_target <= saving else 4 if monthly_target <= saving * 1.5 else 1
+    if monthly_target <= 0:
+        score += 4
+    elif saving <= 0:
+        score += 0
+    else:
+        score += 7 if monthly_target <= saving else 4 if monthly_target <= saving * 1.5 else 1
     score += 3 if target_months >= 12 and contract_days >= 30 else 1
-    return min(score, 25)
+    return max(0, min(score, 25))
 
+
+def _parse_date(value: Any) -> date | None:
+    if isinstance(value, date):
+        return value
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text).date()
+    except ValueError:
+        return None

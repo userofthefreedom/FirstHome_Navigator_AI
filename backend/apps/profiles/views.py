@@ -288,14 +288,23 @@ def register_view(request):
     username = str(request.data.get("username", "")).strip()
     password = str(request.data.get("password", ""))
     email = str(request.data.get("email", "")).strip()
+    name = str(request.data.get("name", "")).strip()
+    birth_year = request.data.get("birth_year")
     if not username or not password:
         return Response({"detail": "username and password are required"}, status=400)
     if len(password) < 8:
         return Response({"detail": "password must be at least 8 characters"}, status=400)
+    if birth_year not in (None, ""):
+        try:
+            birth_year = int(birth_year)
+        except (TypeError, ValueError):
+            return Response({"detail": "birth_year must be a number"}, status=400)
+        if birth_year < 1900 or birth_year > 2100:
+            return Response({"detail": "birth_year is out of range"}, status=400)
 
     try:
         User = get_user_model()
-        user = User.objects.create_user(username=username, email=email, password=password)
+        user = User.objects.create_user(username=username, email=email, password=password, first_name=name[:150])
     except IntegrityError:
         return Response({"detail": "username already exists"}, status=400)
 
@@ -304,6 +313,16 @@ def register_view(request):
     _merge_session_profile(request, user)
     _merge_session_account_state(request, user)
     _merge_client_favorites(request, user)
+    profile = _profile_for_user(user)
+    should_save_profile = False
+    if name:
+        profile.name = name[:40]
+        should_save_profile = True
+    if birth_year not in (None, ""):
+        profile.birth_year = birth_year
+        should_save_profile = True
+    if should_save_profile:
+        profile.save(update_fields=["name", "birth_year", "updated_at"])
     return Response(
         {
             "user": _serialize_user(user),

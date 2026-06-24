@@ -209,6 +209,53 @@ async function auditVisibleUi(page, theme) {
       }))
       .slice(0, 30);
 
+    const subtleSurfaces = [...document.querySelectorAll('button, a, span, input, select, textarea, [role="button"]')]
+      .filter((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width < 28 || rect.width > 760 || rect.height < 16 || rect.height > 92) return false;
+        if (rect.bottom < 0 || rect.top > viewportHeight * 1.5) return false;
+        const text = shortText(el);
+        if (!text && !['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) return false;
+        const style = getComputedStyle(el);
+        const parsedBg = parseColor(style.backgroundColor);
+        if (!parsedBg || parsedBg.alpha < 0.66) return false;
+        const bg = parsedBg.rgb;
+        const parentBg = el.parentElement ? effectiveBackground(el.parentElement) : null;
+        const border = parseRgb(style.borderTopColor);
+        if (!parentBg || !border) return false;
+        const bgGap = Math.abs(lum(bg) - lum(parentBg));
+        const borderGap = Math.abs(lum(border) - lum(bg));
+        const hasShadow = style.boxShadow && style.boxShadow !== 'none';
+        const hasRealBorder = Number.parseFloat(style.borderTopWidth) >= 1 && borderGap >= 0.028;
+        return bgGap < 0.035 && !hasRealBorder && !hasShadow;
+      })
+      .map((el) => ({
+        text: shortText(el) || el.getAttribute('placeholder') || el.getAttribute('aria-label') || el.tagName.toLowerCase(),
+        tag: el.tagName.toLowerCase(),
+        className: String(el.className || '').slice(0, 180),
+      }))
+      .slice(0, 30);
+
+    const fontRiskText = [...document.querySelectorAll('body *')]
+      .filter((el) => {
+        const text = shortText(el);
+        if (!/[가-힣]/.test(text)) return false;
+        const rect = el.getBoundingClientRect();
+        if (rect.width < 40 || rect.height < 14 || rect.bottom < 0 || rect.top > viewportHeight * 1.6) return false;
+        const style = getComputedStyle(el);
+        const size = Number.parseFloat(style.fontSize);
+        const weight = Number.parseInt(style.fontWeight, 10) || 400;
+        return size >= 13 && size <= 22 && weight >= 660;
+      })
+      .map((el) => ({
+        text: shortText(el),
+        tag: el.tagName.toLowerCase(),
+        fontSize: getComputedStyle(el).fontSize,
+        fontWeight: getComputedStyle(el).fontWeight,
+        className: String(el.className || '').slice(0, 180),
+      }))
+      .slice(0, 30);
+
     const darkIslands = activeTheme === 'light'
       ? [...document.querySelectorAll('aside, header, section, article, div')]
         .filter((el) => {
@@ -242,8 +289,34 @@ async function auditVisibleUi(page, theme) {
       }))
       .slice(0, 30);
 
-    return { textIssues, paleBoundaries, darkIslands, tinyOrInvisibleText };
+    return { textIssues, paleBoundaries, subtleSurfaces, fontRiskText, darkIslands, tinyOrInvisibleText };
   }, theme);
+}
+
+async function layoutAudit(page) {
+  return page.evaluate(async () => {
+    function waitFrame() {
+      return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+    const aside = document.querySelector('aside');
+    if (!aside || getComputedStyle(aside).display === 'none') return { layoutIssues: [] };
+    const before = aside.getBoundingClientRect();
+    const scrollTarget = Math.min(900, Math.max(0, document.documentElement.scrollHeight - window.innerHeight));
+    window.scrollTo(0, scrollTarget);
+    await waitFrame();
+    const after = aside.getBoundingClientRect();
+    window.scrollTo(0, 0);
+    await waitFrame();
+    const issues = [];
+    if (scrollTarget > 120 && Math.abs(after.top) > 2) {
+      issues.push({
+        text: 'desktop sidebar is not pinned to viewport while scrolling',
+        beforeTop: Number(before.top.toFixed(1)),
+        afterTop: Number(after.top.toFixed(1)),
+      });
+    }
+    return { layoutIssues: issues };
+  });
 }
 
 async function hoverAudit(page, theme, routeKey) {
@@ -344,6 +417,7 @@ for (const theme of ['dark', 'light']) {
         item.h1 = await page.locator('h1').first().textContent({ timeout: 1200 }).catch(() => '');
         Object.assign(item, await auditVisibleUi(page, theme));
         Object.assign(item, await hoverAudit(page, theme, `${scenario.key}_${route.key}`));
+        Object.assign(item, await layoutAudit(page));
         const fileName = `${theme}_${scenario.key}_${route.key}.png`;
         await page.screenshot({ path: path.join(shotDir, fileName), fullPage: true });
         item.screenshot = fileName;
@@ -380,9 +454,12 @@ const rows = results
     route: item.scenario ? `${item.scenario}_${item.route}` : item.route,
     weak: item.textIssues?.length || 0,
     pale: item.paleBoundaries?.length || 0,
+    subtle: item.subtleSurfaces?.length || 0,
+    font: item.fontRiskText?.length || 0,
     dark: item.darkIslands?.length || 0,
     tiny: item.tinyOrInvisibleText?.length || 0,
     hover: item.hoverIssues?.length || 0,
+    layout: item.layoutIssues?.length || 0,
     error: item.error || '',
   }));
 
@@ -395,9 +472,9 @@ await fs.writeFile(
     `- Generated: ${summary.generatedAt}`,
     `- Browser: ${summary.browserExecutable}`,
     '',
-    '| Theme | Route | Weak Text | Pale Boundaries | Dark Islands | Tiny Text | Hover Issues | Error |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |',
-    ...rows.map((row) => `| ${row.theme} | ${row.route} | ${row.weak} | ${row.pale} | ${row.dark} | ${row.tiny} | ${row.hover} | ${row.error} |`),
+    '| Theme | Route | Weak Text | Pale Boundaries | Subtle Surfaces | Font Risk | Dark Islands | Tiny Text | Hover Issues | Layout Issues | Error |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    ...rows.map((row) => `| ${row.theme} | ${row.route} | ${row.weak} | ${row.pale} | ${row.subtle} | ${row.font} | ${row.dark} | ${row.tiny} | ${row.hover} | ${row.layout} | ${row.error} |`),
   ].join('\n'),
   'utf8',
 );
@@ -405,10 +482,13 @@ await fs.writeFile(
 const totals = rows.reduce((acc, row) => {
   acc.weak += row.weak;
   acc.pale += row.pale;
+  acc.subtle += row.subtle;
+  acc.font += row.font;
   acc.dark += row.dark;
   acc.tiny += row.tiny;
   acc.hover += row.hover;
+  acc.layout += row.layout;
   return acc;
-}, { weak: 0, pale: 0, dark: 0, tiny: 0, hover: 0 });
+}, { weak: 0, pale: 0, subtle: 0, font: 0, dark: 0, tiny: 0, hover: 0, layout: 0 });
 
 console.log(JSON.stringify({ outDir, screenshots: path.relative(process.cwd(), shotDir), totals }, null, 2));

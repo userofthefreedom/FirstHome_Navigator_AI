@@ -420,8 +420,21 @@ onMounted(loadFunding);
 
 <template>
   <div class="space-y-5">
-    <section v-if="loading" class="rounded-lg border border-slate-200 bg-white p-6 text-sm font-semibold text-slate-600 shadow-sm">
-      자금 로드맵을 불러오는 중입니다.
+    <section v-if="loading" class="loading-surface">
+      <p class="text-sm font-black text-slate-950">자금 로드맵을 계산하고 있습니다</p>
+      <p class="mt-1 text-sm text-slate-500">계약금, 중도금, 잔금 흐름과 대출 후보를 함께 정리합니다.</p>
+      <div class="mt-5 grid gap-3 md:grid-cols-2">
+        <div class="loading-surface-tile">
+          <span class="loading-surface-line w-1/3" />
+          <span class="loading-surface-line mt-5 w-full" />
+          <span class="loading-surface-line mt-3 w-5/6" />
+        </div>
+        <div class="loading-surface-tile">
+          <span class="loading-surface-line w-1/4" />
+          <span class="loading-surface-line mt-5 w-full" />
+          <span class="loading-surface-line mt-3 w-2/3" />
+        </div>
+      </div>
     </section>
 
     <section v-else-if="error" class="rounded-lg border border-amber-100 bg-amber-50 p-6 text-sm font-semibold text-amber-800">
@@ -505,29 +518,29 @@ onMounted(loadFunding);
             </div>
           </div>
         </div>
-        <div class="mt-5 grid gap-3 md:grid-cols-4">
-          <div class="rounded-lg bg-slate-50 p-4">
+        <div class="mt-5 grid border-y border-slate-200 md:grid-cols-4 md:divide-x md:divide-slate-200">
+          <div class="p-4">
             <p class="flex items-center gap-2 text-xs font-bold text-slate-500">
               <Landmark class="h-4 w-4" />
               예상 분양가
             </p>
             <p class="mt-2 text-lg font-bold text-slate-950">{{ priceLabel(fundingPlan.price) }}</p>
           </div>
-          <div class="rounded-lg bg-slate-50 p-4">
+          <div class="p-4">
             <p class="flex items-center gap-2 text-xs font-bold text-slate-500">
               <WalletCards class="h-4 w-4" />
               계약금
             </p>
             <p class="mt-2 text-lg font-bold text-slate-950">{{ formatMoney(fundingPlan.down_payment) }}</p>
           </div>
-          <div class="rounded-lg bg-slate-50 p-4">
+          <div class="p-4">
             <p class="flex items-center gap-2 text-xs font-bold text-slate-500">
               <PiggyBank class="h-4 w-4" />
               보유 현금
             </p>
             <p class="mt-2 text-lg font-bold text-slate-950">{{ formatMoney(displayAvailableCash) }}</p>
           </div>
-          <div class="rounded-lg bg-blue-50 p-4">
+          <div class="bg-blue-50/80 p-4">
             <p class="flex items-center gap-2 text-xs font-bold text-blue-700">
               <Calculator class="h-4 w-4" />
               남은 부족액
@@ -725,9 +738,9 @@ onMounted(loadFunding);
             </div>
           </div>
         </div>
-        <div class="mt-5 divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200">
-          <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="grid gap-3 bg-white p-4 text-sm md:grid-cols-[64px_120px_minmax(0,1fr)_160px] md:items-start">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 font-bold text-slate-700">
+        <div class="schedule-timeline mt-5">
+          <div v-for="(item, index) in fundingPlan.timeline" :key="`${item.label}-${index}`" class="schedule-timeline-item grid gap-3 text-sm md:grid-cols-[42px_120px_minmax(0,1fr)_160px] md:items-start">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
               {{ index + 1 }}
             </div>
             <span class="inline-flex w-fit rounded-md px-2 py-1 text-xs font-bold" :class="paymentTypeClass(item.payment_type)">

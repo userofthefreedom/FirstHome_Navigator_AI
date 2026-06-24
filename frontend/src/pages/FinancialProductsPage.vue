@@ -76,7 +76,17 @@ onMounted(loadProducts);
       </div>
     </section>
 
-    <section v-if="loading" class="rounded-lg border border-slate-200 bg-white p-6 text-sm font-bold text-slate-500">상품을 불러오는 중입니다.</section>
+    <section v-if="loading" class="loading-surface">
+      <p class="text-sm font-black text-slate-950">금융상품을 비교할 준비를 하고 있습니다</p>
+      <p class="mt-1 text-sm text-slate-500">금리, 기간, 자금 로드맵 적합도를 함께 정리하는 중입니다.</p>
+      <div class="mt-5 grid gap-3 lg:grid-cols-3">
+        <div v-for="index in 6" :key="index" class="loading-surface-tile">
+          <span class="loading-surface-line w-1/3" />
+          <span class="loading-surface-line mt-4 w-2/3" />
+          <span class="loading-surface-line mt-3 w-full" />
+        </div>
+      </div>
+    </section>
     <section v-else-if="error" class="rounded-lg border border-amber-100 bg-amber-50 p-6 text-sm font-bold text-amber-800">{{ error }}</section>
     <section v-else class="grid gap-4 xl:grid-cols-3">
       <RouterLink
