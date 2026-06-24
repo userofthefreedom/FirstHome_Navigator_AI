@@ -1,0 +1,13 @@
+{
+  "name": "firsthome-beta-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "beta:complete": "node beta-complete.mjs",
+    "beta:flow": "node beta-user-flow.mjs",
+    "beta:load": "node beta-load.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.56.0"
+  }
+}
