@@ -31,6 +31,51 @@ const PAGE_TARGETS = [
     },
 ];
 
+const FINANCE_PAGE_TARGETS = [
+    {
+        title: '금융 광장',
+        description: '금융상품, 경제 NOW, 청약 아고라로 이동합니다.',
+        route: '/finance/products',
+        keywords: ['금융', '금융광장', '금융 광장', '상품', '예금', '적금', '경제', 'now', '아고라', '커뮤니티'],
+    },
+    {
+        title: '금융상품',
+        description: '예금, 적금, 대출 상품을 비교하고 가입 후보로 저장합니다.',
+        route: '/finance/products',
+        keywords: ['금융상품', '금융 상품', '예금', '정기예금', '적금', '대출', '은행', '금리', '상품 비교', '가입상품'],
+    },
+    {
+        title: '경제 NOW',
+        description: '부동산 거래, 환율, 금리, 지수, 금과 은 가격을 확인합니다.',
+        route: '/finance/economy-now',
+        keywords: ['경제 now', '경제now', '경제', 'now', '부동산', '실거래가', '환율', '달러', '금리', '기준금리', 'kospi', 'kosdaq', '금', '은'],
+    },
+    {
+        title: '청약 아고라',
+        description: '청약 영상과 게시판 글, 댓글을 확인합니다.',
+        route: '/finance/agora',
+        keywords: ['청약아고라', '청약 아고라', '아고라', '커뮤니티', '게시판', '글쓰기', '댓글', '영상', '유튜브', 'youtube'],
+    },
+    {
+        title: 'MY PAGE',
+        description: '관심 공고, 관심 옵션, 가입 금융상품을 한 곳에서 관리합니다.',
+        route: '/my-page',
+        keywords: ['my page', 'mypage', '마이페이지', '마이 페이지', 'my', 'page', '관심', '저장', '가입상품', '내 정보'],
+    },
+    {
+        title: '자금 로드맵',
+        description: '선택한 공고의 계약금 부족액, 월 목표, 대출 후보를 확인합니다.',
+        route: '/funding',
+        keywords: ['자금', '로드맵', '자금로드맵', '계약금', '부족액', '월 목표', '대출', '자금 계획'],
+    },
+    {
+        title: 'AI 코치',
+        description: '선택한 공고 기준으로 이번 주 행동 순서와 확인 항목을 정리합니다.',
+        route: '/ai-coach',
+        keywords: ['ai', 'ai코치', 'ai 코치', '코치', '할 일', '행동 순서', '확인 항목', '서류'],
+    },
+];
+
 const QUICK_ACTIONS = [
     {
         title: '선택 공고 자금 로드맵',
@@ -143,10 +188,31 @@ function noticeResults(query, recommendations) {
         }));
 }
 
+function pageTargetScore(target, query) {
+    const normalizedQuery = normalize(query);
+    const title = normalize(target.title);
+    const description = normalize(target.description);
+    const keywords = target.keywords.map((keyword) => normalize(keyword));
+    let score = 0;
+    if (title === normalizedQuery)
+        score += 120;
+    else if (title.includes(normalizedQuery))
+        score += title.startsWith(normalizedQuery) ? 90 : 75;
+    if (keywords.some((keyword) => keyword === normalizedQuery))
+        score += 65;
+    else if (keywords.some((keyword) => keyword.includes(normalizedQuery)))
+        score += 40;
+    if (description.includes(normalizedQuery))
+        score += 25;
+    return score;
+}
+
 function pageResults(query) {
-    return PAGE_TARGETS
-        .filter((target) => includesTerm([target.title, target.description, ...target.keywords], query))
-        .map((target) => ({
+    return [...PAGE_TARGETS, ...FINANCE_PAGE_TARGETS]
+        .map((target) => ({ target, score: pageTargetScore(target, query) }))
+        .filter((row) => row.score > 0)
+        .sort((left, right) => right.score - left.score)
+        .map(({ target }) => ({
             id: `page-${target.route}`,
             type: '화면',
             title: target.title,

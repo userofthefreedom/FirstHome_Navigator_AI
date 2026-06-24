@@ -167,7 +167,6 @@ async function createBrowser() {
 async function newContext(browser, viewport = { width: 1440, height: 960 }) {
   return browser.newContext({
     viewport,
-    extraHTTPHeaders: { 'ngrok-skip-browser-warning': 'true' },
   });
 }
 
@@ -189,7 +188,7 @@ async function saveProfile(page, profile) {
   await page.evaluate(async (payload) => {
     const response = await fetch('/api/profile', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(payload),
     });
@@ -226,9 +225,6 @@ async function gotoPage(page, route, scenario) {
   page.off('requestfailed', onFailed);
   page.off('pageerror', onPageError);
 
-  if (bodyText.includes('ERR_NGROK_6024') || bodyText.includes('You are about to visit')) {
-    issue('P0', route.key, 'ngrok 경고 페이지가 노출됨', { scenario, path: route.path });
-  }
   if (!bodyText.trim()) {
     issue('P0', route.key, '본문 텍스트가 비어 있음', { scenario, path: route.path });
   }

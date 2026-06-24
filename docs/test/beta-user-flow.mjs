@@ -56,9 +56,6 @@ async function createBrowser() {
 async function newContext(browser) {
   return browser.newContext({
     viewport: { width: 1440, height: 960 },
-    extraHTTPHeaders: {
-      'ngrok-skip-browser-warning': 'true',
-    },
   });
 }
 
@@ -103,9 +100,6 @@ async function gotoAndAudit(page, route, scenario) {
   const shotPath = path.join(shotDir, `${scenario}_${route.key}.png`);
   await page.screenshot({ path: shotPath, fullPage: true }).catch(() => undefined);
 
-  if (bodyText.includes('ERR_NGROK_6024') || bodyText.includes('You are about to visit')) {
-    issue('P0', route.key, 'ngrok 경고 페이지가 노출됨', { scenario, path: route.path });
-  }
   if (!bodyText.trim()) {
     issue('P0', route.key, '본문 텍스트가 비어 있음', { scenario, path: route.path });
   }
@@ -168,13 +162,9 @@ async function registerThroughUi(page) {
 
 async function saveProfileThroughApi(page) {
   await page.evaluate(async () => {
-    const headers = {
-      'Content-Type': 'application/json',
-      'ngrok-skip-browser-warning': 'true',
-    };
     const response = await fetch('/api/profile', {
       method: 'PUT',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({
         name: '베타사용자',

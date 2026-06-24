@@ -110,7 +110,6 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = (
     *default_headers,
     "x-firsthome-client-id",
-    "ngrok-skip-browser-warning",
 )
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",

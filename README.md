@@ -625,29 +625,39 @@ CSRF_COOKIE_SECURE=false
 
 - `frontend/.env`의 `VITE_API_BASE_URL`은 `/api`로 둡니다.
 - 백엔드와 프론트 서버는 모두 켜져 있어야 합니다.
-- 이 프로젝트는 ngrok 무료 경고 페이지 우회를 위해 API 요청에 `ngrok-skip-browser-warning` 헤더를 자동으로 붙입니다.
 
 ### 8.1.5 발표 직전 캐시 워밍업
 
-발표 직전에는 백엔드와 프론트 preview 서버, ngrok 터널을 모두 켠 뒤 아래 요청을 한 번 실행해 주요 캐시를 데웁니다. 첫 접속자가 추천 계산과 AI smoke check를 모두 떠안지 않게 하는 절차입니다.
+발표 직전에는 주요 API를 한 번씩 미리 호출해 캐시를 데웁니다. 첫 발표 관객이나 심사위원이 접속했을 때 추천 계산, 금융상품 추천, 시장 데이터 조회, YouTube 기본 검색, AI 챗봇 첫 응답이 한꺼번에 시작되지 않도록 하는 절차입니다.
+
+이 작업은 **백엔드 터미널이나 프론트 터미널에 이어서 입력하지 말고, 새 터미널 하나를 더 열어 실행**하는 것을 권장합니다. 기존 3개 터미널은 계속 켜 둡니다.
+
+| 터미널 | 상태 |
+|---|---|
+| 1 | `backend`에서 Waitress 백엔드 실행 중 |
+| 2 | `frontend`에서 Vite preview 또는 dev 서버 실행 중 |
+| 3 | `ngrok http 5173` 실행 중 |
+| 4 | 아래 워밍업 `curl` 명령 실행 |
+
+즉, 워밍업 터미널은 서버를 실행하는 터미널이 아니라 **이미 켜진 ngrok 공개 주소로 요청만 보내는 별도 확인용 터미널**입니다. Git Bash 기준으로 프로젝트 어느 폴더에서 실행해도 되지만, 헷갈리지 않게 프로젝트 루트에서 실행하는 것을 권장합니다.
 
 Git Bash 기준:
 
 ```bash
 BASE_URL="https://본인-ngrok-주소"
 
-curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/dashboard" > /dev/null
-curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/recommendations/housing" > /dev/null
-curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/recommendations/products" > /dev/null
-curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/market/summary" > /dev/null
-curl -sS -H "ngrok-skip-browser-warning: true" "$BASE_URL/api/videos/default" > /dev/null
-curl -sS -H "ngrok-skip-browser-warning: true" \
+curl -sS "$BASE_URL/api/dashboard" > /dev/null
+curl -sS "$BASE_URL/api/recommendations/housing" > /dev/null
+curl -sS "$BASE_URL/api/recommendations/products" > /dev/null
+curl -sS "$BASE_URL/api/market/summary" > /dev/null
+curl -sS "$BASE_URL/api/videos/default" > /dev/null
+curl -sS \
   -H "Content-Type: application/json" \
   -d '{"message":"이 서비스 화면 사용법을 한 문단으로 알려줘.","page_context":{"type":"home","title":"대시보드"}}' \
   "$BASE_URL/api/ai/chat" > /dev/null
 ```
 
-워밍업 후 브라우저에서 `BASE_URL`을 새로고침하고, 청약 지도와 AI 챗봇이 정상 응답하는지 한 번만 확인합니다.
+명령이 아무 메시지 없이 끝나면 정상입니다. 문제가 있으면 `curl`이 연결 실패나 4xx/5xx 응답을 출력합니다. 워밍업 후 브라우저에서 `BASE_URL`을 새로고침하고, 청약 지도와 AI 챗봇이 정상 응답하는지 한 번만 확인합니다.
 
 ### 8.1.6 종료 방법
 

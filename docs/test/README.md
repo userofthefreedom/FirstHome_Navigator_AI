@@ -5,7 +5,7 @@
 ## 전제
 
 - 기본 대상 URL: `https://polka-kennel-decorated.ngrok-free.dev`
-- ngrok 무료 경고 페이지는 브라우저 컨텍스트에 `ngrok-skip-browser-warning: true` 헤더를 넣어 우회한다.
+- 유료 ngrok 도메인을 사용하므로 별도 경고 페이지 우회 헤더 없이 실제 사용자 접속 조건으로 검증한다.
 - 내부 회귀 테스트가 아니라 실제 화면을 열고 버튼, 폼, API 응답, 콘솔 오류, 로딩 시간, 스크린샷을 기록한다.
 
 ## 설치

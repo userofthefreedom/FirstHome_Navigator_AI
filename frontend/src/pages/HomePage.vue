@@ -433,7 +433,7 @@ onMounted(loadDashboard);
               공고를 찾고 끝나는 서비스가 아니라, 내 조건에 맞는 후보를 고르고 계약금 부족액과 이번 주 행동까지 이어서 확인하는 준비 화면입니다.
             </p>
             <div class="relative mt-7 grid gap-5 sm:grid-cols-4">
-              <div class="absolute left-5 right-5 top-5 hidden h-px bg-slate-200 sm:block" />
+              <div class="absolute left-5 right-5 top-5 hidden h-[1.5px] bg-slate-200 sm:block" />
               <div v-for="item in guestHighlights" :key="item.label" class="relative min-w-0">
                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-700 shadow-sm">
                   <component :is="item.icon" class="h-5 w-5" />

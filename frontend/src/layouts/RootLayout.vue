@@ -165,7 +165,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-950">
     <aside class="hidden bg-slate-950 text-white lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:block lg:w-[260px]">
-      <div class="flex h-screen flex-col lg:relative lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:top-16 lg:after:w-px lg:after:bg-white/10">
+      <div class="flex h-screen flex-col lg:relative lg:after:absolute lg:after:bottom-0 lg:after:right-0 lg:after:top-0 lg:after:w-px lg:after:bg-white/10">
         <div class="flex h-16 items-center border-b border-white/10 px-6">
           <RouterLink to="/" class="flex min-w-0 items-center gap-3 rounded-lg transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-300">
             <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500 text-white shadow-lg shadow-blue-500/25">
@@ -289,20 +289,20 @@ onBeforeUnmount(() => {
           <div class="ml-auto flex items-center gap-2">
             <RouterLink
               to="/profile"
-              class="hidden min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-blue-300 hover:bg-slate-50 sm:flex"
+              class="hidden min-w-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm transition hover:border-blue-300 hover:bg-slate-50 sm:flex"
               :class="authStore.user.is_authenticated ? 'max-w-[300px]' : 'max-w-[360px]'"
             >
               <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-900 text-white">
                 <UserRound class="h-4 w-4" />
               </div>
-              <div class="min-w-0">
+              <div class="min-w-0 leading-tight">
                 <div class="flex min-w-0 items-center gap-2">
                   <p class="truncate text-sm font-semibold">{{ displayName }}</p>
                   <span class="shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-700">
                     {{ formatMoney(profileStore.profile.asset) }}
                   </span>
                 </div>
-                <p class="truncate text-xs font-semibold text-slate-600">
+                <p class="mt-0.5 truncate text-[11px] font-semibold text-slate-600">
                   {{ profileStatus }} · {{ profileStore.profile.preferred_regions.join(', ') || '희망 지역 확인 중' }}
                 </p>
               </div>

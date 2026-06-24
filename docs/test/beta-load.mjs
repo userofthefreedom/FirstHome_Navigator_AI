@@ -48,7 +48,6 @@ async function timed(label, fn) {
 async function runSession(browser, index) {
   const context = await browser.newContext({
     viewport: { width: 1280, height: 820 },
-    extraHTTPHeaders: { 'ngrok-skip-browser-warning': 'true' },
   });
   const page = await context.newPage();
   const failures = [];
@@ -66,7 +65,6 @@ async function runSession(browser, index) {
       const response = await page.goto(`${baseUrl}${routePath}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
       const text = await page.locator('body').innerText({ timeout: 5000 });
-      if (text.includes('ERR_NGROK_6024')) throw new Error('ngrok warning shown');
       const status = response?.status?.() ?? null;
       if (status && status >= 400) throw new Error(`http ${status}`);
       return { status, text_length: text.length };
@@ -74,7 +72,7 @@ async function runSession(browser, index) {
   }
 
   steps.push(await timed('api:recommendations', () => page.evaluate(async () => {
-    const response = await fetch('/api/recommendations/housing', { headers: { 'ngrok-skip-browser-warning': 'true' }, credentials: 'include' });
+    const response = await fetch('/api/recommendations/housing', { credentials: 'include' });
     if (!response.ok) throw new Error(`recommendations ${response.status}`);
     return response.status;
   })));
@@ -82,7 +80,7 @@ async function runSession(browser, index) {
   steps.push(await timed('api:chat', () => page.evaluate(async () => {
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({
         message: '이 화면은 어떻게 쓰면 돼?',
