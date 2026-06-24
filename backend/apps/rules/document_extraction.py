@@ -14,7 +14,10 @@ REQUIRED_DOCUMENT_CANDIDATES = (
     ("당첨자 본인 신분증", ("당첨자 본인 신분증", "신분증")),
     ("주민등록표등본", ("주민등록표등본", "주민등록등본")),
     ("주민등록표초본", ("주민등록표초본", "주민등록초본")),
-    ("개인정보 수집·이용 및 제3자 제공 동의서", ("개인정보 수집", "제3자 제공동의서", "제3자 제공 동의서")),
+    (
+        "개인정보 수집·이용 및 제3자 제공 동의서",
+        ("개인정보 수집", "개인정보수집", "제3자 제공동의서", "제3자 제공 동의서"),
+    ),
     ("가족관계증명서", ("가족관계증명서",)),
     ("혼인관계증명서", ("혼인관계증명서",)),
     ("출입국에 관한 사실증명", ("출입국에 관한 사실", "출입국사실증명")),
@@ -23,15 +26,18 @@ REQUIRED_DOCUMENT_CANDIDATES = (
     ("입양관계증명서", ("입양관계증명서", "친양자 입양관계")),
     ("장애인 등록증", ("장애인 등록증", "장애인등록증", "복지카드")),
     ("국내거소신고증 또는 외국인등록증", ("국내거소신고증", "외국인등록증")),
-    ("소득세납부 입증서류", ("소득세납부 입증서류",)),
+    ("소득세납부 입증서류", ("소득세납부 입증서류", "소득세 납부 입증서류")),
     ("소득금액증명원", ("소득금액증명원", "소득금액증명")),
-    ("납부내역증명서", ("납부내역증명서",)),
+    ("납부내역증명서", ("납부내역증명서", "납부내역 증명서")),
     ("근로소득원천징수영수증", ("근로소득원천징수영수증",)),
     ("건강보험자격득실확인서", ("건강보험자격득실확인서",)),
     ("사업자등록증명", ("사업자등록증명",)),
     ("한부모가족증명서", ("한부모가족증명서",)),
     ("계약금 입금 확인서류", ("계약금 입금 확인서류",)),
-    ("주택취득 자금 조달 및 입주계획서", ("주택취득 자금 조달", "입주계획서")),
+    (
+        "주택취득 자금 조달 및 입주계획서",
+        ("주택취득 자금 조달", "주택 취득 자금 조달", "자금조달계획서", "입주계획서"),
+    ),
     ("위임장", ("위임장",)),
     ("인감증명서", ("인감증명서",)),
     ("본인서명사실확인서", ("본인서명사실확인서",)),
@@ -165,18 +171,11 @@ def best_checklist_evidence(
         needle = next((phrase for phrase in preferred_phrases if phrase in text), None)
         if needle is None:
             needle = max(keywords, key=lambda keyword: text.count(keyword))
-        confidence = 0.62
-        confidence += min(0.16, phrase_score * 0.04)
-        confidence += min(0.12, keyword_score * 0.008)
-        if page.page_no > 4:
-            confidence += 0.03
-        if "기준" in text or "판정" in text:
-            confidence += 0.02
         confidence = checklist_confidence_from_evidence(
             keyword_score=keyword_score,
             phrase_score=phrase_score,
             page_no=page.page_no,
-            has_definition_marker=confidence > 0.62,
+            has_definition_marker=("기준" in text or "판정" in text),
         )
         candidate = {
             "page_no": page.page_no,

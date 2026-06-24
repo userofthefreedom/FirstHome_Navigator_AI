@@ -2,18 +2,23 @@ from __future__ import annotations
 
 import re
 
-from apps.rules.safety import BLOCKED_PHRASES, MAX_ACTION_LENGTH, MAX_REPLY_LENGTH, REPLACEMENTS
+from apps.rules.safety import BLOCKED_PHRASES, MAX_ACTION_LENGTH, MAX_REPLY_LENGTH, REGEX_REPLACEMENTS, REPLACEMENTS
 
 
 def sanitize_text(value: str) -> str:
     next_value = re.sub(r"\s+", " ", value or "").strip()
     for phrase, replacement in REPLACEMENTS.items():
         next_value = next_value.replace(phrase, replacement)
+    for pattern, replacement in REGEX_REPLACEMENTS:
+        next_value = re.sub(pattern, replacement, next_value)
     return next_value
 
 
 def safety_flags(value: str) -> list[str]:
-    return [phrase for phrase in BLOCKED_PHRASES if phrase in (value or "")]
+    text = value or ""
+    flags = [phrase for phrase in BLOCKED_PHRASES if phrase in text]
+    flags.extend(pattern for pattern, _replacement in REGEX_REPLACEMENTS if re.search(pattern, text))
+    return flags
 
 
 def limit_text(value: str, *, max_length: int = MAX_REPLY_LENGTH) -> str:

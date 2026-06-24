@@ -9,6 +9,7 @@ from django.test import TestCase, override_settings
 
 from apps.ai_coach.models import AiChatLog, AiCoachPlan, AiExtractionResult
 from apps.ai_coach.services.ai_client import AiProviderUnavailable, chat_completion
+from apps.ai_coach.services.safety_filter import safety_flags, sanitize_text
 from apps.notice_docs.models import EligibilityChecklist, ExtractionEvidence, HousingUnitOption, NoticeDocument, NoticeExtraction, PaymentSchedule
 from apps.notices.models import HousingNotice
 
@@ -683,3 +684,14 @@ class AiCoachChatApiTests(TestCase):
         self.assertNotIn("신청 가능합니다", reply)
         self.assertNotIn("당첨됩니다", reply)
         self.assertIn("공식", reply)
+
+    def test_safety_filter_replaces_variant_confirmed_expressions(self):
+        text = "이 공고는 신청이 가능하고 대출도 가능합니다. 당첨 가능성이 높아요."
+
+        sanitized = sanitize_text(text)
+        flags = safety_flags(text)
+
+        self.assertIn("신청 가능 여부는 공식 공고 확인이 필요합니다", sanitized)
+        self.assertIn("대출 가능 여부는 금융기관 확인이 필요합니다", sanitized)
+        self.assertIn("당첨 가능성은 확정할 수 없습니다", sanitized)
+        self.assertGreaterEqual(len(flags), 3)

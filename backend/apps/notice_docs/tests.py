@@ -272,7 +272,8 @@ class NoticeDocsMockExtractionTests(TestCase):
                 page_no=32,
                 text=(
                     "계약 시 구비서류\n"
-                    "계약금 입금 확인서류 주택취득 자금 조달 및 입주계획서 위임장 인감증명서 본인서명사실확인서"
+                    "계약금 입금 확인서류 주택 취득 자금 조달 및 입주계획서 위임장 인감증명서 본인서명사실확인서\n"
+                    "소득세 납부 입증서류 납부내역 증명서 자금조달계획서"
                 ),
             ),
         ]
@@ -285,6 +286,9 @@ class NoticeDocsMockExtractionTests(TestCase):
         self.assertIn("주민등록표초본", documents)
         self.assertIn("개인정보 수집·이용 및 제3자 제공 동의서", documents)
         self.assertIn("계약금 입금 확인서류", documents)
+        self.assertIn("소득세납부 입증서류", documents)
+        self.assertIn("납부내역증명서", documents)
+        self.assertIn("주택취득 자금 조달 및 입주계획서", documents)
 
     @patch("apps.notice_docs.services.analysis.parse_pdf_text")
     @patch("apps.notice_docs.services.analysis.discover_documents_for_notice")
