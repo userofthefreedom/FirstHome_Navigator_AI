@@ -1,0 +1,288 @@
+FirstHome Navigator AI 전체 서비스 아키텍처
+작성일: 2026-06-26
+
+1. 서비스 개요
+
+FirstHome Navigator AI는 첫 집 마련을 준비하는 사용자가 청약 공고, 주택형 옵션, 계약금과 잔금 흐름, 부족 자금, 공식 공고문 근거, 금융상품, 정책, 지도, AI 코칭을 한 서비스 안에서 확인할 수 있도록 구성된 웹 서비스다.
+
+서비스의 중심 흐름은 다음과 같다.
+
+사용자 조건 입력
+-> 청약 공고 추천
+-> 공고 상세 및 주택형 옵션 확인
+-> 자금 로드맵 계산
+-> AI 코치로 다음 행동 정리
+-> 관심 공고/옵션/가입 금융상품 저장
+-> MY PAGE에서 저장 내역과 계정 기준 상태 확인
+
+부가 흐름으로 청약 지도, 금융상품 비교, 경제 NOW, 청약 아고라, 전체 화면 AI 챗봇이 연결된다.
+
+
+2. 전체 시스템 구성
+
+프론트엔드
+- Vue 3 기반 SPA
+- Vite 개발 서버 및 빌드 산출물 기반 배포
+- Vue Router로 화면 라우팅
+- Pinia로 인증/프로필 상태 관리
+- Axios 기반 API 클라이언트
+- light/dark theme 지원
+
+백엔드
+- Django 5 + Django REST Framework
+- SQLite 기본 DB
+- drf-spectacular 기반 Swagger/OpenAPI 문서
+- 세션 기반 인증
+- 앱 단위 도메인 분리
+- 외부 API 수집 데이터와 fixture 보강 데이터 병행 사용
+- rules 모듈에서 추천, 자금, 적합도, 안전 필터 등 핵심 판단 규칙 관리
+
+외부 연동
+- LH/공공데이터 계열 청약 공고 데이터
+- 금융감독원 금융상품 API
+- 청년정책 API
+- Kakao Map JavaScript SDK 및 Kakao Local REST API
+- YouTube 검색 API
+- 한국은행/환율/원자재/시장 지표 계열 API
+- SSAFY GMS OpenAI 호환 API 기반 AI 기능
+
+
+3. 프론트엔드 화면 구조
+
+공통 레이아웃
+- frontend/src/layouts/RootLayout.vue
+- 좌측 네비게이션, 상단 검색/계정 영역, 테마 전환, 모바일 대응, 전체 화면 AI 챗봇 진입점을 담당한다.
+
+라우터
+- frontend/src/router/index.js
+- 주요 경로는 다음과 같다.
+
+/                         대시보드
+/profile                  조건 입력
+/recommendations          추천 청약 목록
+/map                      청약 지도
+/notices/:noticeId        공고 상세
+/funding/:noticeId?       자금 로드맵
+/ai-coach/:noticeId?      AI 코치
+/favorites                관심 공고/옵션
+/finance/products         금융상품 목록
+/finance/products/:id     금융상품 상세
+/finance/economy-now      경제 NOW
+/finance/agora            청약 아고라
+/my-page                  MY PAGE
+/auth                     로그인/회원가입
+
+API 클라이언트
+- frontend/src/api/firsthome.js
+- 백엔드 REST API 호출을 한 곳에서 관리한다.
+- GET 요청 캐싱과 중복 요청 병합을 적용해 화면 전환 시 불필요한 API 호출을 줄인다.
+- 비회원 관심 저장을 위해 X-FirstHome-Client-Id 헤더를 사용한다.
+
+상태 관리
+- frontend/src/stores/authStore.js
+- frontend/src/stores/profileStore.js
+- 로그인 세션, 사용자 조건, 임시 저장 상태, 화면 표시용 프로필 상태를 관리한다.
+
+주요 유틸
+- frontend/src/utils/format.js: 금액, 날짜, 비율 등 화면 표시 포맷
+- frontend/src/utils/selectionState.js: 현재 선택 공고/옵션 상태 관리
+- frontend/src/utils/globalSearch.js: 전역 검색 대상 구성
+- frontend/src/utils/analysisStatus.js: PDF 분석 상태 표시 보조
+
+
+4. 백엔드 앱 구조
+
+config
+- backend/config/settings.py
+- backend/config/urls.py
+- 환경 변수, CORS/CSRF, 세션, 캐시, Swagger, 전체 API URL 연결을 담당한다.
+
+profiles
+- 사용자 인증, 회원가입, 로그인, 로그아웃, 프로필 조건, 계정 상태, 관심 저장을 담당한다.
+- 세션 인증과 비회원 client id 기반 관심 저장 흐름을 함께 지원한다.
+
+notices
+- 청약 공고 모델, LH 데이터 수집, fixture 보강, 지도용 공고 목록, 공고 상세 API를 담당한다.
+- 실제 공고가 부족한 지역은 fixture 보강 전략을 통해 시연 가능성을 유지한다.
+
+notice_docs
+- 공식 PDF 발견, 다운로드, 파싱, LLM 보조 추출, 주택형 옵션, 체크리스트, 분석 상태를 담당한다.
+- 공식 원문이 있는 경우 분석 결과를 우선 사용하고, 원문이 없거나 부족한 경우 fixture 구조화 데이터를 보조로 사용한다.
+
+recommendations
+- 사용자 조건과 공고/옵션을 결합해 추천 후보와 점수를 계산한다.
+- 자격, 자금, 지역, 일정 점수를 합산해 100점 기준 추천 점수를 만든다.
+
+funding
+- 선택 공고와 주택형 옵션 기준으로 계약금, 중도금, 잔금, 융자금, 부족액, 월 준비 목표를 계산한다.
+- 사용자의 보유 현금, 부채, 월 저축 가능액, 준비 목표 기간을 반영한다.
+
+rules
+- 서비스 판단 규칙의 중심 모듈이다.
+- 주요 파일:
+  - matching.py: 금융상품/정책/청약 후보 매칭 규칙
+  - funding.py: 자금 계산 규칙
+  - scoring.py: 추천 점수 보조 규칙
+  - safety.py: AI 답변 안전 필터
+  - regions.py: 지역 추론과 매칭
+  - document_extraction.py: 문서 추출 규칙
+  - notice_classification.py: 공고 유형 분류
+  - cache_service.py/cache_keys.py: 계산 결과 캐싱 보조
+
+products
+- 금융상품 목록, 상세, 기간별 금리 옵션, 가입 후보 저장/해제를 담당한다.
+- 금융감독원 API 데이터와 fixture 보강 데이터를 사용한다.
+- 사용자의 자금 로드맵 조건과 연결해 금융상품 적합도를 계산한다.
+
+market
+- 경제 NOW 화면에 필요한 부동산, 환율, 금, 시장 지표 데이터를 제공한다.
+- 외부 API와 로컬 보강 데이터로 시계열 그래프를 구성한다.
+
+policies
+- 청년/주거 정책 수집과 사용자 조건 기반 정책 추천을 담당한다.
+- 지역 미스매치를 줄이기 위해 희망 지역과 정책 지역의 일치 여부를 우선 반영한다.
+
+places
+- Kakao Local REST API 기반 주변 부동산/은행 검색, Kakao 길찾기 URL 생성을 담당한다.
+
+videos
+- 청약 아고라의 영상 검색과 기본 영상 목록을 담당한다.
+
+community
+- 청약 아고라 게시글, 댓글, 카테고리, 샘플 게시글 생성을 담당한다.
+
+ai_coach
+- SSAFY GMS OpenAI 호환 API를 통한 AI 코치 요약과 전체 화면 챗봇 답변을 담당한다.
+- prompt_templates.py에서 페이지별 맥락과 역할을 구성한다.
+- safety_filter.py에서 부적절하거나 위험한 답변을 필터링한다.
+
+
+5. 데이터 흐름
+
+조건 입력 흐름
+1. 사용자가 /profile에서 희망 지역, 예산, 소득, 자산, 부채, 월 저축 가능액, 희망 면적 등을 입력한다.
+2. 프론트엔드는 PUT /api/profile 및 PUT /api/account-state로 저장한다.
+3. 로그인 사용자는 DB 계정 기준으로 저장되고, 비회원은 브라우저 로컬 상태와 client id 기반 임시 저장을 사용한다.
+
+추천 청약 흐름
+1. /recommendations 화면에서 GET /api/recommendations/housing을 호출한다.
+2. 백엔드는 사용자 조건, 청약 공고, 주택형 옵션, rules 점수 계산을 결합한다.
+3. 추천 결과는 자격/자금/지역/일정 점수와 우선 검토 옵션을 포함해 반환된다.
+4. 프론트엔드는 추천 목록, 점수, 공식 근거, 옵션 요약을 표시한다.
+
+공고 상세 흐름
+1. /notices/:noticeId에서 GET /api/notices/:noticeId를 호출한다.
+2. 주택형 옵션은 GET /api/notices/:noticeId/unit-options로 가져온다.
+3. 공식 PDF 분석 상태는 GET /api/notices/:noticeId/documents/status로 확인한다.
+4. 필요 시 POST /api/notices/:noticeId/documents/analyze로 분석을 실행한다.
+
+자금 로드맵 흐름
+1. /funding/:noticeId에서 선택 option_id와 함께 GET /api/recommendations/funding/:noticeId를 호출한다.
+2. 백엔드는 가격, 계약금, 중도금, 잔금, 융자금, 사용자의 현금/부채/월 저축 여력을 계산한다.
+3. 화면은 준비율, 부족액, 일정표, 주택형 비교, 추천 대출/정책 후보를 표시한다.
+
+AI 코치 흐름
+1. /ai-coach/:noticeId에서 POST /api/ai/coach-summary를 호출한다.
+2. 백엔드는 선택 공고, 옵션, 자금 로드맵, 공식 PDF 근거, 사용자 조건을 prompt로 구성한다.
+3. GMS OpenAI 호환 API가 가능한 경우 LLM 답변을 사용한다.
+4. LLM 사용이 불가능한 경우 rule/template 기반 fallback을 사용한다.
+5. 화면별 챗봇은 POST /api/ai/chat에 page_context를 전달해 현재 화면에 맞는 답변을 받는다.
+
+금융상품 흐름
+1. /finance/products에서 GET /api/products를 호출한다.
+2. 상품 유형, 은행, 기간, 검색어, 정렬 조건을 반영한다.
+3. /finance/products/:id에서 기간별 금리 옵션을 비교한다.
+4. 사용자가 메모와 함께 가입 후보로 저장하면 POST /api/products/:id/join을 호출한다.
+5. MY PAGE에서 GET /api/products/joined로 가입 후보를 확인하고 삭제할 수 있다.
+
+지도 흐름
+1. /map에서 GET /api/notices/map으로 지도 표시 공고를 가져온다.
+2. 지도 렌더링은 Kakao Map JavaScript SDK가 담당한다.
+3. 주변 검색과 길찾기는 /api/places/search, /api/places/route를 사용한다.
+
+MY PAGE 흐름
+1. /my-page에서 프로필, 관심 공고, 관심 옵션, 가입 금융상품, 금리 그래프 데이터를 통합 조회한다.
+2. 저장된 항목은 각각 관심 해제 또는 가입 해제가 가능하다.
+3. 가입 금융상품 그래프는 사용자가 선택한 기간 금리를 중심으로 같은 상품의 다른 기간 옵션을 보조 막대로 표시한다.
+
+
+6. fixture 및 실제 데이터 보강 전략
+
+이 서비스는 발표/시연 안정성을 위해 실제 데이터 우선, fixture 보강 후순위 전략을 사용한다.
+
+기본 원칙
+- 실제 API 또는 DB 데이터가 있으면 우선 사용한다.
+- 데이터가 부족한 지역, 공고, 금융상품, 정책은 fixture로 최소 표시 수량을 보강한다.
+- fixture 데이터는 실제 공식 원문이 연결되지 않은 경우 Fixture 또는 공식 확인 필요 상태로 표시한다.
+- 추천 점수에서는 fixture 후보가 실제 공고보다 과도하게 우선되지 않도록 보정한다.
+
+관련 위치
+- backend/fixtures/firsthome_mvp.json
+- backend/fixtures/sample_pdfs/
+- backend/apps/fixture_store.py
+- backend/apps/notices/management/commands/sync_fixture_supplements.py
+
+
+7. 인증 및 저장 구조
+
+회원
+- Django 세션 기반 로그인
+- CustomUser 모델 기반 계정
+- 프로필, 계정 상태, 관심 공고, 관심 옵션, 가입 금융상품을 서버 DB에 저장
+
+비회원
+- 브라우저 localStorage와 X-FirstHome-Client-Id 기반 임시 식별
+- 일부 관심 저장 기능은 client id 기준으로 유지
+- 로그인 또는 회원가입 후 계정 기준 저장 흐름으로 전환
+
+
+8. API 문서
+
+Swagger
+- /api/docs
+
+OpenAPI schema
+- /api/schema
+
+Redoc
+- /api/redoc
+
+백엔드 URL 연결은 backend/config/urls.py에서 관리한다.
+
+
+9. 배포 및 시연 구조
+
+개발 모드
+- Django backend: 127.0.0.1:8000
+- Vite frontend: 127.0.0.1:5173
+- Vite proxy가 /api 요청을 backend로 전달
+
+시연 모드
+- 프론트엔드 빌드 산출물을 serve로 제공
+- Django backend는 waitress로 실행
+- 외부 공유는 ngrok 안정 터널을 사용
+- ngrok 경고 페이지 회피가 필요한 자동 테스트는 ngrok-skip-browser-warning 헤더를 사용
+
+
+10. 제출 산출물 구성
+
+docs/submit/screenshots
+- 실제 배포 주소 기준 캡처 화면
+- 비회원/회원, 라이트/다크 모드 조합별 화면 포함
+- 캡처 설명 README, 캡처 실행 스크립트, manifest 포함
+
+docs/submit/docs_submit
+- 제출용 보조 문서
+- 현재 파일: service_architecture.txt
+
+
+11. 핵심 설계 특징
+
+1. 청약 추천, 자금 로드맵, AI 코치를 하나의 흐름으로 연결했다.
+2. 공식 PDF 분석 결과와 fixture 보강 데이터를 구분해 신뢰도를 표시한다.
+3. 사용자 조건 기반 점수 산정 규칙을 backend/apps/rules에 집중시켜 유지보수성을 높였다.
+4. 비회원도 주요 흐름을 체험할 수 있고, 회원은 저장과 MY PAGE 관리가 가능하다.
+5. 금융상품과 정책 추천을 청약 자금 계획과 연결해 실제 계약금/잔금 준비 관점에서 비교할 수 있다.
+6. 지도, 영상, 커뮤니티, 경제 지표를 금융 광장과 청약 준비 흐름에 연결해 정보 탐색 범위를 넓혔다.
+7. AI 기능은 GMS OpenAI 호환 API를 사용하되, 실패 시 rule/template fallback으로 시연 안정성을 확보한다.
+
