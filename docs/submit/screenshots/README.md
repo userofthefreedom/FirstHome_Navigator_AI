@@ -1,76 +1,82 @@
-# 제출용 실행 화면 캡처
+# 제출용 화면 캡처
 
-- 생성 시각: 2026-06-26T05:35:49.897Z
-- 대상 주소: https://polka-kennel-decorated.ngrok-free.dev
-- 뷰포트: 1440x960
-- 캡처 수: 56
-- 테스트 계정: submit_1782452246327_2ee0
+이 폴더는 실제 배포 주소에서 캡처한 제출용 화면 이미지를 보관합니다.
 
-## 구성
+## 캡처 기준
 
-- `screenshots/guest/light`: 비회원 라이트 모드
-- `screenshots/guest/dark`: 비회원 다크 모드
-- `screenshots/member/light`: 회원 라이트 모드
-- `screenshots/member/dark`: 회원 다크 모드
-- `screenshot-manifest.json`: 캡처 URL, 경로, 준비 상태 기록
+| 항목 | 값 |
+|---|---|
+| 대상 주소 | `https://polka-kennel-decorated.ngrok-free.dev` |
+| viewport | `1440x960` |
+| 캡처 수 | 56장 |
+| 사용자 상태 | 비회원, 회원 |
+| 테마 | light, dark |
+| 캡처 방식 | Playwright 자동화 |
+| manifest | `screenshot-manifest.json` |
 
-## 캡처 목록
+회원 화면 캡처에는 자동 생성한 제출용 테스트 계정을 사용했습니다. 계정명은 manifest의 `member.username`에서 확인할 수 있습니다.
 
-| 상태 | 테마 | 화면 | 파일 | 준비 상태 |
-|---|---|---|---|---|
-| guest | light | dashboard | `screenshots/guest/light/01_dashboard.png` | OK |
-| guest | light | profile | `screenshots/guest/light/02_profile.png` | OK |
-| guest | light | recommendations | `screenshots/guest/light/03_recommendations.png` | OK |
-| guest | light | notice_detail | `screenshots/guest/light/04_notice_detail.png` | OK |
-| guest | light | map | `screenshots/guest/light/05_map.png` | OK |
-| guest | light | funding | `screenshots/guest/light/06_funding.png` | OK |
-| guest | light | ai_coach | `screenshots/guest/light/07_ai_coach.png` | OK |
-| guest | light | favorites | `screenshots/guest/light/08_favorites.png` | OK |
-| guest | light | finance_products | `screenshots/guest/light/09_finance_products.png` | OK |
-| guest | light | finance_product_detail | `screenshots/guest/light/10_finance_product_detail.png` | OK |
-| guest | light | economy_now | `screenshots/guest/light/11_economy_now.png` | OK |
-| guest | light | agora | `screenshots/guest/light/12_agora.png` | OK |
-| guest | light | my_page | `screenshots/guest/light/13_my_page.png` | OK |
-| guest | light | auth | `screenshots/guest/light/14_auth.png` | OK |
-| guest | dark | dashboard | `screenshots/guest/dark/15_dashboard.png` | OK |
-| guest | dark | profile | `screenshots/guest/dark/16_profile.png` | OK |
-| guest | dark | recommendations | `screenshots/guest/dark/17_recommendations.png` | OK |
-| guest | dark | notice_detail | `screenshots/guest/dark/18_notice_detail.png` | OK |
-| guest | dark | map | `screenshots/guest/dark/19_map.png` | OK |
-| guest | dark | funding | `screenshots/guest/dark/20_funding.png` | OK |
-| guest | dark | ai_coach | `screenshots/guest/dark/21_ai_coach.png` | OK |
-| guest | dark | favorites | `screenshots/guest/dark/22_favorites.png` | OK |
-| guest | dark | finance_products | `screenshots/guest/dark/23_finance_products.png` | OK |
-| guest | dark | finance_product_detail | `screenshots/guest/dark/24_finance_product_detail.png` | OK |
-| guest | dark | economy_now | `screenshots/guest/dark/25_economy_now.png` | OK |
-| guest | dark | agora | `screenshots/guest/dark/26_agora.png` | OK |
-| guest | dark | my_page | `screenshots/guest/dark/27_my_page.png` | OK |
-| guest | dark | auth | `screenshots/guest/dark/28_auth.png` | OK |
-| member | light | dashboard | `screenshots/member/light/29_dashboard.png` | OK |
-| member | light | profile | `screenshots/member/light/30_profile.png` | OK |
-| member | light | recommendations | `screenshots/member/light/31_recommendations.png` | OK |
-| member | light | notice_detail | `screenshots/member/light/32_notice_detail.png` | OK |
-| member | light | map | `screenshots/member/light/33_map.png` | OK |
-| member | light | funding | `screenshots/member/light/34_funding.png` | OK |
-| member | light | ai_coach | `screenshots/member/light/35_ai_coach.png` | OK |
-| member | light | favorites | `screenshots/member/light/36_favorites.png` | OK |
-| member | light | finance_products | `screenshots/member/light/37_finance_products.png` | OK |
-| member | light | finance_product_detail | `screenshots/member/light/38_finance_product_detail.png` | OK |
-| member | light | economy_now | `screenshots/member/light/39_economy_now.png` | OK |
-| member | light | agora | `screenshots/member/light/40_agora.png` | OK |
-| member | light | my_page | `screenshots/member/light/41_my_page.png` | OK |
-| member | light | auth | `screenshots/member/light/42_auth.png` | OK |
-| member | dark | dashboard | `screenshots/member/dark/43_dashboard.png` | OK |
-| member | dark | profile | `screenshots/member/dark/44_profile.png` | OK |
-| member | dark | recommendations | `screenshots/member/dark/45_recommendations.png` | OK |
-| member | dark | notice_detail | `screenshots/member/dark/46_notice_detail.png` | OK |
-| member | dark | map | `screenshots/member/dark/47_map.png` | OK |
-| member | dark | funding | `screenshots/member/dark/48_funding.png` | OK |
-| member | dark | ai_coach | `screenshots/member/dark/49_ai_coach.png` | OK |
-| member | dark | favorites | `screenshots/member/dark/50_favorites.png` | OK |
-| member | dark | finance_products | `screenshots/member/dark/51_finance_products.png` | OK |
-| member | dark | finance_product_detail | `screenshots/member/dark/52_finance_product_detail.png` | OK |
-| member | dark | economy_now | `screenshots/member/dark/53_economy_now.png` | OK |
-| member | dark | agora | `screenshots/member/dark/54_agora.png` | OK |
-| member | dark | my_page | `screenshots/member/dark/55_my_page.png` | OK |
-| member | dark | auth | `screenshots/member/dark/56_auth.png` | OK |
+## 폴더 구조
+
+```text
+screenshots/
+  README.md
+  capture-submit.mjs
+  screenshot-manifest.json
+  guest/
+    light/
+    dark/
+  member/
+    light/
+    dark/
+```
+
+## 캡처 대상 화면
+
+각 사용자 상태와 테마 조합별로 다음 14개 화면을 캡처했습니다.
+
+| 화면 | 경로 |
+|---|---|
+| Dashboard | `/` |
+| Profile | `/profile` |
+| Recommendations | `/recommendations` |
+| Notice Detail | `/notices/101?option_id=1001` |
+| Map | `/map` |
+| Funding | `/funding/101?option_id=1001` |
+| AI Coach | `/ai-coach/101?option_id=1001` |
+| Favorites | `/favorites` |
+| Financial Products | `/finance/products` |
+| Financial Product Detail | `/finance/products/1` |
+| Economy NOW | `/finance/economy-now` |
+| Agora | `/finance/agora` |
+| MY PAGE | `/my-page` |
+| Auth | `/auth` |
+
+## 파일 번호 규칙
+
+- `guest/light`: `01_` ~ `14_`
+- `guest/dark`: `15_` ~ `28_`
+- `member/light`: `29_` ~ `42_`
+- `member/dark`: `43_` ~ `56_`
+
+예시:
+
+```text
+guest/light/01_dashboard.png
+member/light/33_map.png
+member/dark/55_my_page.png
+```
+
+## 재캡처 방법
+
+프로젝트 루트에서 실행합니다.
+
+```bash
+node docs/submit/screenshots/capture-submit.mjs https://polka-kennel-decorated.ngrok-free.dev
+```
+
+주의:
+- backend와 frontend 배포 주소가 정상 동작해야 합니다.
+- 중간 로딩 화면이 저장되지 않도록 스크립트는 route 이동 후 network idle과 화면 안정 상태를 기다립니다.
+- ngrok 경고 페이지 회피를 위해 자동화 요청에는 `ngrok-skip-browser-warning` 헤더를 사용합니다.
+

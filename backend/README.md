@@ -1,140 +1,116 @@
 # FirstHome Navigator AI Backend
 
-Django + Django REST Framework 기반 백엔드입니다. 실제 LH 공고, 공식 PDF 분석 결과, rule 기반 추천/자금 계산, 계정 상태, AI 코치/챗봇 API를 제공합니다.
+Django REST Framework 기반 백엔드입니다. 청약 공고 수집, 공식 PDF 분석, 추천 점수 계산, 자금 로드맵, 금융상품/정책/대출 추천, 지도/장소 API, 커뮤니티, AI 코치 API를 제공합니다.
 
-이 문서는 `docs/history/FirstHome_Navigator_AI_개발공유용_확장기획서_v9.0.docx`와 현재 코드 구조를 기준으로 작성했습니다. 전체 프로젝트 실행 흐름은 루트 `README.md`를 우선 확인합니다.
+전체 프로젝트 실행 순서는 루트 `README.md`를 우선 확인합니다.
 
-## Backend Role
+## 역할
 
-백엔드는 다음 책임을 갖습니다.
-
-| Area | Responsibility |
+| 영역 | 설명 |
 |---|---|
-| 공고 데이터 | LH 공고 수집, 소유형 공공분양 필터링, active 공고 조회, fixture 보충 |
-| 공식 PDF 분석 | 공고문 PDF에서 주택형 옵션, 분양가, 계약금/중도금/잔금/융자금, 서류/자격 근거 추출 |
-| Rule 판단 | 공고 분류, 추천 점수, 자금 계산, confidence, 문서 후보 우선순위, 안전 문구 관리 |
-| 추천/자금 | 사용자 조건 기반 추천 후보, option_id 기반 자금 로드맵 계산 |
-| 지도 | Kakao Local REST API로 좌표 보강, 지도 표시용 공고 API 제공 |
-| 계정/상태 | 로그인, 프로필, 관심목록, 선택 공고/옵션 상태 저장 |
-| AI | OpenAI-compatible LLM 호출, AI 코치 플랜 캐시, 전역 챗봇 응답, template fallback |
+| 인증/프로필 | 회원가입, 로그인, 로그아웃, 세션 인증, 사용자 조건, 계정 상태, 관심 저장 |
+| 청약 공고 | LH 공고 수집, 공고 목록/상세, 지도 표시용 공고, fixture 보강 |
+| 공식 PDF 분석 | PDF 발견/다운로드/파싱, 주택형 옵션, 납부 일정, 체크리스트, 분석 상태 |
+| 추천 | 자격, 자금, 지역, 일정 점수 기반 청약 추천 |
+| 자금 로드맵 | option_id 기준 계약금, 중도금, 잔금, 융자금, 부족액, 월 준비 목표 계산 |
+| 금융상품 | 금융감독원 예적금 상품 수집, 기간별 금리 옵션, 가입 후보 저장 |
+| 정책/대출 | 청년/주거 정책 추천, 주택 구입 목적 대출 후보 추천 |
+| 경제 지표 | 부동산, 환율, 금, 시장 지표 데이터 제공 |
+| 지도/장소 | Kakao Local REST API 기반 주변 은행/부동산 검색, 길찾기 URL 제공 |
+| 커뮤니티 | 청약 아고라 게시글과 댓글 CRUD |
+| AI | SSAFY GMS OpenAI 호환 API 기반 AI 코치, 전역 챗봇, LLM 보조 PDF 분석 |
 
-## Stack
+## 기술 스택
 
 - Python 3.11+
 - Django 5.0.6
 - Django REST Framework
+- drf-spectacular
 - SQLite 기본 DB
-- pypdf, pdfplumber 기반 PDF 파싱
-- requests 기반 외부 API 연동
-- OpenAI-compatible Chat Completions API
+- pypdf, pdfplumber
+- requests
+- waitress
+- SSAFY GMS OpenAI 호환 Chat Completions API
 
-## Directory Map
+## 앱 구조
 
 ```text
 backend/
   apps/
-    ai_coach/        AI client, AI 코치 플랜, 전역 챗봇, safety/smoke check
-    funding/         선택 주택형 option_id 기준 자금 로드맵 계산
-    notice_docs/     공식 PDF 분석, 주택형 옵션, 납부 일정, 체크리스트
-    notices/         LH 공고 수집, 공고 API, 지도 API, 좌표 보강
-    policies/        온통청년 정책 수집/추천
-    products/        금융감독원 금융상품 수집/추천
-    profiles/        사용자 조건, 인증, 관심목록, 계정 선택 상태
-    recommendations/ 추천 점수, 후보 랭킹, 추천 API
-    rules/           서비스 판단 규칙의 중앙 코드 모듈
-    fixture_store.py 실제 데이터 부족 시 fixture 보충 및 직렬화
-  config/            Django settings, root urls, ASGI/WSGI
-  fixtures/          발표/회귀용 fixture와 sample PDFs
-  manage.py
-  requirements.txt
+    profiles/          인증, 사용자 조건, 계정 상태, 관심 저장
+    notices/           청약 공고 모델, LH 수집, 지도용 공고, fixture 보강
+    notice_docs/       공식 PDF 분석, 주택형 옵션, 납부 일정, 체크리스트
+    recommendations/   청약/금융상품/정책/대출 추천 API
+    funding/           자금 로드맵 계산 API
+    products/          금융상품, 기간별 금리 옵션, 가입 후보
+    policies/          청년/주거 정책 수집과 추천
+    market/            경제 NOW 지표
+    places/            Kakao 장소 검색과 길찾기
+    videos/            YouTube 영상 검색
+    community/         청약 아고라 게시글/댓글
+    ai_coach/          AI 코치, 전역 챗봇, 안전 필터
+    rules/             추천/자금/지역/PDF/정책/상품 판단 규칙
+    fixture_store.py   실제 데이터 부족분 보강용 fixture 로더
+  config/              settings, urls, wsgi/asgi
+  fixtures/            시연 보강 데이터와 sample PDFs
 ```
 
-## Main Apps And Relationships
+## 주요 API 그룹
 
-| App/File | Main Files | Used By |
-|---|---|---|
-| `apps/rules` | `notice_classification.py`, `scoring.py`, `funding.py`, `regions.py`, `matching.py`, `confidence.py`, `document_extraction.py`, `document_discovery.py`, `retrieval.py`, `safety.py` | notices, notice_docs, recommendations, funding, products, policies, ai_coach |
-| `apps/notices` | `models.py`, `views.py`, `services/lh.py`, `services/map_locations.py`, `management/commands/import_lh.py`, `geocode_notice_locations.py` | recommendation list, detail page, map page |
-| `apps/notice_docs` | `models.py`, `services/analysis.py`, `extractors.py`, `pdf_parser.py`, `validators.py`, `llm_extractors.py` | notice detail, funding, AI coach official checks |
-| `apps/recommendations` | `services/ranking.py`, `services/scoring.py`, `views.py` | recommendation page, dashboard, map scoring |
-| `apps/funding` | `services/calculator.py`, `views.py` | funding page, AI coach |
-| `apps/profiles` | `models.py`, `services.py`, `views.py`, `authentication.py` | all personalized APIs, favorites, account-state |
-| `apps/ai_coach` | `services/ai_client.py`, `prompt_templates.py`, `safety_filter.py`, `views.py` | AI coach page, global chatbot |
-| `apps/fixture_store.py` | fixture loading, DB materialization, serializers | all public APIs when real data is insufficient |
+| 그룹 | 대표 엔드포인트 |
+|---|---|
+| Auth / Account | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` |
+| Profile | `GET/PUT /api/profile`, `GET/PUT /api/account-state`, `/api/favorites` |
+| Housing Notices | `GET /api/notices`, `GET /api/notices/{notice_id}`, `GET /api/notices/map` |
+| Notice Documents | `POST /api/notices/{notice_id}/documents/analyze`, `GET /api/notices/{notice_id}/unit-options` |
+| Recommendations | `GET /api/recommendations/housing`, `GET /api/recommendations/products`, `GET /api/recommendations/policies`, `GET /api/recommendations/loans` |
+| Funding | `GET /api/recommendations/funding/{notice_id}?option_id={option_id}` |
+| AI Coach | `POST /api/ai/coach-summary`, `GET /api/ai/coach-summary/latest`, `POST /api/ai/chat` |
+| Financial Products | `GET /api/products`, `GET /api/products/{product_id}`, `POST /api/products/{product_id}/join` |
+| Market | `GET /api/market/assets`, `GET /api/market/summary` |
+| Places | `GET /api/places/search`, `GET /api/places/route` |
+| Community | `GET/POST /api/agora/posts`, `PUT/DELETE /api/agora/posts/{post_id}` |
+| Videos | `GET /api/videos/default`, `GET /api/videos/search` |
 
-## Data Flow
+Swagger 문서:
 
 ```text
-External APIs / PDFs
-  -> import_finlife / import_youthcenter / import_lh
-  -> HousingNotice, Product, Policy DB rows
-  -> analyze_notice_documents
-  -> NoticeDocument, NoticeExtraction, HousingUnitOption, PaymentSchedule, EligibilityChecklist
-  -> recommendations/funding/notices/map APIs
-  -> frontend screens
-  -> ai_coach/chat with selected notice, option, profile, official refs
+http://localhost:8000/api/docs
+http://localhost:8000/api/schema
+http://localhost:8000/api/redoc
 ```
 
-Fixture는 실제 데이터가 부족한 지역만 보충합니다.
+## 환경 변수
 
-```text
-DB actual notices
-  -> current_notices()
-  -> if active service notices by region < FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION
-  -> materialize fixture notices
-  -> mark as data_source=fixture and hide official source buttons
-```
-
-규칙의 운영/발표용 상세 설명은 루트 기준 `docs/detail/rules_detail.txt`에 정리되어 있습니다. `apps/rules`는 실행 코드, `docs/detail/rules_detail.txt`는 계산식과 판별 기준을 사람이 읽기 좋게 풀어 쓴 문서입니다.
-
-## Environment Variables
-
-`.env.example`을 `.env`로 복사한 뒤 값을 채웁니다.
+`backend/.env.example`을 복사해 `backend/.env`를 만듭니다.
 
 ```bash
+cd backend
 cp .env.example .env
 ```
 
-중요 변수:
+주요 값:
 
-| Variable | Purpose |
+| 변수 | 설명 |
 |---|---|
 | `DJANGO_SECRET_KEY` | Django secret key |
-| `DJANGO_DEBUG` | local 개발은 `true`, 배포는 `false` |
-| `DJANGO_ALLOWED_HOSTS` | 고정 배포 도메인이나 별도 터널 호스트를 쉼표로 추가 |
-| `CORS_ALLOWED_ORIGINS` | 프론트 배포 origin을 쉼표로 추가 |
-| `CSRF_TRUSTED_ORIGINS` | 프론트 배포 origin을 쉼표로 추가 |
-| `DATA_GO_KR_SERVICE_KEY` | LH 공고 수집용 공공데이터포털 API 키 |
-| `FINLIFE_API_KEY` | 금융감독원 금융상품 API 키 |
-| `YOUTH_POLICY_API_KEY` | 온통청년 정책 API 키 |
-| `KAKAO_REST_API_KEY` | Kakao Local REST API 좌표 보강 키 |
-| `GMS_API_KEY` | SSAFY GMS OpenAI-compatible API 키 |
-| `GMS_OPENAI_BASE_URL` | SSAFY GMS OpenAI-compatible base URL |
-| `OPENAI_API_KEY` | AI 코치/챗봇/LLM 보조 분석용 OpenAI API 키 |
-| `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT` | 지역별 fixture 보충 on/off |
-| `FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ` | 조회 API에서 fixture를 자동 DB 생성할지 여부. 발표용 기본 권장값은 `false` |
-| `FIRSTHOME_MIN_ACTIVE_SERVICE_NOTICES_PER_REGION` | 지역별 최소 활성 소유형 공고 수 |
+| `DJANGO_DEBUG` | 개발 중 `true`, 시연/배포 시 상황에 맞게 조정 |
+| `DJANGO_ALLOWED_HOSTS` | 고정 배포 도메인 추가 |
+| `CORS_ALLOWED_ORIGINS` | 프론트엔드 origin 추가 |
+| `CSRF_TRUSTED_ORIGINS` | 프론트엔드 origin 추가 |
+| `DATA_GO_KR_SERVICE_KEY` | LH/공공데이터 API |
+| `FINLIFE_API_KEY` | 금융감독원 금융상품 API |
+| `YOUTH_POLICY_API_KEY` | 청년정책 API |
+| `KAKAO_REST_API_KEY` | Kakao Local REST API |
+| `YOUTUBE_API_KEY` | YouTube 검색 API |
+| `GMS_API_KEY` | SSAFY GMS OpenAI 호환 API |
+| `AI_PROVIDER` | 기본값 `gms_openai` |
+| `FIRSTHOME_ENABLE_FIXTURE_SUPPLEMENT` | 실제 데이터 부족분 fixture 보강 여부 |
+| `FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ` | 조회 중 fixture DB 생성 여부. 시연 안정성상 `false` 권장 |
 
-기본 AI 설정:
+## 설치
 
-```env
-AI_PROVIDER=gms_openai
-AI_MODEL=gpt-4.1
-AI_ENABLE_LLM_EXTRACTION=true
-AI_ENABLE_LLM_CHAT=true
-AI_REQUEST_TIMEOUT=30
-GMS_API_KEY=
-GMS_OPENAI_BASE_URL=https://gms.ssafy.io/gmsapi/api.openai.com/v1
-GMS_OPENAI_CHAT_PATH=/chat/completions
-```
-
-발표/시연 환경에서는 SSAFY GMS key를 사용하는 `gms_openai` provider를 권장합니다. 직접 OpenAI API를 사용할 때만 `AI_PROVIDER=openai`와 `OPENAI_API_KEY`를 사용합니다. HuggingFace/local model serving은 현재 단계에서 사용하지 않습니다.
-
-ngrok 임시 공유는 프론트 ngrok 주소 하나만 열고 Vite dev server의 `/api` 프록시를 사용합니다. 고정 도메인을 쓰거나 Vite 프록시가 아닌 배포 환경에서는 `.env`의 `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`에 실제 프론트/백엔드 주소를 추가합니다.
-
-## Install
-
-프로젝트 루트에서 가상환경을 만들고 패키지를 설치합니다.
+프로젝트 루트에서 실행합니다.
 
 ```bash
 python -m venv .venv
@@ -143,97 +119,53 @@ python -m pip install --upgrade pip
 pip install -r backend/requirements.txt
 ```
 
-HuggingFace/local model serving을 사용하지 않으며, AI 기능은 기본 의존성과 OpenAI-compatible API 호출로 동작합니다.
-
-## Run
+## 개발 서버 실행
 
 ```bash
 cd backend
 python manage.py check
 python manage.py migrate
-python manage.py runserver localhost:8000
+python manage.py runserver 127.0.0.1:8000
 ```
 
-확인 API:
-
-```text
-http://localhost:8000/api/dashboard
-http://localhost:8000/api/notices?active=1
-http://localhost:8000/api/notices/map
-http://localhost:8000/api/recommendations/housing
-http://localhost:8000/api/docs
-http://localhost:8000/api/schema
-```
-
-Swagger UI는 기능별 태그로 정리되어 있습니다.
-
-- Auth / Account
-- Profile
-- Housing Notices
-- Notice Documents
-- Recommendations
-- Funding
-- AI Coach
-- Financial Products
-- Market
-- Map / Places
-- Community
-- Videos
-
-문서 스키마를 검증하려면 아래 명령을 사용합니다.
+## 시연 서버 실행
 
 ```bash
-python manage.py spectacular --validate --file NUL
+cd backend
+waitress-serve --listen=127.0.0.1:8000 --threads=8 config.wsgi:application
 ```
 
-## Data Commands
+## 데이터 준비 명령
 
-### Fixture
-
-실제 수집 데이터를 유지한 채 부족한 지역만 fixture로 보충하려면 아래 명령을 사용합니다. 이 명령은 활성 소유형 공고가 기준치보다 적은 광역시·도에만 fixture 공고와 분석 결과를 materialize합니다.
+Fixture 보강:
 
 ```bash
 python manage.py sync_fixture_supplements
 ```
 
-`FIRSTHOME_MATERIALIZE_FIXTURE_ON_READ=false`가 기본 권장값입니다. `/api/notices` 같은 조회 API가 요청 중 DB를 쓰지 않게 하고, 서버 실행 전에 위 명령으로 보충을 끝내 두면 SQLite lock 위험을 줄일 수 있습니다.
-
-발표용 고정 데이터만 DB에 로드해야 할 때는 아래 명령을 사용합니다. 기존 공고/상품/정책을 지우므로 실제 수집 데이터가 필요할 때는 주의합니다.
-
-```bash
-python manage.py load_firsthome_fixture
-```
-
-### Financial Products and Mortgage Loans
+금융상품:
 
 ```bash
 python manage.py import_finlife --dry-run
 python manage.py import_finlife
-python manage.py import_finlife --clear
 python manage.py import_finlife --repair-only
 ```
 
-예금/적금은 상품명 기준으로 하나의 `FinancialProduct`에 저장되고, 기간별 금리는 `FinancialProductOption`으로 묶입니다. 과거 수집으로 생긴 `상품명 (12개월)` 형태의 중복 상품은 `import_finlife` 실행 시 같은 상품의 옵션으로 병합됩니다. 외부 API를 다시 호출하지 않고 기존 DB만 정리할 때는 `--repair-only`를 사용합니다.
-
-### Youth Policies
+청년정책:
 
 ```bash
 python manage.py import_youthcenter --dry-run
 python manage.py import_youthcenter
-python manage.py import_youthcenter --clear
 ```
 
-### LH Notices
+LH 공고:
 
 ```bash
 python manage.py import_lh --dry-run
 python manage.py import_lh
-python manage.py import_lh --clear
 ```
 
-`python manage.py import_lh`는 운영 기본값으로 페이지당 250개씩 최대 7페이지를 조회하고, 공급정보 상세 조회는 75개 공고까지만 수행합니다. `--dry-run`은 API 연결 확인용으로 50개 1페이지와 공급정보 10개만 확인합니다. 모든 공고의 공급정보를 강제로 보강해야 할 때만 `--supply-limit 0`을 사용합니다.
-
-### PDF Analysis
+공식 PDF 분석:
 
 ```bash
 python manage.py analyze_notice_documents --dry-run
@@ -241,57 +173,36 @@ python manage.py analyze_notice_documents
 python manage.py analyze_notice_documents --force
 ```
 
-### Map Coordinates
+지도 좌표 보강:
 
 ```bash
 python manage.py geocode_notice_locations --dry-run
 python manage.py geocode_notice_locations
-python manage.py geocode_notice_locations --overwrite
 ```
 
-### Kakao Geocoding
+아고라 샘플 데이터:
 
 ```bash
-python manage.py geocode_notice_locations --dry-run --limit 30
-python manage.py geocode_notice_locations --limit 30
+python manage.py seed_agora
 ```
 
-정확한 주소가 없는 LH 지구명은 Kakao geocoding이 실패할 수 있습니다. 이 경우 지도 API는 지역 fallback 좌표와 위치 정확도 안내를 사용합니다.
-
-## API Groups
-
-| Group | Endpoints |
-|---|---|
-| Auth/Profile | `GET /api/auth/me`, `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET/PUT /api/profile`, `GET/PUT /api/account-state` |
-| Favorites | `GET/POST/DELETE /api/favorites` |
-| Notices | `GET /api/notices`, `GET /api/notices/map`, `GET /api/notices/{noticeId}` |
-| Notice Documents | `GET /api/notices/{noticeId}/documents/status`, `POST /api/notices/{noticeId}/documents/analyze`, `GET /api/notices/{noticeId}/unit-options`, `GET /api/notices/{noticeId}/eligibility-checklists` |
-| Recommendations | `GET /api/recommendations/housing`, `GET /api/recommendations/products`, `GET /api/recommendations/policies` |
-| Funding | `GET /api/recommendations/funding/{noticeId}?option_id={optionId}` |
-| AI | `POST /api/ai/coach-summary`, `POST /api/ai/chat` |
-
-## Tests And Checks
+## 테스트
 
 ```bash
-python manage.py check
-python manage.py makemigrations --check --dry-run
+cd backend
 python manage.py test
 ```
 
-Focused checks:
+필요 시 특정 앱만 실행합니다.
 
 ```bash
-python manage.py test apps.ai_coach apps.notice_docs
-python manage.py test apps.notices apps.recommendations apps.profiles apps.ai_coach
-python manage.py check_sample_pdf_regression --report-json=reports/sample_pdf_regression_review.json
-python manage.py check_representative_flow --report-json=reports/representative_flow_review.json
-python manage.py check_ai_chat_smoke --report-json=reports/ai_chat_smoke_review.json
+python manage.py test apps.recommendations apps.funding apps.products apps.ai_coach
 ```
 
-## Local Artifacts
+## 규칙 문서
 
-- `db.sqlite3`: local DB
-- `reports/`: 분석/회귀/AI smoke 결과
-- PDF cache 또는 외부 API 결과물: 로컬 산출물로 취급
+추천과 판단 규칙은 다음 두 위치를 함께 확인합니다.
 
-API keys, `.env`, raw AI response, 개인정보가 들어간 로그는 커밋하지 않습니다.
+- 실행 코드: `backend/apps/rules/`
+- 설명 문서: `docs/detail/rules_detail.txt`
+- 제출용 알고리즘 문서: `docs/submit/docs_submit/recommendation_algorithm_detail.txt`

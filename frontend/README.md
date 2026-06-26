@@ -1,26 +1,10 @@
 # FirstHome Navigator AI Frontend
 
-Vue 3 + JavaScript + Vite 기반 프론트엔드입니다. 사용자가 조건을 입력하고, 추천 청약을 비교하고, 지도에서 공고를 선택하고, 선택한 주택형 옵션의 자금 로드맵과 AI 코치 플랜을 확인하는 화면을 담당합니다.
+Vue 3 + JavaScript + Vite 기반 프론트엔드입니다. 사용자가 조건을 입력하고, 추천 청약을 비교하고, 지도와 공고 상세를 확인하고, 자금 로드맵과 AI 코치를 이어서 보는 화면을 제공합니다. 금융상품, 경제 NOW, 청약 아고라, MY PAGE, light/dark mode도 이 프론트엔드에서 담당합니다.
 
-이 문서는 `docs/history/FirstHome_Navigator_AI_개발공유용_확장기획서_v9.0.docx`와 현재 `frontend/src` 구조를 기준으로 작성했습니다. 전체 프로젝트 실행 순서는 루트 `README.md`를 우선 확인합니다.
+전체 프로젝트 실행 순서는 루트 `README.md`를 우선 확인합니다.
 
-## Frontend Role
-
-프론트엔드는 다음 사용자 흐름을 화면으로 연결합니다.
-
-```text
-Home
-  -> Profile Form
-  -> Recommendations
-  -> Notice Detail / Map
-  -> Funding Roadmap
-  -> AI Coach
-  -> Favorites
-```
-
-전역 챗봇은 `RootLayout`에서 항상 렌더링되어, 로그인 여부와 관계없이 현재 화면 이용 방법과 청약 관련 질문을 돕습니다.
-
-## Stack
+## 기술 스택
 
 - Vue 3
 - JavaScript
@@ -32,9 +16,7 @@ Home
 - lucide-vue-next
 - Kakao Map JavaScript SDK
 
-TypeScript는 사용하지 않습니다.
-
-## Directory Map
+## 화면 구조
 
 ```text
 frontend/
@@ -43,97 +25,102 @@ frontend/
     icons.svg
   src/
     api/
-      firsthome.js          Axios client and backend API wrappers
+      firsthome.js
     components/
-      FloatingCoachChat.vue Global chatbot
+      FloatingCoachChat.vue
     layouts/
-      RootLayout.vue        Sidebar/topbar/mobile nav and shared layout
+      RootLayout.vue
     pages/
-      HomePage.vue          Dashboard and current selected candidate summary
-      ProfileFormPage.vue   User condition input
-      RecommendationPage.vue Housing recommendation list
-      MapPage.vue           Kakao map based notice explorer
-      NoticeDetailPage.vue  Notice detail, official checks, unit options
-      FundingPage.vue       Option-based funding roadmap
-      AiCoachPage.vue       Selected notice/option AI action plan
-      FavoritesPage.vue     Saved notices and unit options
-      AuthPage.vue          Login/register/logout helper
+      HomePage.vue
+      ProfileFormPage.vue
+      RecommendationPage.vue
+      NoticeDetailPage.vue
+      FundingPage.vue
+      AiCoachPage.vue
+      FavoritesPage.vue
+      MapPage.vue
+      FinancialProductsPage.vue
+      FinancialProductDetailPage.vue
+      EconomyNowPage.vue
+      AgoraPage.vue
+      MyPage.vue
+      AuthPage.vue
     router/
-      index.js              Route definitions
+      index.js
     stores/
-      authStore.js          Session state
-      profileStore.js       Profile state
+      authStore.js
+      profileStore.js
     utils/
-      analysisStatus.js     Notice document status labels
-      format.js             Money/date formatting
-      globalSearch.js       Topbar search routing and keyword mapping
-      selectionState.js     Current notice/option persistence
+      analysisStatus.js
+      format.js
+      globalSearch.js
+      selectionState.js
     App.vue
     main.js
     style.css
-  index.html
-  package.json
-  vite.config.js
 ```
 
-## Screen Responsibilities
+## 라우트
 
-| Screen | Route | Main Responsibility |
+| 화면 | 경로 | 역할 |
 |---|---|---|
-| Dashboard | `/` | 현재 추천 후보, 캘린더, 선택 후보 요약 |
-| Profile | `/profile` | 사용자 자금/면적/지역/공급유형/청약 조건 입력 |
-| Recommendations | `/recommendations` | 점수순/마감/분양가/계약금/부족액 기준 후보 정렬 |
-| Map | `/map` | Kakao 지도에서 실제/fixture 공고 위치 탐색 |
-| Notice Detail | `/notices/:noticeId` | 공고 상세, 주택형 옵션 그룹, 공식 확인 체크리스트 |
-| Funding | `/funding/:noticeId?` | 선택 option_id 기준 계약금, 중도금, 잔금, 융자금, 부족액 계산 |
-| AI Coach | `/ai-coach/:noticeId?` | 선택 공고/옵션 기준 이번 주 할 일과 공식 확인 포인트 |
-| Favorites | `/favorites` | 저장한 공고와 주택형 옵션 재확인 |
-| Auth | `/auth` | 회원가입, 로그인, 로그아웃 상태 확인 |
+| Dashboard | `/` | 현재 추천 후보, 선택 후보, 이번 주 할 일, 자금 상태 요약 |
+| Profile | `/profile` | 사용자 조건 입력과 저장 |
+| Recommendations | `/recommendations` | 추천 청약 목록, 점수, 우선 검토 주택형 옵션 |
+| Map | `/map` | 청약 공고 지도, 주변 부동산/은행 검색, 길찾기 |
+| Notice Detail | `/notices/:noticeId` | 공고 상세, 공식 PDF 분석, 주택형 옵션, 체크리스트 |
+| Funding | `/funding/:noticeId?` | 선택 주택형 기준 자금 로드맵 |
+| AI Coach | `/ai-coach/:noticeId?` | 선택 공고/옵션 기준 AI 준비 플랜 |
+| Favorites | `/favorites` | 관심 공고와 관심 옵션 |
+| Financial Products | `/finance/products` | 예적금 상품 목록, 필터, 정렬 |
+| Product Detail | `/finance/products/:productId` | 기간별 금리 옵션과 가입 후보 저장 |
+| Economy NOW | `/finance/economy-now` | 부동산/환율/금/시장 지표 시각화 |
+| Agora | `/finance/agora` | 청약 영상 검색, 게시글, 댓글 |
+| MY PAGE | `/my-page` | 프로필, 저장 내역, 가입 금융상품, 금리 그래프 |
+| Auth | `/auth` | 로그인, 회원가입, 로그아웃 상태 확인 |
 
-## State Model
+## 공통 레이아웃
 
-상태는 세 층으로 나뉩니다.
+`RootLayout.vue`가 좌측 사이드바, 상단 검색, 계정 영역, 테마 전환, 모바일 내비게이션, Floating AI 챗봇을 담당합니다.
 
-| State | File | Persistence |
+`FloatingCoachChat.vue`는 현재 화면 맥락을 백엔드에 전달해 화면별 추천 질문과 답변을 제공합니다. 예를 들어 지도 화면에서는 지도 사용법, 청약 아고라에서는 청약 관련 영상/커뮤니티 사용법, MY PAGE에서는 저장 내역 확인 방법을 중심으로 답변합니다.
+
+## 상태 관리
+
+| 상태 | 파일 | 저장 방식 |
 |---|---|---|
-| Auth session | `stores/authStore.js` | Django session cookie |
-| Profile | `stores/profileStore.js` | 로그인 사용자는 backend profile, 비로그인은 local/session fallback |
-| Current selection | `utils/selectionState.js` | 로그인 사용자는 `/api/account-state`, 비로그인은 browser storage |
+| 인증 세션 | `stores/authStore.js` | Django session cookie |
+| 프로필 조건 | `stores/profileStore.js` | 회원은 backend profile, 비회원은 브라우저 상태 |
+| 현재 선택 공고/옵션 | `utils/selectionState.js` | 회원은 `/api/account-state`, 비회원은 browser storage |
+| API 캐시 | `api/firsthome.js` | 짧은 TTL의 GET 캐시와 중복 요청 병합 |
 
-선택 상태 규칙:
+## API 클라이언트
 
-- 아무 선택이 없으면 추천 점수 1등 공고와 해당 공고의 1등 옵션을 기본값으로 사용합니다.
-- 공고만 선택하면 해당 공고 안의 기본/최고 옵션을 사용합니다.
-- 공고와 옵션을 선택한 뒤에는 사용자가 바꾸기 전까지 임의로 리셋하지 않습니다.
-- 로그아웃하면 프로필 임시 상태와 현재 선택 상태를 초기화하고 홈으로 이동합니다.
+`src/api/firsthome.js`가 백엔드 API 호출을 관리합니다.
 
-## Backend API Client
+대표 함수:
 
-`src/api/firsthome.js`가 backend API를 감쌉니다.
-
-주요 함수:
-
-| Function | Backend API |
+| 함수 | API |
 |---|---|
 | `fetchAuthSession` | `GET /api/auth/me` |
+| `registerToApi`, `loginToApi`, `logoutFromApi` | `/api/auth/...` |
 | `fetchProfile`, `saveProfileToApi` | `GET/PUT /api/profile` |
 | `fetchAccountState`, `saveAccountStateToApi` | `GET/PUT /api/account-state` |
 | `fetchHousingRecommendations` | `GET /api/recommendations/housing` |
-| `fetchMapNotices` | `GET /api/notices/map` |
-| `fetchNotice` | `GET /api/notices/{noticeId}` |
-| `analyzeNoticeDocument` | `POST /api/notices/{noticeId}/documents/analyze` |
-| `fetchFundingPlan` | `GET /api/recommendations/funding/{noticeId}?option_id={optionId}` |
-| `fetchCoachSummary` | `POST /api/ai/coach-summary` |
-| `askCoachChat` | `POST /api/ai/chat` |
+| `fetchNotice`, `fetchNoticeUnitOptions` | `GET /api/notices/...` |
+| `fetchFundingPlan` | `GET /api/recommendations/funding/{noticeId}` |
+| `fetchCoachSummary`, `askCoachChat` | `/api/ai/...` |
+| `fetchFinancialProducts`, `joinFinancialProduct` | `/api/products...` |
+| `fetchMarketAssets` | `GET /api/market/assets` |
+| `fetchAgoraPosts`, `createAgoraPost` | `/api/agora/posts` |
 | `fetchFavorites`, `addFavorite`, `removeFavorite` | `/api/favorites` |
 
-Axios는 `withCredentials: true`로 Django session cookie를 함께 보냅니다. 비로그인 관심목록 병합을 위해 `X-FirstHome-Client-Id` 헤더를 사용합니다.
+## 환경 변수
 
-## Environment Variables
-
-`.env.example`을 `.env`로 복사합니다.
+`frontend/.env.example`을 복사해 `frontend/.env`를 만듭니다.
 
 ```bash
+cd frontend
 cp .env.example .env
 ```
 
@@ -142,82 +129,55 @@ VITE_API_BASE_URL=/api
 VITE_KAKAO_MAP_JS_KEY=
 ```
 
-| Variable | Purpose |
+| 변수 | 설명 |
 |---|---|
-| `VITE_API_BASE_URL` | Django API base URL |
-| `VITE_KAKAO_MAP_JS_KEY` | Kakao Map JavaScript SDK key |
+| `VITE_API_BASE_URL` | Django API base URL. 개발/시연 기본값은 `/api` |
+| `VITE_KAKAO_MAP_JS_KEY` | Kakao Map JavaScript SDK 키 |
 
-Vite에서 브라우저 코드에 노출되는 환경 변수는 `VITE_` 접두사가 필요합니다.
+Vite dev server는 `/api` 요청을 Django backend로 proxy합니다.
 
-로컬 개발과 ngrok 공유에서는 Vite dev server가 `/api` 요청을 `http://127.0.0.1:8000` 백엔드로 프록시합니다.
-
-```env
-VITE_API_BASE_URL=/api
-```
-
-Kakao Developers의 JavaScript 키 설정에는 개발 중 접속하는 도메인을 등록합니다.
-
-```text
-http://localhost:5173
-http://127.0.0.1:5173
-```
-
-## Install
+## 설치
 
 ```bash
 cd frontend
 npm ci
 ```
 
-## Run
+## 개발 서버 실행
 
 ```bash
+cd frontend
 npm run dev
 ```
 
-확인 URL:
+기본 URL:
 
 ```text
 http://localhost:5173/
 ```
 
-백엔드가 기본값인 `http://localhost:8000/api`에서 실행 중이어야 합니다.
-
-## Build
+## 빌드
 
 ```bash
+cd frontend
 npm run build
 ```
 
-Vite preview:
+시연 안정성을 위해 Vite dev server 대신 빌드 산출물을 serve로 제공할 수 있습니다.
 
 ```bash
-npm run preview
+npm run build
+npx serve -s dist -l 5173
 ```
 
-## Kakao Map Notes
+## Kakao Map 확인
 
-`MapPage.vue`는 Kakao Map JavaScript SDK를 동적으로 로드합니다.
+- Kakao Developers에서 JavaScript 키를 발급합니다.
+- 허용 도메인에 개발/시연 주소를 등록합니다.
+- `VITE_KAKAO_MAP_JS_KEY`에 JavaScript 키를 넣고 프론트엔드 서버를 재시작합니다.
+- 지도 좌표 보강은 백엔드의 `KAKAO_REST_API_KEY`와 `geocode_notice_locations` 명령이 담당합니다.
 
-- JS 키가 없으면 지도 대신 안내 문구를 표시합니다.
-- `/api/notices/map`에서 받은 `location` 좌표로 marker를 표시합니다.
-- 실제 주소가 없는 공고는 backend fallback 좌표를 사용할 수 있으므로 화면에 위치 정확도 안내를 제공합니다.
-- 지도 목록은 페이지네이션으로 제한하여 긴 목록이 화면 높이를 늘리지 않게 합니다.
-
-## AI UX Notes
-
-AI 기능은 두 화면으로 분리되어 있습니다.
-
-| UI | Component/Page | Role |
-|---|---|---|
-| Global chatbot | `components/FloatingCoachChat.vue` | 모든 화면에서 현재 맥락 질문, 서비스 이용 방법, 청약 질문 응답 |
-| AI Coach page | `pages/AiCoachPage.vue` | 선택 공고/옵션 기준으로 앞으로 할 일, 공식 확인 포인트, 선택 기준 정리 |
-
-채팅 기록은 새로고침, 로그인, 로그아웃 시 초기화됩니다. 새 메시지가 생기면 채팅 영역은 자동으로 최신 메시지로 스크롤됩니다.
-
-## Development Checklist
-
-프론트 변경 후 최소 확인:
+## 개발 체크리스트
 
 ```bash
 npm run build
@@ -226,30 +186,28 @@ npm run build
 수동 확인 흐름:
 
 1. `/profile`에서 조건 저장
-2. `/recommendations`에서 추천 후보와 정렬 기준 확인
-3. `/map`에서 지도 marker, 필터, 목록 페이지네이션 확인
-4. `/notices/:noticeId`에서 옵션 선택
-5. `/funding/:noticeId?option_id=...`에서 선택 옵션 자금 로드맵 확인
-6. `/ai-coach/:noticeId?option_id=...`에서 같은 선택이 유지되는지 확인
-7. 전역 챗봇에서 현재 화면 질문 입력
-8. 로그인/로그아웃 후 선택 상태 초기화 또는 유지 규칙 확인
+2. `/recommendations`에서 추천 후보 확인
+3. `/notices/:noticeId`에서 공고 상세와 주택형 옵션 확인
+4. `/funding/:noticeId?option_id=...`에서 자금 로드맵 확인
+5. `/ai-coach/:noticeId?option_id=...`에서 AI 코치 확인
+6. `/map`에서 지도, 필터, 주변 검색, 길찾기 확인
+7. `/finance/products`와 `/finance/products/:productId`에서 상품 조회와 저장 확인
+8. `/finance/economy-now`에서 차트 표시 확인
+9. `/finance/agora`에서 영상 검색, 게시글, 댓글 확인
+10. `/my-page`에서 저장 내역과 금리 그래프 확인
+11. light/dark mode 모두 확인
 
-## Common Issues
+## 자주 보는 문제
 
-### API 호출 실패
+API 호출 실패:
+- backend 서버가 켜져 있는지 확인합니다.
+- `VITE_API_BASE_URL`이 `/api` 또는 올바른 backend 주소인지 확인합니다.
+- backend CORS/CSRF 설정에 현재 프론트엔드 origin이 포함되어 있는지 확인합니다.
 
-- Django 서버가 켜져 있는지 확인합니다.
-- `VITE_API_BASE_URL`이 backend 주소와 맞는지 확인합니다.
-- `.env` 수정 후 Vite dev server를 재시작합니다.
-- backend CORS 설정에 현재 프론트 도메인이 들어 있는지 확인합니다.
-
-### Kakao 지도 미표시
-
+Kakao 지도 미표시:
 - `VITE_KAKAO_MAP_JS_KEY`가 비어 있지 않은지 확인합니다.
-- Kakao Developers JavaScript 키 도메인에 `http://localhost:5173`이 등록되어 있는지 확인합니다.
-- REST API 키는 backend geocoding용입니다. 프론트 지도 렌더링에는 JS 키가 필요합니다.
+- Kakao Developers JavaScript 키 허용 도메인에 현재 주소가 등록되어 있는지 확인합니다.
 
-### AI 답변이 template fallback으로 보임
-
-- backend `.env`의 `AI_PROVIDER`, `OPENAI_API_KEY`, `AI_ENABLE_LLM_CHAT` 값을 확인합니다.
-- 로그인 사용자만 실제 AI 코치 LLM 분석을 받을 수 있습니다.
+AI 답변이 fallback으로 보임:
+- backend `.env`의 `AI_PROVIDER`, `GMS_API_KEY`, `AI_ENABLE_LLM_CHAT` 값을 확인합니다.
+- backend 서버 로그에서 GMS/OpenAI 호출 경로를 확인합니다.

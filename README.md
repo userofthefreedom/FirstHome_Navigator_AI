@@ -7,7 +7,8 @@
 - [금융상품 추천 알고리즘 설명](#금융상품-추천-알고리즘-설명)
 - [생성형 AI 활용 내용](#생성형-ai-활용-내용)
 - [프로젝트 후기 및 느낀 점](#프로젝트-후기-및-느낀-점)
-- [대회 요구사항 대응 요약](#대회-요구사항-대응-요약)
+- [제출용 산출물 위치](#제출용-산출물-위치)
+- [요구사항 대응 요약](#요구사항-대응-요약)
 - [사전 준비](#1-사전-준비)
 - [기술 스택](#2-기술-스택)
 - [폴더 구조](#3-폴더-구조)
@@ -76,6 +77,28 @@
 개발 과정에서 가장 중요했던 부분은 실제 데이터의 불완전성을 다루는 일이었습니다. 공고마다 PDF 형식이 다르고, 외부 API 데이터가 부족하거나 누락되는 경우가 있었기 때문에 실제 데이터 우선, fixture 보강, 공식 근거 표시, AI fallback을 함께 설계했습니다.
 
 또한 발표와 시연을 준비하면서 기능 구현만큼 가시성, 로딩 안정성, 다크/라이트 모드, 동시 접속 테스트, 캡처 산출물 정리도 중요하다는 점을 배웠습니다. 최종적으로 FirstHome Navigator AI는 청약 추천, 자금 계획, 금융상품, 지도, 커뮤니티, AI 코치를 하나의 사용자 흐름으로 묶은 서비스로 완성되었습니다.
+
+## 제출용 산출물 위치
+
+제출용 문서와 캡처 자료는 `docs/submit/` 아래에 모았습니다.
+
+| 위치 | 내용 |
+|---|---|
+| `docs/submit/README.md` | 제출용 산출물 전체 구성 안내 |
+| `docs/submit/screenshots/` | 실제 배포 주소 기준 화면 캡처, 캡처 실행 스크립트, 캡처 manifest, 캡처 설명 README |
+| `docs/submit/screenshots/guest/` | 비회원 화면 캡처 |
+| `docs/submit/screenshots/member/` | 회원 로그인 상태 화면 캡처 |
+| `docs/submit/docs_submit/service_architecture.txt` | 전체 서비스 아키텍처 설명 |
+| `docs/submit/docs_submit/recommendation_algorithm_detail.txt` | 청약/주택형/금융상품/정책/대출 추천 알고리즘 상세 설계 |
+| `docs/submit/docs_submit/FirstHome Navigator API.yaml` | OpenAPI/Swagger API 명세 |
+| `docs/submit/docs_submit/firsthome_api_flow_sequence_diagrams.pdf` | API 흐름도와 시퀀스 다이어그램 |
+| `docs/submit/docs_submit/firsthome_vue_component_structure.pdf` | Vue 컴포넌트 구조도 |
+| `docs/submit/docs_submit/firsthome_db_erd.pdf` | DB 모델링 ERD |
+| `docs/submit/docs_submit/firsthome_page_design.pdf` | 페이지 설계 또는 화면 설계도 |
+| `docs/submit/docs_submit/FirstHome_Navigator_AI_상세_와이어프레임_기획용_최종.pdf` | 상세 와이어프레임 문서 |
+| `docs/submit/docs_submit/청약네비_기획서_최종.docx` | 최종 기획서 |
+| `docs/submit/docs_submit/ERD.png`, `docs/submit/docs_submit/usecase.png` | ERD와 Use Case 이미지 |
+| `docs/submit/document_generation_prompt_guide.txt` | API 흐름도, Vue 구조도, ERD, 화면 설계도 생성을 GPT에 요청하기 위한 프롬프트 가이드 |
 
 첫 주택 마련을 준비하는 사용자가 실제 LH 청약 공고와 공식 PDF 공고문을 바탕으로 추천 청약, 주택형 옵션, 분양가, 계약금/중도금/잔금 일정, 자금 부족분, 공식 근거, AI 코치 답변을 확인할 수 있는 서비스입니다.
 
